@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOVA AI</title>
+<style>html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}body{display:grid;place-items:center}.box{text-align:center;padding:24px}.logo{font-size:44px;font-weight:800}.msg{margin-top:18px;color:#9999b5;line-height:1.8}.err{max-width:760px;color:#ff8bad;white-space:pre-wrap}</style>
+</head>
+<body>
+<div class="box"><div class="logo">NOVA AI</div><div class="msg" id="status">جاري تشغيل NOVA AI…</div></div>
+<script>window.__NOVA_HTML=[];window.__NOVA_JS64=[];window.__NOVA_LOAD_ERR='';function novaErr(n){window.__NOVA_LOAD_ERR=n;}</script>
+<script src="../nova-ai-original-clean/raw-1.js?v=v37" onerror="novaErr('raw-1.js')"></script>
+<script src="../nova-ai-original-clean/raw-2.js?v=v37" onerror="novaErr('raw-2.js')"></script>
+<script src="../nova-ai-original-clean/raw-3.js?v=v37" onerror="novaErr('raw-3.js')"></script>
+<script src="../nova-ai-original-clean/raw-4.js?v=v37" onerror="novaErr('raw-4.js')"></script>
+<script src="../nova-ai-original-clean/raw-5-fixed.js?v=v37" onerror="novaErr('raw-5-fixed.js')"></script>
+<script src="../nova-ai-original-clean/raw-6b.js?v=v37" onerror="novaErr('raw-6b.js')"></script>
+<script src="../nova-ai-original-clean/raw-7b.js?v=v37" onerror="novaErr('raw-7b.js')"></script>
+<script src="../nova-ai-original-clean/raw-8b.js?v=v37" onerror="novaErr('raw-8b.js')"></script>
+<script>
+(function(){
+ const s=document.getElementById('status');
+ const fail=m=>{s.className='msg err';s.textContent='حدثت مشكلة أثناء تشغيل NOVA AI: '+m;};
+ function decode64(input){
+   const bin=atob(String(input||''));
+   const bytes=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+   return new TextDecoder('utf-8').decode(bytes);
+ }
+ try{
+   if(window.__NOVA_LOAD_ERR)throw new Error('تعذر تحميل '+window.__NOVA_LOAD_ERR);
+   if(window.__NOVA_HTML.length!==5)throw new Error('الأجزاء الأصلية '+window.__NOVA_HTML.length+'/5');
+   if(window.__NOVA_JS64.length!==3)throw new Error('الأجزاء المشفرة '+window.__NOVA_JS64.length+'/3');
+   for(const b64 of window.__NOVA_JS64){
+     const js=decode64(b64);
+     new Function('window',js)(window);
+   }
+   if(window.__NOVA_HTML.length!==8)throw new Error('إجمالي الأجزاء '+window.__NOVA_HTML.length+'/8');
+   const html=window.__NOVA_HTML.join('');
+   if(!html.includes('initApp()'))throw new Error('ملف التطبيق النهائي غير مكتمل');
+   document.open();document.write(html);document.close();
+ }catch(e){fail(e&&e.message?e.message:String(e));}
+})();
+</script>
+</body>
+</html>
