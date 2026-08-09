@@ -16,7 +16,7 @@ html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:syst
  const base='../nova-ai-original-clean/';
  const direct=['raw-1.js','raw-2.js','raw-3.js','raw-4.js','raw-5.js'];
  const encoded=['raw-6b.js','raw-7b.js','raw-8b.js'];
- const stamp='text-parser-31';
+ const stamp='js-literal-parser-32';
  const fail=(msg)=>{status.className='msg err';status.textContent='حدثت مشكلة أثناء تشغيل NOVA AI: '+msg;};
  async function loadText(name){
    const r=await fetch(base+name+'?v='+stamp,{cache:'no-store'});
@@ -30,7 +30,13 @@ html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:syst
    const start=source.indexOf(marker),end=source.lastIndexOf(');');
    if(start<0||end<0||end<=start) throw new Error(name+' تنسيقه غير صحيح');
    const arg=source.slice(start+marker.length,end).trim();
-   try{return JSON.parse(arg);}catch(e){throw new Error(name+' تعذر قراءة محتواه: '+e.message);}
+   try{
+     const value=Function('"use strict";return ('+arg+');')();
+     if(typeof value!=='string') throw new Error('المحتوى ليس نصًا');
+     return value;
+   }catch(e){
+     throw new Error(name+' تعذر قراءة محتواه كـ JavaScript string: '+e.message);
+   }
  }
  function decode64(input){
    const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
