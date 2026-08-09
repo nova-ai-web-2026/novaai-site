@@ -14,9 +14,8 @@ html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:syst
 (async()=>{
  const status=document.getElementById('status');
  const base='../nova-ai-original-clean/';
- const direct=['raw-1.js','raw-2.js','raw-3.js','raw-4.js','raw-5.js'];
- const encoded=['raw-6b.js','raw-7b.js','raw-8b.js'];
- const stamp='legacy-js-parser-33';
+ const parts=['raw-1.js','raw-2.js','raw-3.js','raw-4.js','raw-5a.js','raw-5b.js','raw-5c.js','raw-5d.js'];
+ const stamp='correct-8-direct-34';
  const fail=(msg)=>{status.className='msg err';status.textContent='حدثت مشكلة أثناء تشغيل NOVA AI: '+msg;};
  async function loadText(name){
    const r=await fetch(base+name+'?v='+stamp,{cache:'no-store'});
@@ -25,8 +24,8 @@ html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:syst
    if(!t.trim()) throw new Error(name+' فارغ');
    return t;
  }
- function extractPush(source,target,name){
-   const marker='window.'+target+'.push(';
+ function extractPush(source,name){
+   const marker='window.__NOVA_HTML.push(';
    const start=source.indexOf(marker),end=source.lastIndexOf(');');
    if(start<0||end<0||end<=start) throw new Error(name+' تنسيقه غير صحيح');
    const arg=source.slice(start+marker.length,end).trim();
@@ -35,23 +34,21 @@ html,body{height:100%;margin:0;background:#0d0d12;color:#ededf5;font-family:syst
      if(typeof value!=='string') throw new Error('المحتوى ليس نصًا');
      return value;
    }catch(e){
-     throw new Error(name+' تعذر قراءة محتواه كـ JavaScript string: '+e.message);
+     throw new Error(name+' تعذر قراءة محتواه: '+e.message);
    }
  }
- function decode64(input){
-   const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-   const map=new Int16Array(128);map.fill(-1);for(let i=0;i<alphabet.length;i++)map[alphabet.charCodeAt(i)]=i;
-   const clean=String(input||'').replace(/[^A-Za-z0-9+/]/g,'');const out=new Uint8Array(Math.ceil(clean.length*3/4));let oi=0;
-   for(let i=0;i<clean.length;i+=4){const a=map[clean.charCodeAt(i)],b=i+1<clean.length?map[clean.charCodeAt(i+1)]:0,c=i+2<clean.length?map[clean.charCodeAt(i+2)]:0,d=i+3<clean.length?map[clean.charCodeAt(i+3)]:0;if(a<0||b<0||c<0||d<0)throw new Error('Base64 غير صالح');const n=(a<<18)|(b<<12)|(c<<6)|d;out[oi++]=(n>>16)&255;if(i+2<clean.length)out[oi++]=(n>>8)&255;if(i+3<clean.length)out[oi++]=n&255;}
-   return new TextDecoder('utf-8').decode(out.subarray(0,oi));
- }
  try{
-   const chunks=[];status.textContent='جاري قراءة أجزاء NOVA AI… 0/8';
-   for(let i=0;i<direct.length;i++){const src=await loadText(direct[i]);chunks.push(extractPush(src,'__NOVA_HTML',direct[i]));status.textContent='جاري قراءة أجزاء NOVA AI… '+(i+1)+'/8';}
-   for(let i=0;i<encoded.length;i++){const src=await loadText(encoded[i]);const b64=extractPush(src,'__NOVA_JS64',encoded[i]);const decoded=decode64(b64);chunks.push(extractPush(decoded,'__NOVA_HTML',encoded[i]+' decoded'));status.textContent='جاري قراءة أجزاء NOVA AI… '+(direct.length+i+1)+'/8';}
-   if(chunks.length!==8)throw new Error('عدد الأجزاء النهائي '+chunks.length+'/8');
-   let html=chunks.join('');if(!html.includes('initApp()'))throw new Error('ملف التطبيق النهائي غير مكتمل');
-   html=html.replace(/<title>[\s\S]*?<\/title>/i,'<title>NOVA AI</title>').replaceAll('NovaAI','NOVA AI');document.open();document.write(html);document.close();
+   const chunks=[];
+   status.textContent='جاري قراءة أجزاء NOVA AI… 0/8';
+   for(let i=0;i<parts.length;i++){
+     const src=await loadText(parts[i]);
+     chunks.push(extractPush(src,parts[i]));
+     status.textContent='جاري قراءة أجزاء NOVA AI… '+(i+1)+'/8';
+   }
+   let html=chunks.join('');
+   if(!html.includes('<html')||!html.includes('initApp()')) throw new Error('ملف التطبيق النهائي غير مكتمل');
+   html=html.replace(/<title>[\s\S]*?<\/title>/i,'<title>NOVA AI</title>').replaceAll('NovaAI','NOVA AI');
+   document.open();document.write(html);document.close();
  }catch(e){fail(e&&e.message?e.message:String(e));}
 })();
 </script>
