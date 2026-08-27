@@ -4,13 +4,19 @@ const file='nova-ultimate/index.html';
 let html=fs.readFileSync(file,'utf8');
 
 if(!html.includes('https://js.puter.com/v2/')){
-  html=html.replace('</head>','<script src="https://js.puter.com/v2/"></script>\n</head>');
+  const headEnd=html.indexOf('</head>');
+  if(headEnd<0)throw new Error('Missing </head>');
+  html=html.slice(0,headEnd)+'<script src="https://js.puter.com/v2/"></script>\n'+html.slice(headEnd);
 }
 if(!html.includes('./v7.css')){
-  html=html.replace('</head>','<link rel="stylesheet" href="./v7.css?v=7">\n</head>');
+  const headEnd=html.indexOf('</head>');
+  if(headEnd<0)throw new Error('Missing </head>');
+  html=html.slice(0,headEnd)+'<link rel="stylesheet" href="./v7.css?v=7">\n'+html.slice(headEnd);
 }
 if(!html.includes('./app-v7.js')){
-  html=html.replace('</body>','<script src="./app-v7.js?v=7"></script>\n</body>');
+  const bodyEnd=html.lastIndexOf('</body>');
+  if(bodyEnd<0)throw new Error('Missing final </body>');
+  html=html.slice(0,bodyEnd)+'<script src="./app-v7.js?v=7"></script>\n'+html.slice(bodyEnd);
 }
 
 html=html.replaceAll('تعديل محلي وتوليد AI عند ربط الخادم','تعديل وتوليد صور بالذكاء الاصطناعي');
@@ -20,4 +26,4 @@ html=html.replaceAll("navigator.serviceWorker.register('./sw.js?v=3')","navigato
 html=html.replaceAll("navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).then(()=>navigator.serviceWorker.register('./sw.js?v=5'))","navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).then(()=>navigator.serviceWorker.register('./sw.js?v=7'))");
 
 fs.writeFileSync(file,html);
-console.log('NovaAI v7: Puter model discovery + reliable send flow + clean UI enabled');
+console.log('NovaAI v7: injected AI/UI assets at real document boundaries');
