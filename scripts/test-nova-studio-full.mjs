@@ -126,7 +126,7 @@ includes(v5,'video/mp4;codecs=avc1.42E01E,mp4a.40.2','MP4 preferred recorder for
 includes(v5,'video/webm;codecs=vp9,opus','WebM VP9 fallback','extend');
 for(const sec of ['16','24','32','60']) includes(v5,`value="${sec}"`,`${sec}s local duration option`,'extend');
 includes(v5,'accept="video/*"','local file accepts video','extend');
-includes(v5,'$('#download').download=`nova-extended-${target}s.${extFor(type)}`','duration-based download filename','extend');
+includes(v5,"$('#download').download=`nova-extended-${target}s.${extFor(type)}`",'duration-based download filename','extend');
 includes(v5,'الملف الناتج فارغ','empty output protection','extend');
 includes(v5,'مدة الفيديو غير صالحة','invalid duration protection','extend');
 includes(v5,'لم أجد فيديو داخل Nova','missing in-app video protection','extend');
