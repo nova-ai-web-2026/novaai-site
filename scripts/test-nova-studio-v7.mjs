@@ -31,5 +31,6 @@ const preview=await fake.puter.ai.txt2vid('prompt',true);
 pass('preview reaches original',()=>assert.equal(preview,'ok'));
 pass('preview original call count',()=>assert.equal(realCalls,1));
 pass('double patch prevented',()=>assert.equal(api.installOnWindow(fake,null),false));
+window.close();
 console.log(`NOVA_V7_NO_SPEND_ASSERTIONS=${n}`);
 console.log('NOVA_STUDIO_V7_NO_SPEND_PASS');
