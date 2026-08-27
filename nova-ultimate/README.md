@@ -29,14 +29,16 @@ Required for cloud AI chat:
 Optional:
 
 - `BAILIAN_TOKEN_PLAN_BASE_URL`
-- `NOVA_AI_MODEL` (defaults to `qwen3.8-max-preview` for compatibility with the existing Token Plan setup)
+- `NOVA_AI_MODEL` to force a specific model
 - `POLLINATIONS_API_KEY` for AI image generation
+
+Without `NOVA_AI_MODEL`, the backend tries `qwen3.8-max` first for maximum quality and automatically falls back to `qwen3.8-max-preview` if the existing Token Plan endpoint does not expose the newer model.
 
 The UI remains usable without the optional image key; local image editing and all local tools continue to work.
 
 ## Security
 
-API keys stay server-side. The browser never receives the Alibaba or Pollinations secret keys.
+API keys stay server-side. The browser never receives the Alibaba or Pollinations secret keys. Uploaded file text is treated as untrusted data rather than higher-priority instructions.
 
 ## Run locally
 
