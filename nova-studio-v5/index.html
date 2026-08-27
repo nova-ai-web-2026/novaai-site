@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nova Studio 5</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090a0f;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#fff}#app{position:fixed;inset:0;width:100%;height:100%;border:0}.extendBtn{position:fixed;left:16px;bottom:18px;z-index:50;border:1px solid #3a4052;background:linear-gradient(135deg,#8b5cf6,#d946ef);color:#fff;border-radius:14px;padding:11px 14px;font-weight:800;box-shadow:0 15px 45px #0008;cursor:pointer}.modalShade{display:none;position:fixed;inset:0;z-index:80;background:#000a;backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:14px}.modalShade.open{display:flex}.modal{width:min(560px,100%);max-height:88vh;overflow:auto;background:#10131c;border:1px solid #32394b;border-radius:20px;padding:18px;box-shadow:0 24px 80px #000c}.modal h2{margin:0 0 6px;font-size:21px}.modal p{margin:0 0 14px;color:#9ba3b5;font-size:12px;line-height:1.7}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:6px}.field label{font-size:11px;color:#949caf}.field select,.field input{width:100%;border:1px solid #30374a;background:#0b0e15;color:#fff;border-radius:11px;padding:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.primary,.secondary{border-radius:11px;padding:10px 13px;cursor:pointer}.primary{border:0;background:linear-gradient(135deg,#8b5cf6,#d946ef);color:#fff;font-weight:800}.secondary{border:1px solid #30374a;background:#171b26;color:#fff}.primary:disabled{opacity:.5}.status{margin-top:12px;border:1px solid #2e3547;background:#0c0f16;border-radius:12px;padding:10px;font-size:11px;color:#aeb5c4;line-height:1.6}.result{display:none;margin-top:12px;border-top:1px solid #292f40;padding-top:12px}.result.show{display:block}.result video{width:100%;max-height:320px;border-radius:12px;background:#000}.download{display:inline-block;margin-top:9px;color:white;text-decoration:none;border:1px solid #3b4358;border-radius:10px;padding:8px 11px}.note{font-size:10px;color:#828b9d;margin-top:10px;line-height:1.6}.closeX{float:left;border:0;background:transparent;color:#aeb5c4;font-size:20px;cursor:pointer}@media(max-width:600px){.extendBtn{left:10px;bottom:10px}.row{grid-template-columns:1fr}.modal{padding:14px;border-radius:16px}}
+</style>
+</head>
+<body>
+<iframe id="app" src="../nova-studio-v4/?from=v5" title="Nova Studio"></iframe>
+<button class="extendBtn" id="openExtend">⏱ مدة أطول محليًا</button>
+<div class="modalShade" id="shade">
+  <div class="modal">
+    <button class="closeX" id="closeExtend">×</button>
+    <h2>Nova Local Extend</h2>
+    <p>يمدّد ملف الفيديو داخل جهازك فقط، من غير API ومن غير رصيد. الامتداد يكرر المقطع الأصلي حتى يصل للمدة المطلوبة؛ لا يصنع مشاهد AI جديدة.</p>
+    <div class="row">
+      <div class="field"><label>المدة النهائية</label><select id="target"><option value="16">16 ثانية</option><option value="24">24 ثانية</option><option value="32">32 ثانية</option><option value="60">60 ثانية</option></select></div>
+      <div class="field"><label>مصدر الفيديو</label><select id="sourceMode"><option value="auto">آخر فيديو داخل Nova</option><option value="file">اختيار ملف من الجهاز</option></select></div>
+    </div>
+    <div class="field" id="fileField" style="margin-top:10px;display:none"><label>ملف الفيديو</label><input id="file" type="file" accept="video/*"></div>
+    <div class="actions"><button class="primary" id="extend">إنشاء ملف أطول</button><button class="secondary" id="cancel">إلغاء</button></div>
+    <div class="status" id="status">جاهز. كل المعالجة محلية في المتصفح.</div>
+    <div class="result" id="result"><video id="preview" controls playsinline></video><br><a class="download" id="download">حفظ الفيديو</a></div>
+    <div class="note">قد يكون الملف الناتج WebM بدل MP4 حسب دعم المتصفح. لو المتصفح لا يدعم التقاط الفيديو مباشرة، اختر ملف الفيديو من جهازك وجرب من جديد.</div>
+  </div>
+</div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);let objectURL=null,resultURL=null;
+function setStatus(t){$('#status').textContent=t}
+function bestMime(){const c=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];for(const x of c){try{if(window.MediaRecorder?.isTypeSupported?.(x))return x}catch{}}return ''}
+function extFor(m){return String(m).startsWith('video/mp4')?'mp4':'webm'}
+async function getSource(){if($('#sourceMode').value==='file'){
+ const f=$('#file').files?.[0];if(!f)throw new Error('اختر ملف فيديو أولًا.');if(objectURL)URL.revokeObjectURL(objectURL);objectURL=URL.createObjectURL(f);const v=document.createElement('video');v.src=objectURL;v.playsInline=true;v.preload='auto';await waitMeta(v);return v;
+}
+let doc;try{doc=$('#app').contentDocument}catch{}const src=doc?.querySelector('#vidOut video, video[controls]');if(!src)throw new Error('لم أجد فيديو داخل Nova. ولّد فيديو أولًا أو اختر ملفًا من جهازك.');const url=src.currentSrc||src.src;if(!url)throw new Error('الفيديو الحالي لا يحتوي على مصدر قابل للتمديد.');const v=document.createElement('video');v.src=url;v.playsInline=true;v.preload='auto';v.crossOrigin=src.crossOrigin||'';await waitMeta(v);return v}
+function waitMeta(v){return new Promise((res,rej)=>{if(v.readyState>=1)return res();const ok=()=>{clean();res()},bad=()=>{clean();rej(new Error('تعذر قراءة ملف الفيديو.'))},clean=()=>{v.removeEventListener('loadedmetadata',ok);v.removeEventListener('error',bad)};v.addEventListener('loadedmetadata',ok,{once:true});v.addEventListener('error',bad,{once:true});v.load?.()})}
+function capture(v){return v.captureStream?.()||v.mozCaptureStream?.()||null}
+async function extendLocal(){const btn=$('#extend');if(btn.disabled)return;btn.disabled=true;$('#result').classList.remove('show');try{
+ const target=Number($('#target').value);const v=await getSource();if(!isFinite(v.duration)||v.duration<=0)throw new Error('مدة الفيديو غير صالحة.');
+ setStatus(`تجهيز تمديد محلي إلى ${target} ثانية…`);v.loop=true;v.currentTime=0;v.muted=false;await v.play();const stream=capture(v);if(!stream)throw new Error('المتصفح لا يدعم Local Extend مباشرة. جرّب Chrome حديث أو اختر ملفًا محليًا.');
+ const mime=bestMime();const rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);const chunks=[];rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+ const done=new Promise((res,rej)=>{rec.onerror=e=>rej(e.error||new Error('فشل التسجيل المحلي.'));rec.onstop=res});rec.start(500);const started=performance.now();
+ await new Promise(resolve=>{const tick=()=>{const elapsed=(performance.now()-started)/1000;setStatus(`إنشاء محلي: ${Math.min(target,elapsed).toFixed(1)} / ${target} ثانية`);if(elapsed>=target){resolve();return}requestAnimationFrame(tick)};tick()});rec.stop();v.pause();await done;
+ const type=rec.mimeType||mime||'video/webm';const blob=new Blob(chunks,{type});if(!blob.size)throw new Error('الملف الناتج فارغ.');if(resultURL)URL.revokeObjectURL(resultURL);resultURL=URL.createObjectURL(blob);$('#preview').src=resultURL;$('#download').href=resultURL;$('#download').download=`nova-extended-${target}s.${extFor(type)}`;$('#result').classList.add('show');setStatus(`تم إنشاء ملف ${target} ثانية محليًا بدون رصيد إضافي.`)
+ }catch(e){setStatus('تعذر التمديد: '+String(e?.message||e))}finally{btn.disabled=false}}
+$('#openExtend').onclick=()=>$('#shade').classList.add('open');$('#closeExtend').onclick=$('#cancel').onclick=()=>$('#shade').classList.remove('open');$('#shade').addEventListener('click',e=>{if(e.target===$('#shade'))$('#shade').classList.remove('open')});$('#sourceMode').onchange=()=>$('#fileField').style.display=$('#sourceMode').value==='file'?'grid':'none';$('#extend').onclick=extendLocal;
+window.__novaLocalExtendTest={bestMime,extFor,capture};
+})();
+</script>
+</body>
+</html>
