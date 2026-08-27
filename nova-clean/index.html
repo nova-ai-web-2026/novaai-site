@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b10">
+  <title>NovaAI</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    :root{--bg:#0b0b10;--panel:#111116;--panel2:#17171e;--line:#262630;--text:#f7f7f8;--muted:#9a9aa5;--accent:#8b5cf6;--accent2:#d946ef;--danger:#f87171;--ok:#34d399}
+    *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;-webkit-text-size-adjust:100%}
+    button,input,textarea{font:inherit}button{color:inherit}
+    .app{height:100dvh;display:grid;grid-template-columns:248px 1fr;overflow:hidden}
+    .side{background:#0e0e13;border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 4px}.gem{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 28px #8b5cf633;font-weight:900}.brand b{font-size:17px}.brand span{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+    .new{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:11px 12px;text-align:right;cursor:pointer}.new:hover{background:#1d1d25}
+    .sideTitle{font-size:11px;color:#777783;padding:5px 5px 0}.history{display:flex;flex-direction:column;gap:4px;overflow:auto}.history button{border:0;background:transparent;color:#c8c8d0;padding:9px 8px;text-align:right;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.history button:hover{background:#19191f}
+    .sideBottom{margin-top:auto;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:5px}.sideBottom button{border:0;background:transparent;text-align:right;color:#b6b6bf;padding:8px;border-radius:9px;cursor:pointer}.sideBottom button:hover{background:#19191f}
+    .main{min-width:0;display:grid;grid-template-rows:56px 1fr auto;position:relative}.top{display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #17171c;background:#0b0b10e8;backdrop-filter:blur(12px);z-index:5}.leftTop{display:flex;align-items:center;gap:8px}.menuBtn{display:none}.iconBtn{width:36px;height:36px;border:1px solid var(--line);background:transparent;border-radius:10px;display:grid;place-items:center;cursor:pointer}.iconBtn:hover{background:#17171d}
+    .modelWrap{position:relative}.modelBtn{border:1px solid var(--line);background:#131319;border-radius:11px;padding:8px 11px;display:flex;gap:8px;align-items:center;cursor:pointer;min-width:170px;justify-content:space-between}.modelBtn small{color:var(--muted);font-size:10px}.modelMenu{position:absolute;top:44px;right:0;width:min(330px,calc(100vw - 28px));background:#14141b;border:1px solid #2a2a34;border-radius:14px;padding:7px;box-shadow:0 20px 60px #0009;display:none;z-index:20}.modelMenu.open{display:block}.modelMenu button{width:100%;border:0;background:transparent;border-radius:10px;padding:10px;text-align:right;cursor:pointer;display:flex;justify-content:space-between;gap:12px}.modelMenu button:hover,.modelMenu button.active{background:#202028}.modelMenu b{display:block;font-size:13px}.modelMenu span{display:block;color:var(--muted);font-size:10px;margin-top:2px}.modelNote{color:#858591;font-size:10px;padding:8px 10px;border-top:1px solid var(--line);margin-top:4px}
+    .status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}.dot{width:7px;height:7px;border-radius:50%;background:#f59e0b}.dot.ok{background:var(--ok)}.dot.bad{background:var(--danger)}
+    .messages{overflow:auto;padding:28px 18px 160px}.column{max-width:820px;margin:0 auto}.welcome{min-height:50vh;display:grid;place-content:center;text-align:center;padding:30px}.welcome .bigGem{width:50px;height:50px;border-radius:16px;margin:0 auto 16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:24px;box-shadow:0 16px 48px #8b5cf633}.welcome h1{font-size:26px;margin:0 0 8px}.welcome p{margin:0;color:var(--muted);font-size:14px}.suggest{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:18px}.suggest button{border:1px solid var(--line);background:#111118;border-radius:999px;padding:8px 11px;color:#c8c8d0;cursor:pointer;font-size:12px}.suggest button:hover{background:#181820}
+    .msg{display:grid;grid-template-columns:32px minmax(0,1fr);gap:11px;margin:0 auto 24px;direction:rtl}.avatar{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#17171e;border:1px solid var(--line);font-size:12px}.msg.user .avatar{background:#20202a}.bubble{line-height:1.7;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.msg.user .bubble{background:#17171e;border:1px solid var(--line);padding:10px 12px;border-radius:14px;display:inline-block;max-width:min(680px,92%)}.meta{font-size:10px;color:#73737f;margin-top:6px}.typing{display:flex;align-items:center;gap:8px;color:#9898a3;font-size:12px;margin:0 43px 18px}.dots{display:flex;gap:3px}.dots i{width:5px;height:5px;background:#777783;border-radius:50%;animation:pulse 1s infinite}.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}@keyframes pulse{0%,80%,100%{opacity:.25}40%{opacity:1}}
+    .composerWrap{position:absolute;bottom:0;left:0;right:0;padding:16px 18px 20px;background:linear-gradient(180deg,transparent 0,#0b0b10 30%)}.composer{max-width:820px;margin:auto;border:1px solid #30303a;background:#15151c;border-radius:18px;padding:9px;box-shadow:0 18px 48px #0007}.attachments{display:flex;gap:6px;overflow:auto;padding:0 2px}.chip{font-size:10px;color:#c2c2cb;background:#22222a;border:1px solid #31313b;padding:5px 7px;border-radius:8px;white-space:nowrap}.inputRow{display:flex;align-items:flex-end;gap:7px}.prompt{flex:1;resize:none;border:0;outline:0;background:transparent;color:var(--text);min-height:43px;max-height:150px;padding:11px 8px;line-height:1.45}.prompt::placeholder{color:#777782}.send{width:40px;height:40px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;cursor:pointer;font-weight:900}.send:disabled{opacity:.45;cursor:default}.tool{width:40px;height:40px;border:0;background:transparent;border-radius:11px;color:#aaaab4;cursor:pointer}.tool:hover{background:#23232b}
+    .drawerShade{display:none}.modal{position:fixed;inset:0;background:#0009;display:none;place-items:center;z-index:50;padding:20px}.modal.open{display:grid}.card{width:min(520px,100%);background:#15151c;border:1px solid #2e2e38;border-radius:18px;padding:16px;box-shadow:0 24px 80px #000b}.cardHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.cardHead h2{font-size:16px;margin:0}.close{border:0;background:transparent;font-size:24px;color:#9d9da8;cursor:pointer}.authBox{border:1px solid var(--line);border-radius:13px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}.authText b{display:block;font-size:13px}.authText span{font-size:11px;color:var(--muted)}.primary{border:0;background:#7c3aed;border-radius:10px;padding:8px 11px;cursor:pointer}.secondary{border:1px solid var(--line);background:#1a1a22;border-radius:10px;padding:8px 11px;cursor:pointer}.imageGrid{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}.imageGrid input{min-width:0;border:1px solid var(--line);background:#101016;color:var(--text);border-radius:10px;padding:10px}.generated{display:none;width:100%;margin-top:12px;border-radius:14px;border:1px solid var(--line)}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e1e26;border:1px solid #343440;border-radius:11px;padding:9px 12px;font-size:12px;z-index:80;box-shadow:0 10px 40px #0008}
+    @media(max-width:780px){.app{grid-template-columns:1fr}.side{position:fixed;right:0;top:0;bottom:0;width:min(290px,86vw);z-index:60;transform:translateX(105%);transition:.2s}.side.open{transform:translateX(0)}.drawerShade{position:fixed;inset:0;background:#0008;z-index:55;display:none}.drawerShade.open{display:block}.menuBtn{display:grid}.top{padding:0 10px}.modelBtn{min-width:145px;padding:8px 9px}.messages{padding-left:12px;padding-right:12px}.composerWrap{padding:12px 10px 14px}.welcome h1{font-size:23px}.statusText{display:none}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><div class="gem">✦</div><div><b>NovaAI</b><span>Clean build</span></div></div>
+    <button class="new" id="newChat">＋ محادثة جديدة</button>
+    <div class="sideTitle">المحادثات</div>
+    <div class="history" id="history"></div>
+    <div class="sideBottom">
+      <button id="imageTool">✦ توليد صورة</button>
+      <button id="settingsBtn">⚙ الإعدادات والاتصال</button>
+    </div>
+  </aside>
+  <div class="drawerShade" id="shade"></div>
+  <main class="main">
+    <header class="top">
+      <div class="leftTop">
+        <button class="iconBtn menuBtn" id="menuBtn" aria-label="القائمة">☰</button>
+        <div class="modelWrap">
+          <button class="modelBtn" id="modelBtn"><span><b id="modelTitle">Auto</b><small id="modelSub">أقوى نموذج متاح</small></span><span>⌄</span></button>
+          <div class="modelMenu" id="modelMenu"></div>
+        </div>
+      </div>
+      <div class="status"><i class="dot" id="statusDot"></i><span class="statusText" id="statusText">جاهز للاتصال</span></div>
+    </header>
+    <section class="messages" id="messages"><div class="column" id="messageColumn"></div></section>
+    <div class="composerWrap">
+      <div class="composer">
+        <div class="attachments" id="attachments"></div>
+        <div class="inputRow">
+          <button class="tool" id="attachBtn" title="رفع ملف">＋</button>
+          <input type="file" id="fileInput" hidden multiple accept=".txt,.md,.json,.js,.ts,.html,.css,.py,.csv,.xml,text/*">
+          <textarea class="prompt" id="prompt" rows="1" placeholder="اكتب رسالتك…"></textarea>
+          <button class="send" id="sendBtn" aria-label="إرسال">↑</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="modal" id="settingsModal"><div class="card"><div class="cardHead"><h2>الاتصال بالذكاء الاصطناعي</h2><button class="close" data-close="settingsModal">×</button></div><div class="authBox"><div class="authText"><b id="authTitle">Puter AI</b><span id="authText">يتم التحقق عند أول رسالة</span></div><button class="primary" id="authBtn">تسجيل الدخول</button></div><div style="display:flex;gap:8px;margin-top:10px"><button class="secondary" id="scanModels">فحص النماذج</button><button class="secondary" id="clearData">مسح السجل المحلي</button></div><p style="color:#888894;font-size:11px;line-height:1.6;margin:12px 2px 0">لا يوجد خادم API يدوي للمحادثة في هذه النسخة. الاتصال يتم مباشرة من المتصفح عبر Puter.js.</p></div></div>
+<div class="modal" id="imageModal"><div class="card"><div class="cardHead"><h2>توليد صورة</h2><button class="close" data-close="imageModal">×</button></div><div class="imageGrid"><input id="imagePrompt" placeholder="صف الصورة التي تريدها"><button class="primary" id="generateImage">توليد</button></div><div id="imageStatus" style="font-size:11px;color:#9999a4;margin-top:8px"></div><img class="generated" id="generatedImage" alt="AI generated"></div></div>
+<script>
+(()=>{'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const KEY='nova_clean_v1';
+let state={messages:[],threads:[],files:[],selected:'auto',lastModel:''};
+try{state={...state,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{}
+const ai={models:[],opus:null,qwen:null,scanned:false};
+function save(){localStorage.setItem(KEY,JSON.stringify({...state,files:state.files.map(f=>({name:f.name,text:f.text||''}))}))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toast(t){const x=document.createElement('div');x.className='toast';x.textContent=t;document.body.appendChild(x);setTimeout(()=>x.remove(),3200)}
+function setStatus(text,kind='warn'){const d=$('#statusDot');d.className='dot'+(kind==='ok'?' ok':kind==='bad'?' bad':'');$('#statusText').textContent=text}
+function normalize(r){const v=r?.message?.content??r?.content??r;if(typeof v==='string')return v;if(Array.isArray(v))return v.map(x=>typeof x==='string'?x:(x?.text||x?.content||'')).join('');if(v&&typeof v.text==='string')return v.text;return String(v||'')}
+function modelBlob(m){return [m?.id,m?.name,...(Array.isArray(m?.aliases)?m.aliases:[])].filter(Boolean).join(' ').toLowerCase()}
+function pickModels(list){ai.models=Array.isArray(list)?list:[];ai.opus=ai.models.find(m=>m.id==='anthropic/claude-opus-5')||ai.models.find(m=>/claude.*opus.*5|opus.*5/.test(modelBlob(m)))||null;ai.qwen=ai.models.find(m=>m.id==='qwen/qwen3.8-max')||ai.models.find(m=>/qwen.*3[.\-_ ]?8.*max/.test(modelBlob(m)))||null;ai.scanned=true;renderModelMenu()}
+function label(m){return m?.name||m?.id||'Model'}
+function renderModelMenu(){const menu=$('#modelMenu');const rows=[];rows.push(`<button data-model="auto" class="${state.selected==='auto'?'active':''}"><span><b>Auto · الأقوى</b><span>Claude Opus 5 ثم Qwen3.8 Max</span></span><b>✓</b></button>`);if(ai.opus)rows.push(`<button data-model="${esc(ai.opus.id)}" class="${state.selected===ai.opus.id?'active':''}"><span><b>${esc(label(ai.opus))}</b><span>${esc(ai.opus.id)}</span></span><b>✓</b></button>`);if(ai.qwen)rows.push(`<button data-model="${esc(ai.qwen.id)}" class="${state.selected===ai.qwen.id?'active':''}"><span><b>${esc(label(ai.qwen))}</b><span>${esc(ai.qwen.id)}</span></span><b>✓</b></button>`);if(ai.scanned&&!ai.opus&&!ai.qwen)rows.push(`<div class="modelNote">القائمة الحالية لم تُرجع Opus 5 أو Qwen3.8 Max.</div>`);rows.push(`<div class="modelNote">الموديلات الظاهرة بعد الفحص جاية من puter.ai.listModels()، مش أسماء مكتوبة للمنظر.</div>`);menu.innerHTML=rows.join('');$$('[data-model]').forEach(b=>b.onclick=e=>{e.stopPropagation();state.selected=b.dataset.model;save();updateModelButton();renderModelMenu();menu.classList.remove('open')})}
+function updateModelButton(){if(state.selected==='auto'){$('#modelTitle').textContent=state.lastModel?`Auto · ${state.lastModel}`:'Auto';$('#modelSub').textContent='أقوى نموذج متاح';return}const m=ai.models.find(x=>x.id===state.selected);$('#modelTitle').textContent=m?label(m):'Auto';$('#modelSub').textContent=m?.id||'أقوى نموذج متاح'}
+async function scanModels(show=true){if(!window.puter?.ai?.listModels)throw new Error('Puter.js لم يتم تحميله');setStatus('فحص النماذج…');const list=await puter.ai.listModels();pickModels(list);setStatus(`متصل · ${list.length} نموذج`,'ok');updateModelButton();if(show)toast(`${list.length} نموذج متاح${ai.opus?' · Opus 5 ✓':''}${ai.qwen?' · Qwen3.8 Max ✓':''}`)}
+function beginAuthIfNeeded(){if(!window.puter?.auth)throw new Error('Puter.js لم يتم تحميله');if(puter.auth.isSignedIn?.())return null;setStatus('فتح تسجيل الدخول…');return puter.auth.signIn({attempt_temp_user_creation:true})}
+function welcome(){return `<div class="welcome"><div class="bigGem">✦</div><h1>كيف أقدر أساعدك؟</h1><p>محادثة مباشرة بنموذج حقيقي، بدون خادم API يدوي.</p><div class="suggest"><button data-s="اشرح لي الموضوع ده ببساطة">اشرح موضوع</button><button data-s="ساعدني أراجع كود وأصلح المشاكل">راجع كود</button><button data-s="قارن بين الاختيارات دي بشكل واضح">اعمل مقارنة</button></div></div>`}
+function render(){const c=$('#messageColumn');if(!state.messages.length){c.innerHTML=welcome();$$('[data-s]').forEach(b=>b.onclick=()=>{$('#prompt').value=b.dataset.s;grow();$('#prompt').focus()});return}c.innerHTML=state.messages.map(m=>`<div class="msg ${m.role==='user'?'user':'ai'}"><div class="avatar">${m.role==='user'?'أ':'✦'}</div><div><div class="bubble">${esc(m.content)}</div>${m.model?`<div class="meta">${esc(m.model)}</div>`:''}</div></div>`).join('');$('#messages').scrollTop=$('#messages').scrollHeight}
+function renderFiles(){$('#attachments').innerHTML=state.files.map(f=>`<span class="chip">${esc(f.name)}</span>`).join('')}
+function titleFor(msgs){return (msgs.find(m=>m.role==='user')?.content||'محادثة جديدة').slice(0,38)}
+function archive(){if(!state.messages.length)return;state.threads.unshift({id:Date.now(),title:titleFor(state.messages),messages:state.messages});state.threads=state.threads.slice(0,20)}
+function renderHistory(){$('#history').innerHTML=state.threads.map(t=>`<button data-thread="${t.id}">${esc(t.title)}</button>`).join('');$$('[data-thread]').forEach(b=>b.onclick=()=>{archive();const t=state.threads.find(x=>String(x.id)===b.dataset.thread);if(!t)return;state.messages=JSON.parse(JSON.stringify(t.messages));state.threads=state.threads.filter(x=>x.id!==t.id);save();render();renderHistory();closeSide()})}
+function addAssistant(text,model=''){state.messages.push({role:'assistant',content:text,model});save();render()}
+function showTyping(text){hideTyping();const d=document.createElement('div');d.id='typing';d.className='typing';d.innerHTML=`<div class="dots"><i></i><i></i><i></i></div><span>${esc(text)}</span>`;$('#messageColumn').appendChild(d);$('#messages').scrollTop=$('#messages').scrollHeight}
+function setTyping(text){const s=$('#typing span');if(s)s.textContent=text}function hideTyping(){$('#typing')?.remove()}
+function buildMessages(text){const hist=state.messages.slice(-18,-1).filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role,content:m.content}));const fc=state.files.slice(0,6).map(f=>`\n[File: ${f.name}]\n${f.text.slice(0,18000)}`).join('\n');return [{role:'system',content:'You are NovaAI, a precise and capable assistant. Reply naturally in the user language. Give accurate, practical answers. For coding, produce secure maintainable code. For study, explain clearly.'},...hist,{role:'user',content:text+(fc?'\n\nAttached files:'+fc:'')}];}
+async function send(){const p=$('#prompt'),btn=$('#sendBtn'),text=p.value.trim();if(!text||btn.disabled)return;const authPromise=beginAuthIfNeeded();state.messages.push({role:'user',content:text});p.value='';grow();save();render();btn.disabled=true;showTyping(authPromise?'أكمل تسجيل الدخول…':'تجهيز الذكاء الاصطناعي…');try{if(authPromise)await authPromise;setStatus('متصل','ok');if(!ai.scanned){setTyping('فحص النماذج المتاحة…');await scanModels(false)}const messages=buildMessages(text);let candidates=[];if(state.selected==='auto')candidates=[ai.opus,ai.qwen].filter(Boolean);else candidates=[ai.models.find(m=>m.id===state.selected)].filter(Boolean);if(!candidates.length)throw new Error('لم يتم العثور على النموذج المطلوب في قائمة Puter الحالية');let response=null,used=null,lastErr=null;for(const m of candidates){try{setTyping(`تشغيل ${label(m)}…`);response=await puter.ai.chat(messages,{model:m.id});used=m;break}catch(e){lastErr=e}}if(!response)throw lastErr||new Error('تعذر تشغيل النموذج');const reply=normalize(response).trim();if(!reply)throw new Error('وصل رد فارغ');hideTyping();state.lastModel=label(used);save();updateModelButton();setStatus(`متصل · ${label(used)}`,'ok');addAssistant(reply,`${label(used)} · ${used.id}`)}catch(e){hideTyping();setStatus('تعذر الاتصال','bad');addAssistant(`تعذر تشغيل الذكاء الاصطناعي: ${String(e?.msg||e?.message||e)}`,'System')}finally{btn.disabled=false;p.focus()}}
+function grow(){const p=$('#prompt');p.style.height='auto';p.style.height=Math.min(p.scrollHeight,150)+'px'}
+function openSide(){$('#side').classList.add('open');$('#shade').classList.add('open')}function closeSide(){$('#side').classList.remove('open');$('#shade').classList.remove('open')}
+async function readFiles(files){for(const f of [...files].slice(0,6)){try{const text=(await f.text()).slice(0,70000);state.files.push({name:f.name,text})}catch{}}save();renderFiles()}
+$('#sendBtn').onclick=send;$('#prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});$('#prompt').addEventListener('input',grow);
+$('#attachBtn').onclick=()=>$('#fileInput').click();$('#fileInput').onchange=e=>readFiles(e.target.files);
+$('#modelBtn').onclick=e=>{e.stopPropagation();$('#modelMenu').classList.toggle('open')};document.addEventListener('click',e=>{if(!e.target.closest('.modelWrap'))$('#modelMenu').classList.remove('open')});
+$('#newChat').onclick=()=>{archive();state.messages=[];state.files=[];save();render();renderFiles();renderHistory();closeSide()};
+$('#menuBtn').onclick=openSide;$('#shade').onclick=closeSide;
+$('#settingsBtn').onclick=()=>{$('#settingsModal').classList.add('open');const signed=window.puter?.auth?.isSignedIn?.();$('#authText').textContent=signed?'تم تسجيل الدخول':'سيظهر تسجيل الدخول عند الحاجة';$('#authBtn').textContent=signed?'متصل':'تسجيل الدخول';closeSide()};
+$('#authBtn').onclick=async()=>{try{const p=beginAuthIfNeeded();if(p)await p;$('#authText').textContent='تم تسجيل الدخول';$('#authBtn').textContent='متصل';setStatus('متصل','ok');await scanModels(true)}catch(e){toast(String(e?.msg||e?.message||e))}};
+$('#scanModels').onclick=async()=>{try{const p=beginAuthIfNeeded();if(p)await p;await scanModels(true)}catch(e){toast(String(e?.msg||e?.message||e))}};
+$('#clearData').onclick=()=>{localStorage.removeItem(KEY);location.reload()};
+$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));
+$('#imageTool').onclick=()=>{$('#imageModal').classList.add('open');closeSide()};
+$('#generateImage').onclick=async()=>{const text=$('#imagePrompt').value.trim(),btn=$('#generateImage'),st=$('#imageStatus');if(!text)return;const authPromise=beginAuthIfNeeded();btn.disabled=true;st.textContent=authPromise?'أكمل تسجيل الدخول…':'جاري التوليد…';try{if(authPromise)await authPromise;const img=await puter.ai.txt2img(text);$('#generatedImage').src=img.src;$('#generatedImage').style.display='block';st.textContent='تم التوليد'}catch(e){st.textContent='تعذر التوليد: '+String(e?.msg||e?.message||e)}finally{btn.disabled=false}};
+render();renderFiles();renderHistory();renderModelMenu();updateModelButton();setStatus(window.puter?'جاهز للاتصال':'تعذر تحميل Puter','warn');
+})();
+</script>
+</body>
+</html>
