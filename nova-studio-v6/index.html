@@ -34,7 +34,7 @@
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s);const frame=$('#app');let urls=[],outURL=null,autoOpened=false;
-const RES={4k:[3840,2160],1440:[2560,1440],1080:[1920,1080]};
+const RES={'4k':[3840,2160],'1440':[2560,1440],'1080':[1920,1080]};
 function open(reason='manual'){ $('#shade').classList.add('open'); if(reason==='balance'){ $('#balanceBanner').classList.add('show'); setTimeout(()=>$('#balanceBanner').classList.remove('show'),5000); $('#status').classList.add('warn'); $('#status').textContent='الرصيد السحابي انتهى أو غير كافٍ؛ استخدم الفيديوهات الموجودة عندك لإنشاء ملف طويل محليًا بدون طلب AI جديد.'; }}
 function close(){ $('#shade').classList.remove('open') }
 $('#openLong').onclick=()=>open();$('#close').onclick=$('#cancel').onclick=close;$('#shade').addEventListener('click',e=>{if(e.target===$('#shade'))close()});
