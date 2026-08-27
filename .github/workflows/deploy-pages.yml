@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Enable browser AI chat
+        run: node scripts/patch-nova-puter.mjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
