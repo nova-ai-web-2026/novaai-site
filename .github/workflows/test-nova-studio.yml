@@ -10,6 +10,7 @@ on:
       - 'scripts/test-nova-studio-v3.mjs'
       - 'scripts/test-nova-studio-v4.mjs'
       - 'scripts/test-nova-studio-v5.mjs'
+      - 'scripts/test-nova-studio-full.mjs'
       - '.github/workflows/test-nova-studio.yml'
   workflow_dispatch:
 
@@ -34,3 +35,5 @@ jobs:
         run: node scripts/test-nova-studio-v4.mjs
       - name: Run Nova Studio v5 local extender test
         run: node scripts/test-nova-studio-v5.mjs
+      - name: Run full Nova Studio regression suite
+        run: node scripts/test-nova-studio-full.mjs
