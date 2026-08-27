@@ -1,0 +1,11 @@
+{
+  "name": "Nova AI Ultimate",
+  "short_name": "Nova AI",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "description": "A fast, installable AI workspace for chat, study, code, files, images and local tools.",
+  "lang": "ar",
+  "dir": "rtl"
+}
