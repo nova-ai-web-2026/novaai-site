@@ -6,8 +6,10 @@ on:
     paths:
       - 'nova-studio-v3/**'
       - 'nova-studio-v4/**'
+      - 'nova-studio-v5/**'
       - 'scripts/test-nova-studio-v3.mjs'
       - 'scripts/test-nova-studio-v4.mjs'
+      - 'scripts/test-nova-studio-v5.mjs'
       - '.github/workflows/test-nova-studio.yml'
   workflow_dispatch:
 
@@ -30,3 +32,5 @@ jobs:
         run: node scripts/test-nova-studio-v3.mjs
       - name: Run Nova Studio v4 balance and quality test
         run: node scripts/test-nova-studio-v4.mjs
+      - name: Run Nova Studio v5 local extender test
+        run: node scripts/test-nova-studio-v5.mjs
