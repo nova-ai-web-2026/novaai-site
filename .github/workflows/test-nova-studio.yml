@@ -8,10 +8,12 @@ on:
       - 'nova-studio-v4/**'
       - 'nova-studio-v5/**'
       - 'nova-studio-v6/**'
+      - 'nova-studio-v7/**'
       - 'scripts/test-nova-studio-v3.mjs'
       - 'scripts/test-nova-studio-v4.mjs'
       - 'scripts/test-nova-studio-v5.mjs'
       - 'scripts/test-nova-studio-v6.mjs'
+      - 'scripts/test-nova-studio-v7.mjs'
       - 'scripts/test-nova-studio-full.mjs'
       - '.github/workflows/test-nova-studio.yml'
   workflow_dispatch:
@@ -41,3 +43,5 @@ jobs:
         run: node scripts/test-nova-studio-full.mjs
       - name: Run Nova Studio v6 long video regression test
         run: node scripts/test-nova-studio-v6.mjs
+      - name: Run Nova Studio v7 no-spend video test
+        run: node scripts/test-nova-studio-v7.mjs
