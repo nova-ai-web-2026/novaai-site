@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - 'nova-studio-v3/**'
+      - 'nova-studio-v4/**'
       - 'scripts/test-nova-studio-v3.mjs'
+      - 'scripts/test-nova-studio-v4.mjs'
       - '.github/workflows/test-nova-studio.yml'
   workflow_dispatch:
 
@@ -26,3 +28,5 @@ jobs:
         run: npm install --no-save jsdom@26
       - name: Run Nova Studio v3 integration test
         run: node scripts/test-nova-studio-v3.mjs
+      - name: Run Nova Studio v4 balance and quality test
+        run: node scripts/test-nova-studio-v4.mjs
