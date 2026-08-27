@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'nova-studio/**'
-      - 'scripts/test-nova-studio.mjs'
+      - 'nova-studio-v3/**'
+      - 'scripts/test-nova-studio-v3.mjs'
       - '.github/workflows/test-nova-studio.yml'
   workflow_dispatch:
 
@@ -13,10 +13,16 @@ permissions:
   contents: read
 
 jobs:
-  smoke-test:
+  integration-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Run Nova Studio smoke test
-        run: node scripts/test-nova-studio.mjs
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install browser DOM test dependency
+        run: npm install --no-save jsdom@26
+      - name: Run Nova Studio v3 integration test
+        run: node scripts/test-nova-studio-v3.mjs
