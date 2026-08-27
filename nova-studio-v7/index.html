@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a0f">
+<title>Nova Studio 7</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090a0f;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}#app{position:fixed;inset:0;width:100%;height:100%;border:0}.mode{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:300;background:#0f1713e8;border:1px solid #245c3f;color:#b8f7d2;border-radius:999px;padding:8px 12px;font-size:11px;box-shadow:0 10px 35px #0008;backdrop-filter:blur(12px);white-space:nowrap}.toast{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:320;background:#171b26;border:1px solid #394154;color:#fff;border-radius:12px;padding:10px 13px;font-size:11px;box-shadow:0 14px 44px #000a;max-width:min(560px,92vw);line-height:1.6}.toast.show{display:block}
+</style>
+</head>
+<body>
+<iframe id="app" src="../nova-studio-v6/?from=v7" title="Nova Studio"></iframe>
+<div class="mode">🛡️ No‑Spend Video · Local 4K</div>
+<div class="toast" id="toast"></div>
+<script>
+(()=>{
+'use strict';
+const outer=document.querySelector('#app'),toast=document.querySelector('#toast');
+let patched=false,blocked=0,previewAllowed=0,originalCalls=0;
+function show(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),4200)}
+function isPreviewCall(args){const a=args?.[0],b=args?.[1];return b===true||a===true||b?.test_mode===true||b?.testMode===true||a?.test_mode===true||a?.testMode===true}
+function openLocal(){try{outer.contentWindow.__novaLongVideoTest?.open?.('balance')}catch{}show('تم إيقاف الطلب السحابي قبل الإرسال وفتح Long Video 4K المحلي بدل نافذة Upgrade.')}
+function cleanVisible(doc){if(!doc)return;const warn=doc.querySelector('#vidWarn'),out=doc.querySelector('#vidOut');if(warn){warn.textContent='وضع No‑Spend نشط: لن يتم إرسال فيديو مدفوع للسحابة. استخدم Long Video 4K المحلي أو Preview المجاني.';warn.classList.add('show')}if(out)out.textContent='تم التحويل إلى Long Video 4K المحلي بدون استهلاك AI credits.'}
+function installOnWindow(w,doc){if(!w?.puter?.ai?.txt2vid||w.__novaNoSpendVideoPatched)return false;const real=w.puter.ai.txt2vid.bind(w.puter.ai);w.__novaNoSpendVideoPatched=true;w.puter.ai.txt2vid=(...args)=>{if(isPreviewCall(args)){previewAllowed++;originalCalls++;return real(...args)}blocked++;openLocal();setTimeout(()=>cleanVisible(doc),0);return Promise.reject(new Error('low balance: Nova No-Spend blocked paid video before cloud request'))};patched=true;return true}
+function findAndPatch(){try{const v6doc=outer.contentDocument;if(!v6doc)return false;const inner=v6doc.querySelector('#app');if(!inner)return false;const run=()=>{try{installOnWindow(inner.contentWindow,inner.contentDocument);const d=inner.contentDocument;if(d&&!d.__novaNoSpendObserver){d.__novaNoSpendObserver=true;new MutationObserver(()=>{const t=(d.body?.innerText||'').toLowerCase();if(/low balance|not enough funding|upgrade now/.test(t))cleanVisible(d)}).observe(d.body,{subtree:true,childList:true,characterData:true})}}catch{}};inner.addEventListener('load',run);run();return true}catch{return false}}
+outer.addEventListener('load',()=>{findAndPatch();setTimeout(findAndPatch,300);setTimeout(findAndPatch,1200)});setInterval(()=>{if(!patched)findAndPatch()},1500);
+window.__novaV7Test={isPreviewCall,installOnWindow,getStats:()=>({patched,blocked,previewAllowed,originalCalls})};
+})();
+</script>
+</body>
+</html>
