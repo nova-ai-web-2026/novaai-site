@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090a0f">
+<title>Nova Studio 6</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090a0f;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}#app{position:fixed;inset:0;width:100%;height:100%;border:0}.longBtn{position:fixed;left:16px;bottom:18px;z-index:70;border:1px solid #57406f;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border-radius:14px;padding:12px 15px;font-weight:850;box-shadow:0 16px 50px #0009;cursor:pointer}.shade{display:none;position:fixed;inset:0;z-index:120;background:#000b;backdrop-filter:blur(9px);align-items:center;justify-content:center;padding:12px}.shade.open{display:flex}.modal{width:min(700px,100%);max-height:92vh;overflow:auto;background:#10131c;border:1px solid #32394b;border-radius:22px;padding:18px;box-shadow:0 28px 90px #000d}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.top h2{margin:0;font-size:22px}.top p{margin:5px 0 0;color:#9da5b7;font-size:12px;line-height:1.65}.x{border:0;background:transparent;color:#aab2c3;font-size:22px;cursor:pointer}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.field{display:grid;gap:6px}.field label{font-size:11px;color:#929bad}.field select,.field input{width:100%;border:1px solid #30384b;background:#0b0e15;color:#fff;border-radius:11px;padding:10px}.files{margin-top:10px}.files input{padding:12px}.hero{margin-top:12px;border:1px solid #49365f;background:linear-gradient(135deg,#181324,#121722);border-radius:14px;padding:12px}.hero b{font-size:13px}.hero span{display:block;color:#aaa2bd;font-size:10px;line-height:1.6;margin-top:4px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.primary,.secondary{border-radius:11px;padding:10px 14px;cursor:pointer}.primary{border:0;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;font-weight:850}.secondary{border:1px solid #30384b;background:#171b26;color:#fff}.primary:disabled{opacity:.5}.status{margin-top:12px;border:1px solid #2d3548;background:#0b0e15;border-radius:12px;padding:10px;font-size:11px;color:#b0b8c8;line-height:1.7}.status.warn{border-color:#654b28;color:#f4c48f}.progress{height:7px;background:#171c28;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#d946ef)}.result{display:none;margin-top:12px;border-top:1px solid #292f40;padding-top:12px}.result.show{display:block}.result video{width:100%;max-height:360px;border-radius:12px;background:#000}.download{display:inline-block;margin-top:9px;color:#fff;text-decoration:none;border:1px solid #3c455b;border-radius:10px;padding:9px 12px}.note{font-size:10px;color:#7f899d;line-height:1.7;margin-top:10px}.balanceBanner{display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:95;background:#19140f;border:1px solid #654b28;color:#f4c48f;border-radius:12px;padding:10px 13px;font-size:11px;box-shadow:0 12px 40px #0009}.balanceBanner.show{display:block}@media(max-width:640px){.grid{grid-template-columns:1fr}.modal{padding:14px;border-radius:17px}.longBtn{left:10px;bottom:10px}.top h2{font-size:19px}}
+</style>
+</head>
+<body>
+<iframe id="app" src="../nova-studio-v4/?from=v6" title="Nova Studio"></iframe>
+<div class="balanceBanner" id="balanceBanner">الرصيد السحابي غير كافٍ. Nova فتح لك وضع الفيديو المحلي الطويل بدل إيقافك.</div>
+<button class="longBtn" id="openLong">🎬 Long Video 4K</button>
+<div class="shade" id="shade"><div class="modal">
+  <div class="top"><div><h2>Nova Long Video Studio</h2><p>تصدير محلي طويل بدون AI credits إضافية. استخدم فيديو واحد أو عدة فيديوهات؛ Nova يكرر قائمة المقاطع بالتتابع حتى يصل للمدة المطلوبة.</p></div><button class="x" id="close">×</button></div>
+  <div class="hero"><b>Ultra Local · 4K</b><span>أعلى إعداد افتراضي: 3840×2160. هذه دقة ملف الإخراج؛ لا تضيف تفاصيل غير موجودة في الفيديو الأصلي.</span></div>
+  <div class="grid">
+    <div class="field"><label>المدة النهائية</label><select id="duration"><option value="600" selected>10 دقائق</option><option value="900">15 دقيقة</option><option value="1800">30 دقيقة</option><option value="3600">60 دقيقة</option></select></div>
+    <div class="field"><label>دقة الإخراج</label><select id="quality"><option value="4k" selected>Ultra 4K · 3840×2160</option><option value="1440">2K · 2560×1440</option><option value="1080">Full HD · 1920×1080</option></select></div>
+    <div class="field"><label>الإطارات</label><select id="fps"><option value="60" selected>60 FPS</option><option value="30">30 FPS</option></select></div>
+    <div class="field"><label>جودة الضغط</label><select id="bitrate"><option value="50000000" selected>Ultra · 50 Mbps</option><option value="35000000">High · 35 Mbps</option><option value="20000000">Balanced · 20 Mbps</option></select></div>
+  </div>
+  <div class="field files"><label>الفيديوهات المصدر (يمكن اختيار أكثر من ملف)</label><input id="files" type="file" accept="video/*" multiple></div>
+  <div class="actions"><button class="primary" id="export">إنشاء الفيديو الطويل</button><button class="secondary" id="cancel">إلغاء</button></div>
+  <div class="status" id="status">جاهز. اختر فيديو أو أكثر. المعالجة والتصدير يتمان داخل المتصفح.</div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="result" id="result"><video id="preview" controls playsinline></video><br><a id="download" class="download">حفظ الفيديو</a></div>
+  <div class="note">ملفات 4K الطويلة قد تكون ضخمة جدًا وتضغط على الهاتف. لو المتصفح لا يدعم MP4 عبر MediaRecorder سيستخدم WebM. الصوت الموجود في ملفات الفيديو يُحاول الحفاظ عليه عبر Web Audio. لا يتم إنشاء مشاهد AI جديدة بدون رصيد سحابي.</div>
+</div></div>
+<canvas id="canvas" hidden></canvas><video id="source" playsinline hidden></video>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);const frame=$('#app');let urls=[],outURL=null,autoOpened=false;
+const RES={4k:[3840,2160],1440:[2560,1440],1080:[1920,1080]};
+function open(reason='manual'){ $('#shade').classList.add('open'); if(reason==='balance'){ $('#balanceBanner').classList.add('show'); setTimeout(()=>$('#balanceBanner').classList.remove('show'),5000); $('#status').classList.add('warn'); $('#status').textContent='الرصيد السحابي انتهى أو غير كافٍ؛ استخدم الفيديوهات الموجودة عندك لإنشاء ملف طويل محليًا بدون طلب AI جديد.'; }}
+function close(){ $('#shade').classList.remove('open') }
+$('#openLong').onclick=()=>open();$('#close').onclick=$('#cancel').onclick=close;$('#shade').addEventListener('click',e=>{if(e.target===$('#shade'))close()});
+function watchCloud(){try{const d=frame.contentDocument;if(!d)return;const warn=d.querySelector('#vidWarn'),out=d.querySelector('#vidOut');if(!warn||!out)return;const inspect=()=>{const text=(warn.textContent+' '+out.textContent).toLowerCase();if(/الرصيد|credits|balance|منع الطلب|funding/.test(text)&&(warn.classList.contains('show')||/منع الطلب|الرصيد غير كاف|الرصيد المتبقي صفر/.test(text))){if(/nova منع الطلب/.test(out.textContent.toLowerCase()))out.textContent='الرصيد السحابي غير متاح للتوليد الجديد. استخدم Long Video 4K المحلي من الزر أسفل الشاشة.';if(!autoOpened){autoOpened=true;open('balance')}}};new MutationObserver(inspect).observe(d.body,{subtree:true,childList:true,characterData:true,attributes:true});inspect()}catch{}}
+frame.addEventListener('load',watchCloud);
+function bestMime(){const c=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];for(const m of c){try{if(MediaRecorder?.isTypeSupported?.(m))return m}catch{}}return ''}
+function ext(m){return String(m).startsWith('video/mp4')?'mp4':'webm'}
+function cleanupURLs(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[]}
+function waitMeta(v){return new Promise((res,rej)=>{if(v.readyState>=1)return res();const ok=()=>{clean();res()},bad=()=>{clean();rej(new Error('تعذر قراءة أحد ملفات الفيديو.'))},clean=()=>{v.removeEventListener('loadedmetadata',ok);v.removeEventListener('error',bad)};v.addEventListener('loadedmetadata',ok,{once:true});v.addEventListener('error',bad,{once:true});v.load()})}
+function drawFit(ctx,v,w,h){const vw=v.videoWidth||w,vh=v.videoHeight||h;const s=Math.min(w/vw,h/vh),dw=vw*s,dh=vh*s;ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);ctx.drawImage(v,(w-dw)/2,(h-dh)/2,dw,dh)}
+async function exportLong(){const btn=$('#export');if(btn.disabled)return;const files=[...$('#files').files||[]];if(!files.length){$('#status').textContent='اختر ملف فيديو واحد على الأقل.';return}btn.disabled=true;$('#result').classList.remove('show');cleanupURLs();try{
+ const target=Number($('#duration').value),fps=Number($('#fps').value),bps=Number($('#bitrate').value),[w,h]=RES[$('#quality').value]||RES['4k'];const canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false}),v=$('#source');canvas.width=w;canvas.height=h;urls=files.map(f=>URL.createObjectURL(f));
+ const canvasStream=canvas.captureStream(fps);let audioCtx=null,audioDest=null;try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();await audioCtx.resume();audioDest=audioCtx.createMediaStreamDestination();const src=audioCtx.createMediaElementSource(v);src.connect(audioDest);audioDest.stream.getAudioTracks().forEach(t=>canvasStream.addTrack(t))}catch{}
+ const mime=bestMime();const opts={videoBitsPerSecond:bps};if(mime)opts.mimeType=mime;const rec=new MediaRecorder(canvasStream,opts),chunks=[];rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};const done=new Promise((res,rej)=>{rec.onerror=e=>rej(e.error||new Error('فشل تسجيل الفيديو المحلي.'));rec.onstop=res});
+ let index=0,stopped=false;async function loadNext(){v.pause();v.src=urls[index%urls.length];index++;await waitMeta(v);v.currentTime=0;await v.play()}
+ await loadNext();rec.start(1000);const started=performance.now();let lastFrame=0;
+ await new Promise((resolve,reject)=>{const tick=async now=>{try{const elapsed=(now-started)/1000;if(elapsed>=target){stopped=true;resolve();return}if(v.ended||v.paused){await loadNext()}if(now-lastFrame>=1000/fps){drawFit(ctx,v,w,h);lastFrame=now}const pct=Math.min(100,elapsed/target*100);$('#bar').style.width=pct.toFixed(2)+'%';$('#status').textContent=`تصدير ${w}×${h} · ${fps}FPS: ${Math.floor(elapsed/60)}:${String(Math.floor(elapsed%60)).padStart(2,'0')} / ${Math.floor(target/60)}:00`;requestAnimationFrame(tick)}catch(e){reject(e)}};requestAnimationFrame(tick)});
+ if(!stopped)throw new Error('توقف التصدير بشكل غير متوقع.');rec.stop();v.pause();await done;audioCtx?.close?.();const type=rec.mimeType||mime||'video/webm';const blob=new Blob(chunks,{type});if(!blob.size)throw new Error('ملف الفيديو الناتج فارغ.');if(outURL)URL.revokeObjectURL(outURL);outURL=URL.createObjectURL(blob);$('#preview').src=outURL;$('#download').href=outURL;$('#download').download=`nova-long-${Math.round(target/60)}min-${w}x${h}.${ext(type)}`;$('#result').classList.add('show');$('#bar').style.width='100%';$('#status').classList.remove('warn');$('#status').textContent=`تم إنشاء فيديو ${Math.round(target/60)} دقيقة بدقة ${w}×${h} محليًا بدون AI credits إضافية.`;
+ }catch(e){$('#status').classList.add('warn');$('#status').textContent='تعذر التصدير المحلي: '+String(e?.message||e)}finally{btn.disabled=false}}
+$('#export').onclick=exportLong;
+window.__novaLongVideoTest={RES,bestMime,ext,drawFit,open,watchCloud};
+})();
+</script>
+</body>
+</html>
