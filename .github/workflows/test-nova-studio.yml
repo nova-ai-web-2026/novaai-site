@@ -1,0 +1,22 @@
+name: Test Nova Studio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'nova-studio/**'
+      - 'scripts/test-nova-studio.mjs'
+      - '.github/workflows/test-nova-studio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run Nova Studio smoke test
+        run: node scripts/test-nova-studio.mjs
