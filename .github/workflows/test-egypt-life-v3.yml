@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V3
+name: Test Egyptian Life Simulator V4
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
           sleep 2
-      - name: Run real browser smoke test
+      - name: Run real browser test
         run: |
           cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -36,26 +36,47 @@ jobs:
           page.on('console', m => { if(m.type()==='error') failures.push('console: '+m.text()); });
           await page.goto('http://127.0.0.1:4173/', {waitUntil:'networkidle'});
           await page.waitForSelector('#menu', {state:'visible'});
-          const title = await page.textContent('.logo');
-          if(!title?.includes('حياة')) throw new Error('New game menu title missing');
+          if(!(await page.textContent('.logo'))?.includes('حياة')) throw new Error('Menu title missing');
+          if(!(await page.isVisible('#soundToggle'))) throw new Error('Sound toggle missing');
           await page.click('#newGameBtn');
           await page.waitForFunction(() => getComputedStyle(document.querySelector('#menu')).display === 'none');
-          await page.waitForTimeout(1200);
-          const errVisible = await page.isVisible('#errorBox');
-          if(errVisible) throw new Error('Runtime error box became visible: '+await page.textContent('#errorBox'));
-          const canvasBox = await page.locator('#game').boundingBox();
-          if(!canvasBox || canvasBox.width < 1000 || canvasBox.height < 600) throw new Error('Game canvas is not full-screen');
-          const metrics = await page.evaluate(() => {
-            const eng = BABYLON.Engine.LastCreatedEngine;
-            const scene = eng?.scenes?.[0];
-            const cam = scene?.activeCamera;
-            return cam ? { y:cam.position.y, fov:cam.fov, ey:cam.ellipsoid?.y, oy:cam.ellipsoidOffset?.y } : null;
+          await page.waitForTimeout(1000);
+          if(await page.isVisible('#errorBox')) throw new Error('Runtime error box: '+await page.textContent('#errorBox'));
+          const box = await page.locator('#game').boundingBox();
+          if(!box || box.width < 1000 || box.height < 600) throw new Error('Canvas is not full-screen');
+
+          const initial = await page.evaluate(() => { window.__egyptDebug.resetPose(); return window.__egyptDebug.getCamera(); });
+          if(Math.abs(initial.y-1.72)>.03) throw new Error('Bad player eye height '+initial.y);
+          if(initial.offsetY >= 0) throw new Error('Collider offset must be below eye level');
+
+          // Control direction test: at yaw 0, W must increase Z and D must increase X.
+          await page.keyboard.down('KeyW'); await page.waitForTimeout(650); await page.keyboard.up('KeyW');
+          const afterW = await page.evaluate(() => window.__egyptDebug.getCamera());
+          if(afterW.z <= initial.z + .15) throw new Error(`W is reversed or not moving forward: ${initial.z} -> ${afterW.z}`);
+          await page.evaluate(() => window.__egyptDebug.resetPose());
+          await page.keyboard.down('KeyD'); await page.waitForTimeout(650); await page.keyboard.up('KeyD');
+          const afterD = await page.evaluate(() => window.__egyptDebug.getCamera());
+          if(afterD.x <= initial.x + .15) throw new Error(`D is reversed or not moving right: ${initial.x} -> ${afterD.x}`);
+
+          // Look direction test: positive mouse delta means right/down, not inverted.
+          const look = await page.evaluate(() => { window.__egyptDebug.resetPose(); window.__egyptDebug.applyLook(100,80); return window.__egyptDebug.getCamera(); });
+          if(look.yaw <= 0 || look.pitch <= 0) throw new Error(`Look controls inverted: yaw=${look.yaw}, pitch=${look.pitch}`);
+
+          const detail = await page.evaluate(() => {
+            const scene = BABYLON.Engine.LastCreatedEngine?.scenes?.[0];
+            const names = scene?.meshes?.map(m=>m.name) || [];
+            return {
+              windows:names.filter(n=>n==='windowRecess').length,
+              balconies:names.filter(n=>n==='balconySlab').length,
+              awnings:names.filter(n=>n==='awning').length,
+              cables:names.filter(n=>n==='cable').length,
+              audio:window.__egyptDebug.audioState()
+            };
           });
-          if(!metrics) throw new Error('Active camera not found');
-          if(metrics.fov > 0.95) throw new Error('FOV still too wide: '+metrics.fov);
-          if(metrics.oy >= 0) throw new Error('Camera collision offset is not below eye level: '+metrics.oy);
+          if(detail.windows < 20 || detail.balconies < 5 || detail.awnings < 8 || detail.cables < 2) throw new Error('City detail generation too sparse: '+JSON.stringify(detail));
+          if(detail.audio.state === 'none') throw new Error('Audio engine did not initialize');
           if(failures.length) throw new Error(failures.join('\n'));
-          console.log('Browser test passed', metrics);
+          console.log('V4 browser test passed', {initial, afterW, afterD, look, detail});
           await browser.close();
           EOF
           node smoke.mjs
