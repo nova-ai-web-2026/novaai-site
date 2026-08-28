@@ -15,6 +15,7 @@
     #stats{display:grid;grid-template-columns:repeat(4,minmax(74px,1fr));gap:6px;padding:8px;border-radius:15px;min-width:min(560px,72vw)}
     .stat{padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.055)}.lab{font-size:11px;opacity:.7}.val{font-size:15px;font-weight:800;margin-top:2px}.meter{height:4px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}.fill{height:100%;width:60%;background:#fff}
     #clock{min-width:122px;padding:10px 13px;border-radius:15px;text-align:center}.clockMain{font-size:20px;font-weight:900}.clockSub{font-size:11px;opacity:.72;margin-top:2px}
+    #soundToggle{position:absolute;top:82px;left:12px;pointer-events:auto;border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:rgba(20,15,12,.78);color:#fff;cursor:pointer;font-size:12px;font-weight:800}
     #mission{position:absolute;right:12px;top:106px;width:min(330px,78vw);padding:12px 14px;border-radius:15px;line-height:1.55}.mTitle{font-weight:900;color:var(--gold)}.mText{font-size:13px;margin-top:4px;opacity:.9}
     #prompt{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);padding:10px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.15s}.show{opacity:1!important}
     #toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:10px 15px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
@@ -39,7 +40,7 @@
 
     #mobile{display:none;position:absolute;inset:0;pointer-events:none}#joy{position:absolute;left:20px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);pointer-events:auto;touch-action:none}#knob{position:absolute;left:39px;top:39px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.42)}#act,#run{position:absolute;right:20px;border:1px solid rgba(255,255,255,.16);border-radius:50%;color:#fff;background:rgba(31,24,19,.76);pointer-events:auto;font-weight:900}#act{bottom:40px;width:72px;height:72px}#run{bottom:122px;right:33px;width:50px;height:50px;font-size:11px}
     #shop,#dialog{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.54);pointer-events:auto}.modal{width:min(560px,96vw);max-height:80vh;overflow:auto;padding:20px;border-radius:20px;background:#2b211b;border:1px solid var(--line)}.modal h2{margin:0 0 6px}.desc{opacity:.76;line-height:1.6}.item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border-radius:11px;background:rgba(255,255,255,.06);margin-top:7px}.item button,.closeBtn{border:0;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}.item button{background:var(--gold);color:#20150d}.closeBtn{margin-top:12px;width:100%;background:#4a3a30;color:#fff}.who{color:var(--gold);font-weight:900;margin-bottom:8px}#dialogText{line-height:1.8}
-    @media(max-width:760px){#stats{grid-template-columns:repeat(2,minmax(72px,1fr));width:64vw;min-width:0}.stat{padding:5px 7px}.val{font-size:13px}#clock{min-width:102px;padding:8px}.clockMain{font-size:17px}#mission{top:152px;width:72vw}#mapWrap{width:116px;height:116px;bottom:170px}.microbus{transform:scale(.75);transform-origin:right bottom}.logo{letter-spacing:-1px}#mobile{display:block}}
+    @media(max-width:760px){#stats{grid-template-columns:repeat(2,minmax(72px,1fr));width:64vw;min-width:0}.stat{padding:5px 7px}.val{font-size:13px}#clock{min-width:102px;padding:8px}.clockMain{font-size:17px}#mission{top:152px;width:72vw}#soundToggle{top:132px;left:10px}#mapWrap{width:116px;height:116px;bottom:170px}.microbus{transform:scale(.75);transform-origin:right bottom}.logo{letter-spacing:-1px}#mobile{display:block}}
   </style>
 </head>
 <body>
@@ -47,10 +48,11 @@
   <div id="hud">
     <div id="top"><div id="stats" class="glass">
       <div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">300 ج</div></div>
-      <div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">82%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div>
-      <div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">91%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div>
-      <div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">74%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div>
-    </div><div id="clock" class="glass"><div id="time" class="clockMain">08:15</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
+      <div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">84%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div>
+      <div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">92%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div>
+      <div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">76%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div>
+    </div><div id="clock" class="glass"><div id="time" class="clockMain">08:20</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
+    <button id="soundToggle">🔊 الصوت</button>
     <div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل وافطر ولف السوق.</div></div>
     <div id="prompt" class="glass">E — تفاعل</div><div id="toast" class="glass"></div>
     <div id="mapWrap" class="glass"><canvas id="minimap" width="300" height="300"></canvas></div><div id="cross"></div>
@@ -60,15 +62,15 @@
   <div id="menu">
     <div id="menuScene"><div class="sun"></div><div class="building b1"></div><div class="building b2"></div><div class="building b3"></div><div class="wire"></div><div class="wire w2"></div><div class="microbus"></div></div>
     <div id="menuContent">
-      <div class="kicker">EGYPTIAN OPEN-WORLD LIFE SIMULATOR</div>
+      <div class="kicker">EGYPTIAN OPEN-WORLD LIFE SIMULATOR — V4</div>
       <div class="logo">حياة <span>مصر</span></div>
-      <div class="tagline">ابدأ يومك في حارة مصرية عايشة: قهوة وكشك وفرن وفول وطعمية وكشري وسوق، ميكروباص وتوك توك، عمارات ببلكونات وغسيل ودِشّات، وشغل ومصاريف وروتين يومي.</div>
+      <div class="tagline">نسخة جديدة بتحكم موحّد وصوت شارع ومبانٍ أكثر تفصيلًا: محارة وشبابيك وبلكونات ومحلات ومظلات وأسلاك وخزانات ودِشّات، مع ميكروباصات وتكاتك وسوق وقهوة وحياة يومية مصرية.</div>
       <div class="menuButtons">
         <button id="newGameBtn" class="menuBtn primary">▶ ابدأ يوم جديد</button>
         <button id="continueBtn" class="menuBtn">↻ كمّل من آخر حفظ</button>
         <button id="resetBtn" class="menuBtn danger">⌫ امسح الحفظ</button>
       </div>
-      <div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">Mouse نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">موبايل مدعوم</span></div>
+      <div class="menuMeta"><span class="pill">W للأمام</span><span class="pill">D لليمين</span><span class="pill">الماوس طبيعي</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">M كتم الصوت</span></div>
       <div id="menuStatus"></div>
     </div>
   </div>
@@ -76,6 +78,37 @@
   <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div>
   <div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div>
   <div id="errorBox"></div>
+
+  <script>
+    // Babylon's current UniversalCamera build doesn't expose the old moveWithCollisions
+    // helper used by the game core. Provide a small deterministic bridge with manual
+    // X/Z collision against meshes explicitly marked checkCollisions=true.
+    (() => {
+      const proto = window.BABYLON?.UniversalCamera?.prototype;
+      if (!proto || typeof proto.moveWithCollisions === 'function') return;
+      proto.moveWithCollisions = function(delta) {
+        const scene = this.getScene();
+        const radius = 0.38;
+        const blocked = (x,z) => {
+          if (Math.abs(x) > 105.5 || Math.abs(z) > 105.5) return true;
+          for (const mesh of scene.meshes) {
+            if (!mesh.checkCollisions || !mesh.isEnabled?.() || !mesh.getBoundingInfo) continue;
+            mesh.computeWorldMatrix(true);
+            const bb = mesh.getBoundingInfo().boundingBox;
+            const min = bb.minimumWorld, max = bb.maximumWorld;
+            if (max.y < 0.08 || min.y > 2.45) continue;
+            if (x + radius > min.x && x - radius < max.x && z + radius > min.z && z - radius < max.z) return true;
+          }
+          return false;
+        };
+        const nx = this.position.x + (delta.x || 0);
+        if (!blocked(nx,this.position.z)) this.position.x = nx;
+        const nz = this.position.z + (delta.z || 0);
+        if (!blocked(this.position.x,nz)) this.position.z = nz;
+        return this;
+      };
+    })();
+  </script>
   <script src="game.js"></script>
 </body>
 </html>
