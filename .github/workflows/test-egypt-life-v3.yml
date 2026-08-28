@@ -40,7 +40,7 @@ jobs:
           if(!(await page.isVisible('#soundToggle'))) throw new Error('Sound toggle missing');
           await page.click('#newGameBtn');
           await page.waitForFunction(() => getComputedStyle(document.querySelector('#menu')).display === 'none');
-          await page.waitForTimeout(1000);
+          await page.waitForTimeout(500);
           if(await page.isVisible('#errorBox')) throw new Error('Runtime error box: '+await page.textContent('#errorBox'));
           const box = await page.locator('#game').boundingBox();
           if(!box || box.width < 1000 || box.height < 600) throw new Error('Canvas is not full-screen');
@@ -50,20 +50,23 @@ jobs:
             window.__testKeyCodes=[];
             window.addEventListener('keydown', e => window.__testKeyCodes.push(e.code));
           });
+          const forceFrames = () => page.evaluate(async () => {
+            const scene=BABYLON.Engine.LastCreatedEngine?.scenes?.[0];
+            for(let i=0;i<40;i++){ scene.render(); await new Promise(r=>setTimeout(r,8)); }
+          });
+
           const initial = await page.evaluate(() => { window.__egyptDebug.resetPose(); return window.__egyptDebug.getCamera(); });
           if(Math.abs(initial.y-1.72)>.03) throw new Error('Bad player eye height '+initial.y);
           if(initial.offsetY >= 0) throw new Error('Collider offset must be below eye level');
 
-          await page.keyboard.down('KeyW'); await page.waitForTimeout(650); await page.keyboard.up('KeyW');
+          await page.keyboard.down('KeyW'); await forceFrames(); await page.keyboard.up('KeyW');
           const wResult = await page.evaluate(() => ({camera:window.__egyptDebug.getCamera(), codes:window.__testKeyCodes.slice()}));
-          console.log('W diagnostic', {initial, wResult});
           if(!wResult.codes.includes('KeyW')) throw new Error('Browser did not deliver KeyW: '+JSON.stringify(wResult.codes));
-          if(wResult.camera.z <= initial.z + .15) throw new Error(`W received but movement failed: ${initial.z} -> ${wResult.camera.z}; codes=${JSON.stringify(wResult.codes)}`);
+          if(wResult.camera.z <= initial.z + .15) throw new Error(`W received but movement failed: ${initial.z} -> ${wResult.camera.z}`);
 
           await page.evaluate(() => { window.__egyptDebug.resetPose(); window.__testKeyCodes=[]; });
-          await page.keyboard.down('KeyD'); await page.waitForTimeout(650); await page.keyboard.up('KeyD');
+          await page.keyboard.down('KeyD'); await forceFrames(); await page.keyboard.up('KeyD');
           const dResult = await page.evaluate(() => ({camera:window.__egyptDebug.getCamera(), codes:window.__testKeyCodes.slice()}));
-          console.log('D diagnostic', dResult);
           if(!dResult.codes.includes('KeyD')) throw new Error('Browser did not deliver KeyD: '+JSON.stringify(dResult.codes));
           if(dResult.camera.x <= initial.x + .15) throw new Error(`D received but movement failed: ${initial.x} -> ${dResult.camera.x}`);
 
@@ -78,10 +81,11 @@ jobs:
               balconies:names.filter(n=>n==='balconySlab').length,
               awnings:names.filter(n=>n==='awning').length,
               cables:names.filter(n=>n==='cable').length,
+              vehicles:names.filter(n=>n==='vehCollider').length,
               audio:window.__egyptDebug.audioState()
             };
           });
-          if(detail.windows < 20 || detail.balconies < 5 || detail.awnings < 8 || detail.cables < 2) throw new Error('City detail generation too sparse: '+JSON.stringify(detail));
+          if(detail.windows < 20 || detail.balconies < 5 || detail.awnings < 8 || detail.cables < 2 || detail.vehicles < 10) throw new Error('City detail generation too sparse: '+JSON.stringify(detail));
           if(detail.audio.state === 'none') throw new Error('Audio engine did not initialize');
           if(failures.length) throw new Error(failures.join('\n'));
           console.log('V4 browser test passed', {initial, wResult, dResult, look, detail});
