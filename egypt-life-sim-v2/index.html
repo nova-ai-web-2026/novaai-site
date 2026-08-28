@@ -78,6 +78,37 @@
   <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div>
   <div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div>
   <div id="errorBox"></div>
+
+  <script>
+    // Babylon's current UniversalCamera build doesn't expose the old moveWithCollisions
+    // helper used by the game core. Provide a small deterministic bridge with manual
+    // X/Z collision against meshes explicitly marked checkCollisions=true.
+    (() => {
+      const proto = window.BABYLON?.UniversalCamera?.prototype;
+      if (!proto || typeof proto.moveWithCollisions === 'function') return;
+      proto.moveWithCollisions = function(delta) {
+        const scene = this.getScene();
+        const radius = 0.38;
+        const blocked = (x,z) => {
+          if (Math.abs(x) > 105.5 || Math.abs(z) > 105.5) return true;
+          for (const mesh of scene.meshes) {
+            if (!mesh.checkCollisions || !mesh.isEnabled?.() || !mesh.getBoundingInfo) continue;
+            mesh.computeWorldMatrix(true);
+            const bb = mesh.getBoundingInfo().boundingBox;
+            const min = bb.minimumWorld, max = bb.maximumWorld;
+            if (max.y < 0.08 || min.y > 2.45) continue;
+            if (x + radius > min.x && x - radius < max.x && z + radius > min.z && z - radius < max.z) return true;
+          }
+          return false;
+        };
+        const nx = this.position.x + (delta.x || 0);
+        if (!blocked(nx,this.position.z)) this.position.x = nx;
+        const nz = this.position.z + (delta.z || 0);
+        if (!blocked(this.position.x,nz)) this.position.z = nz;
+        return this;
+      };
+    })();
+  </script>
   <script src="game.js"></script>
 </body>
 </html>
