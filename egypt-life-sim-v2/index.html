@@ -3,66 +3,79 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <meta name="theme-color" content="#18130f" />
-  <title>حياة مصر — محاكي الحياة المصرية V2</title>
+  <meta name="theme-color" content="#17110d" />
+  <title>حياة مصر — محاكي الحياة المصرية</title>
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <style>
-    :root{--glass:rgba(20,15,12,.78);--glass2:rgba(35,27,21,.9);--line:rgba(255,255,255,.13);--gold:#f3c969;--green:#5dc780;--red:#ef6c65;--ink:#14110e}
-    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#15110e;color:#fff;font-family:Tahoma,Arial,sans-serif}
-    button{font:inherit}#game{display:block;width:100%;height:100%;touch-action:none;outline:none}
-    #hud{position:fixed;inset:0;z-index:10;pointer-events:none}.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);box-shadow:0 10px 34px rgba(0,0,0,.28)}
+    :root{--gold:#f4c45f;--cream:#fff4d7;--ink:#17110d;--glass:rgba(20,15,12,.78);--line:rgba(255,255,255,.13)}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#17110d;color:#fff;font-family:Tahoma,Arial,sans-serif}button{font:inherit}
+    #game{display:block;width:100%;height:100%;touch-action:none;outline:none}
+    #hud{position:fixed;inset:0;z-index:10;pointer-events:none}.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(9px);box-shadow:0 12px 34px rgba(0,0,0,.25)}
     #top{position:absolute;top:max(10px,env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
-    #stats{display:grid;grid-template-columns:repeat(4,minmax(70px,1fr));gap:6px;padding:8px;border-radius:16px;min-width:min(560px,72vw)}
-    .stat{padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.055)}.lab{font-size:11px;opacity:.7}.val{font-size:15px;font-weight:800;margin-top:2px}.meter{height:4px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}.fill{height:100%;background:#fff;width:50%}
-    #clock{min-width:128px;padding:10px 13px;border-radius:16px;text-align:center}.big{font-size:20px;font-weight:900}.small{font-size:11px;opacity:.7;margin-top:2px}
-    #mission{position:absolute;right:12px;top:106px;width:min(335px,78vw);padding:12px 14px;border-radius:15px;line-height:1.55}.mTitle{font-weight:900;color:var(--gold);font-size:14px}.mText{font-size:13px;margin-top:4px;opacity:.92}
-    #culture{position:absolute;right:12px;top:206px;width:min(335px,78vw);padding:10px 13px;border-radius:14px;font-size:12px;line-height:1.55;opacity:.94}.cultureTitle{color:#9fe4b7;font-weight:800;margin-bottom:3px}
-    #prompt{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);padding:10px 14px;border-radius:13px;font-size:13px;opacity:0;transition:.15s}.show{opacity:1!important}
-    #toast{position:absolute;left:50%;top:19%;transform:translateX(-50%);padding:10px 15px;border-radius:13px;opacity:0;transition:.2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
-    #mapWrap{position:absolute;left:12px;bottom:max(12px,env(safe-area-inset-bottom));width:164px;height:164px;padding:7px;border-radius:19px}#minimap{width:100%;height:100%;display:block;border-radius:13px;background:#2c342a}
-    #start{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 20%,#9d784a 0,#423022 36%,#17120f 100%)}
-    #startCard{width:min(760px,96vw);padding:28px;border-radius:24px;text-align:center;background:rgba(18,13,10,.8);border:1px solid rgba(255,255,255,.14);box-shadow:0 22px 70px rgba(0,0,0,.4)}
-    .eyebrow{font-size:12px;letter-spacing:1px;color:#f1d9a4}.title{font-size:clamp(34px,8vw,66px);font-weight:950;letter-spacing:-2px}.subtitle{opacity:.82;line-height:1.8;max-width:650px;margin:9px auto 18px}.chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:20px}.chip{font-size:12px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)}
-    .primary{pointer-events:auto;border:0;border-radius:13px;padding:12px 20px;font-weight:900;background:var(--gold);color:#241b12;cursor:pointer;box-shadow:0 7px 20px rgba(0,0,0,.25)}
-    #shop,#dialog{position:fixed;inset:0;z-index:26;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.5);pointer-events:auto}.modal{width:min(560px,96vw);max-height:80vh;overflow:auto;padding:20px;border-radius:20px;background:var(--glass2);border:1px solid var(--line)}
-    .modal h2{margin:0 0 6px;font-size:24px}.desc{opacity:.75;line-height:1.6;margin-bottom:13px}.item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.055);margin-top:7px}.item button,.closeBtn{border:0;border-radius:10px;padding:8px 11px;font-weight:800;cursor:pointer}.item button{background:#f1cc76;color:#1d160f}.closeBtn{margin-top:12px;background:#3b312a;color:#fff;width:100%}
-    #dialogText{line-height:1.8;font-size:16px}.who{color:var(--gold);font-weight:900;margin-bottom:8px}
-    #mobile{display:none;position:absolute;inset:0;pointer-events:none}#joy{position:absolute;left:20px;bottom:28px;width:124px;height:124px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);pointer-events:auto;touch-action:none}#knob{position:absolute;left:40px;top:40px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.4)}#act,#run{position:absolute;right:20px;border:0;border-radius:50%;color:#fff;background:rgba(31,24,19,.72);border:1px solid rgba(255,255,255,.16);pointer-events:auto;font-weight:900}#act{bottom:40px;width:72px;height:72px}#run{bottom:122px;right:33px;width:50px;height:50px;font-size:11px}
-    #cross{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border:1px solid rgba(255,255,255,.6);border-radius:50%}
-    @media(max-width:760px){#stats{grid-template-columns:repeat(2,minmax(72px,1fr));min-width:0;width:64vw}.stat{padding:5px 7px}.val{font-size:13px}#clock{min-width:104px;padding:8px}.big{font-size:17px}#mission{top:154px;width:72vw}#culture{display:none}#mapWrap{width:118px;height:118px;bottom:170px}.title{letter-spacing:-1px}#mobile{display:block}}
+    #stats{display:grid;grid-template-columns:repeat(4,minmax(74px,1fr));gap:6px;padding:8px;border-radius:15px;min-width:min(560px,72vw)}
+    .stat{padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.055)}.lab{font-size:11px;opacity:.7}.val{font-size:15px;font-weight:800;margin-top:2px}.meter{height:4px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}.fill{height:100%;width:60%;background:#fff}
+    #clock{min-width:122px;padding:10px 13px;border-radius:15px;text-align:center}.clockMain{font-size:20px;font-weight:900}.clockSub{font-size:11px;opacity:.72;margin-top:2px}
+    #mission{position:absolute;right:12px;top:106px;width:min(330px,78vw);padding:12px 14px;border-radius:15px;line-height:1.55}.mTitle{font-weight:900;color:var(--gold)}.mText{font-size:13px;margin-top:4px;opacity:.9}
+    #prompt{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);padding:10px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.15s}.show{opacity:1!important}
+    #toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:10px 15px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+    #mapWrap{position:absolute;left:12px;bottom:max(12px,env(safe-area-inset-bottom));width:154px;height:154px;padding:7px;border-radius:18px}#minimap{width:100%;height:100%;display:block;border-radius:12px;background:#2f352b}
+    #cross{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border:1px solid rgba(255,255,255,.62);border-radius:50%}
+
+    #menu{position:fixed;inset:0;z-index:40;overflow:auto;background:linear-gradient(90deg,rgba(16,11,8,.96) 0%,rgba(21,14,10,.88) 42%,rgba(27,18,12,.45) 70%,rgba(27,18,12,.18) 100%)}
+    #menuScene{position:absolute;inset:0;overflow:hidden;background:linear-gradient(#dca863 0 42%,#be7a3f 42% 46%,#6c5340 46% 100%)}
+    #menuScene:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,8,6,.92),rgba(11,8,6,.58) 48%,rgba(11,8,6,.12) 80%),linear-gradient(0deg,rgba(0,0,0,.42),transparent 40%)}
+    .sun{position:absolute;width:170px;height:170px;border-radius:50%;background:#ffd887;right:10%;top:9%;box-shadow:0 0 80px #ffd88780}
+    .building{position:absolute;bottom:0;background:#6f4f39;border-top:5px solid #8d674c}.b1{right:3%;width:22%;height:65%}.b2{right:27%;width:17%;height:50%;background:#785b45}.b3{right:47%;width:15%;height:58%;background:#654b3a}.building:before{content:"";position:absolute;inset:12% 12%;background:repeating-linear-gradient(0deg,transparent 0 35px,#241c17 36px 49px),repeating-linear-gradient(90deg,transparent 0 42px,#2b211b 43px 58px);opacity:.55}
+    .wire{position:absolute;right:-5%;top:25%;width:80%;height:2px;background:#2c2119;transform:rotate(-5deg);transform-origin:right}.wire.w2{top:32%;transform:rotate(3deg)}
+    .microbus{position:absolute;right:15%;bottom:5%;width:210px;height:90px;border-radius:18px 18px 8px 8px;background:#e9e7df;box-shadow:0 16px 20px #0005}.microbus:before{content:"";position:absolute;left:16px;right:16px;top:12px;height:30px;border-radius:6px;background:#25343a}.microbus:after{content:"";position:absolute;left:20px;bottom:-14px;width:34px;height:34px;border-radius:50%;background:#1d1b19;box-shadow:135px 0 #1d1b19}
+
+    #menuContent{position:relative;z-index:2;min-height:100%;width:min(610px,92vw);padding:clamp(28px,7vh,80px) clamp(22px,5vw,64px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:right}
+    .kicker{font-size:12px;letter-spacing:1.5px;color:#f6d58d;font-weight:800}.logo{font-size:clamp(48px,9vw,86px);line-height:.98;font-weight:950;letter-spacing:-3px;margin:8px 0}.logo span{color:var(--gold)}
+    .tagline{font-size:15px;line-height:1.8;max-width:500px;color:#f6ead9;opacity:.88;margin-bottom:24px}
+    .menuButtons{width:min(360px,100%);display:grid;gap:10px}.menuBtn{border:1px solid rgba(255,255,255,.13);border-radius:13px;padding:13px 16px;text-align:right;font-weight:900;cursor:pointer;transition:.16s;background:rgba(255,255,255,.07);color:#fff}.menuBtn:hover{transform:translateX(-4px);background:rgba(255,255,255,.12)}.menuBtn.primary{background:var(--gold);color:#23170e;border-color:#ffd879}.menuBtn.danger{color:#ffb8ad}
+    .menuMeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}.pill{font-size:11px;padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);color:#f1e6d6}
+    #menuStatus{margin-top:13px;font-size:12px;color:#f6d58d;min-height:18px}
+    #errorBox{display:none;position:fixed;z-index:60;left:18px;right:18px;bottom:18px;padding:14px;border-radius:14px;background:#4a1f1b;border:1px solid #ff8c7e;color:#fff;line-height:1.6}
+
+    #mobile{display:none;position:absolute;inset:0;pointer-events:none}#joy{position:absolute;left:20px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);pointer-events:auto;touch-action:none}#knob{position:absolute;left:39px;top:39px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.42)}#act,#run{position:absolute;right:20px;border:1px solid rgba(255,255,255,.16);border-radius:50%;color:#fff;background:rgba(31,24,19,.76);pointer-events:auto;font-weight:900}#act{bottom:40px;width:72px;height:72px}#run{bottom:122px;right:33px;width:50px;height:50px;font-size:11px}
+    #shop,#dialog{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.54);pointer-events:auto}.modal{width:min(560px,96vw);max-height:80vh;overflow:auto;padding:20px;border-radius:20px;background:#2b211b;border:1px solid var(--line)}.modal h2{margin:0 0 6px}.desc{opacity:.76;line-height:1.6}.item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border-radius:11px;background:rgba(255,255,255,.06);margin-top:7px}.item button,.closeBtn{border:0;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}.item button{background:var(--gold);color:#20150d}.closeBtn{margin-top:12px;width:100%;background:#4a3a30;color:#fff}.who{color:var(--gold);font-weight:900;margin-bottom:8px}#dialogText{line-height:1.8}
+    @media(max-width:760px){#stats{grid-template-columns:repeat(2,minmax(72px,1fr));width:64vw;min-width:0}.stat{padding:5px 7px}.val{font-size:13px}#clock{min-width:102px;padding:8px}.clockMain{font-size:17px}#mission{top:152px;width:72vw}#mapWrap{width:116px;height:116px;bottom:170px}.microbus{transform:scale(.75);transform-origin:right bottom}.logo{letter-spacing:-1px}#mobile{display:block}}
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
   <div id="hud">
-    <div id="top">
-      <div id="stats" class="glass">
-        <div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">250 ج</div></div>
-        <div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">85%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div>
-        <div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">90%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div>
-        <div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">75%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div>
-      </div>
-      <div id="clock" class="glass"><div id="time" class="big">08:10</div><div id="day" class="small">اليوم 1 — السبت</div></div>
-    </div>
-    <div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل الشارع، اتعرّف على الحارة، وافطر حاجة مصرية.</div></div>
-    <div id="culture" class="glass"><div class="cultureTitle">🇪🇬 من روح الشارع</div><div id="cultureText">القهوة الشعبية هنا مكان للّمة والشاي والطاولة والكورة، مش مجرد مكان تشرب فيه.</div></div>
+    <div id="top"><div id="stats" class="glass">
+      <div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">300 ج</div></div>
+      <div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">82%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div>
+      <div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">91%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div>
+      <div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">74%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div>
+    </div><div id="clock" class="glass"><div id="time" class="clockMain">08:15</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
+    <div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل وافطر ولف السوق.</div></div>
     <div id="prompt" class="glass">E — تفاعل</div><div id="toast" class="glass"></div>
     <div id="mapWrap" class="glass"><canvas id="minimap" width="300" height="300"></canvas></div><div id="cross"></div>
     <div id="mobile"><div id="joy"><div id="knob"></div></div><button id="run">جري</button><button id="act">تفاعل</button></div>
   </div>
 
-  <div id="start">
-    <div id="startCard">
-      <div class="eyebrow">OPEN-WORLD EGYPTIAN LIFE SIM</div>
-      <div class="title">حياة مصر 🇪🇬</div>
-      <div class="subtitle">عالم مفتوح مصري مستوحى من تفاصيل الحياة اليومية: عمارات ببلكونات وغسيل ودِشّات، كشك وقهوة وفرن وفول وطعمية وكشري وعصير قصب، عربيات وميكروباص وتوك توك، شوارع مزدحمة ولافتات عربية، ومهام فلوس وأكل وبيت وشغل.</div>
-      <div class="chips"><span class="chip">🏙️ حارة + سوق + ميدان</span><span class="chip">🥙 فول وطعمية</span><span class="chip">🍲 كشري</span><span class="chip">☕ قهوة شعبية</span><span class="chip">🧃 قصب</span><span class="chip">🚐 ميكروباص</span><span class="chip">🛺 توك توك</span><span class="chip">🧺 غسيل على البلكونات</span><span class="chip">📡 دِشّات وخزانات</span></div>
-      <button id="startBtn" class="primary">ابدأ يومك في مصر</button>
+  <div id="menu">
+    <div id="menuScene"><div class="sun"></div><div class="building b1"></div><div class="building b2"></div><div class="building b3"></div><div class="wire"></div><div class="wire w2"></div><div class="microbus"></div></div>
+    <div id="menuContent">
+      <div class="kicker">EGYPTIAN OPEN-WORLD LIFE SIMULATOR</div>
+      <div class="logo">حياة <span>مصر</span></div>
+      <div class="tagline">ابدأ يومك في حارة مصرية عايشة: قهوة وكشك وفرن وفول وطعمية وكشري وسوق، ميكروباص وتوك توك، عمارات ببلكونات وغسيل ودِشّات، وشغل ومصاريف وروتين يومي.</div>
+      <div class="menuButtons">
+        <button id="newGameBtn" class="menuBtn primary">▶ ابدأ يوم جديد</button>
+        <button id="continueBtn" class="menuBtn">↻ كمّل من آخر حفظ</button>
+        <button id="resetBtn" class="menuBtn danger">⌫ امسح الحفظ</button>
+      </div>
+      <div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">Mouse نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">موبايل مدعوم</span></div>
+      <div id="menuStatus"></div>
     </div>
   </div>
 
   <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div>
   <div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div>
+  <div id="errorBox"></div>
   <script src="game.js"></script>
 </body>
 </html>

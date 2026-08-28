@@ -1,0 +1,61 @@
+name: Test Egyptian Life Simulator V3
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: node --check egypt-life-sim-v2/game.js
+      - name: Install browser test runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
+          sleep 2
+      - name: Run real browser smoke test
+        run: |
+          cat > smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:1280,height:720}});
+          const failures=[];
+          page.on('pageerror', e => failures.push('pageerror: '+e.message));
+          page.on('console', m => { if(m.type()==='error') failures.push('console: '+m.text()); });
+          await page.goto('http://127.0.0.1:4173/', {waitUntil:'networkidle'});
+          await page.waitForSelector('#menu', {state:'visible'});
+          const title = await page.textContent('.logo');
+          if(!title?.includes('حياة')) throw new Error('New game menu title missing');
+          await page.click('#newGameBtn');
+          await page.waitForFunction(() => getComputedStyle(document.querySelector('#menu')).display === 'none');
+          await page.waitForTimeout(1200);
+          const errVisible = await page.isVisible('#errorBox');
+          if(errVisible) throw new Error('Runtime error box became visible: '+await page.textContent('#errorBox'));
+          const canvasBox = await page.locator('#game').boundingBox();
+          if(!canvasBox || canvasBox.width < 1000 || canvasBox.height < 600) throw new Error('Game canvas is not full-screen');
+          const metrics = await page.evaluate(() => {
+            const eng = BABYLON.Engine.LastCreatedEngine;
+            const scene = eng?.scenes?.[0];
+            const cam = scene?.activeCamera;
+            return cam ? { y:cam.position.y, fov:cam.fov, ey:cam.ellipsoid?.y, oy:cam.ellipsoidOffset?.y } : null;
+          });
+          if(!metrics) throw new Error('Active camera not found');
+          if(metrics.fov > 0.95) throw new Error('FOV still too wide: '+metrics.fov);
+          if(metrics.oy >= 0) throw new Error('Camera collision offset is not below eye level: '+metrics.oy);
+          if(failures.length) throw new Error(failures.join('\n'));
+          console.log('Browser test passed', metrics);
+          await browser.close();
+          EOF
+          node smoke.mjs
