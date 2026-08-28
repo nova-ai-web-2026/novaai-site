@@ -27,7 +27,7 @@ jobs:
           sleep 2
       - name: Run real browser smoke test
         run: |
-          cat > /tmp/smoke.mjs <<'EOF'
+          cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage({viewport:{width:1280,height:720}});
@@ -58,4 +58,4 @@ jobs:
           console.log('Browser test passed', metrics);
           await browser.close();
           EOF
-          node /tmp/smoke.mjs
+          node smoke.mjs
