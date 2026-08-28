@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#151515" />
+  <title>حياة الحارة — محاكي الحياة المصرية</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <style>
+    :root{--glass:rgba(16,16,20,.76);--line:rgba(255,255,255,.12);--accent:#f2c94c;--ok:#62d26f;--danger:#ff6b6b}
+    *{box-sizing:border-box} html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-family:Tahoma,Arial,sans-serif;color:#fff}
+    #game{width:100%;height:100%;display:block;touch-action:none;outline:none}
+    #hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+    .panel{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    #topbar{position:absolute;top:max(10px,env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+    #stats{display:grid;grid-template-columns:repeat(4,minmax(72px,1fr));gap:6px;padding:8px;border-radius:14px;min-width:min(520px,68vw)}
+    .stat{padding:7px 9px;background:rgba(255,255,255,.055);border-radius:10px}.label{font-size:11px;opacity:.72}.value{font-size:16px;font-weight:700;margin-top:2px}.bar{height:4px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}.fill{height:100%;background:#fff;width:70%}
+    #clock{padding:10px 12px;border-radius:14px;text-align:center;min-width:120px}.clockMain{font-size:19px;font-weight:800}.clockSub{font-size:11px;opacity:.7;margin-top:2px}
+    #minimapWrap{position:absolute;left:12px;bottom:max(12px,env(safe-area-inset-bottom));width:152px;height:152px;padding:7px;border-radius:18px}
+    #minimap{width:100%;height:100%;display:block;border-radius:12px;background:#253129}
+    #task{position:absolute;top:104px;right:12px;width:min(320px,76vw);padding:12px 14px;border-radius:14px;line-height:1.55}.taskTitle{font-weight:800;color:var(--accent)}.taskText{font-size:13px;margin-top:4px;opacity:.9}
+    #prompt{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);padding:10px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.15s}.show{opacity:1!important}
+    #toast{position:absolute;left:50%;top:20%;transform:translateX(-50%);padding:10px 15px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+    #start{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 25%,#7e6746 0,#2c2c2c 38%,#111 100%)}
+    #card{width:min(680px,96vw);padding:26px;border-radius:22px;text-align:center}.title{font-size:clamp(30px,7vw,58px);font-weight:900;letter-spacing:-1px}.subtitle{opacity:.76;line-height:1.7;margin:8px auto 20px;max-width:560px}.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-bottom:18px}.chip{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:12px}
+    button{pointer-events:auto;border:0;border-radius:12px;padding:12px 18px;font-weight:800;font-size:15px;cursor:pointer}.primary{background:var(--accent);color:#171717}.secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid var(--line)}
+    #startBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.hint{font-size:11px;opacity:.58;margin-top:14px}
+    #shop{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.48)}
+    #shopCard{width:min(520px,94vw);padding:18px;border-radius:18px;pointer-events:auto}.shopHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.shopTitle{font-size:22px;font-weight:900}.shopItems{display:grid;gap:8px;margin-top:14px}.shopItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.055)}.shopItem small{opacity:.65}.price{color:var(--accent);font-weight:800}.close{padding:8px 11px;font-size:12px}
+    #mobile{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}.joyBase{position:absolute;left:22px;bottom:28px;width:118px;height:118px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid var(--line);pointer-events:auto}.joyKnob{position:absolute;left:39px;top:39px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.28)}
+    .mBtn{position:absolute;width:62px;height:62px;border-radius:50%;padding:0;background:rgba(20,20,24,.66);color:#fff;border:1px solid var(--line);pointer-events:auto}.mInteract{right:22px;bottom:34px}.mSprint{right:94px;bottom:94px;font-size:11px}
+    #crosshair{position:absolute;left:50%;top:50%;width:12px;height:12px;transform:translate(-50%,-50%);opacity:.8}#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;border-radius:2px}#crosshair:before{left:5px;top:0;width:2px;height:12px}#crosshair:after{left:0;top:5px;width:12px;height:2px}
+    @media(max-width:760px){#stats{grid-template-columns:repeat(2,1fr);min-width:62vw}.value{font-size:14px}#task{top:150px}.taskText{font-size:12px}#minimapWrap{width:125px;height:125px;bottom:164px}#mobile{display:block}#prompt{bottom:28%}}
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div id="topbar">
+      <div id="stats" class="panel">
+        <div class="stat"><div class="label">الفلوس</div><div class="value" id="money">250 ج</div></div>
+        <div class="stat"><div class="label">الجوع</div><div class="value" id="hungerTxt">85%</div><div class="bar"><div class="fill" id="hungerBar"></div></div></div>
+        <div class="stat"><div class="label">الطاقة</div><div class="value" id="energyTxt">90%</div><div class="bar"><div class="fill" id="energyBar"></div></div></div>
+        <div class="stat"><div class="label">المزاج</div><div class="value" id="moodTxt">72%</div><div class="bar"><div class="fill" id="moodBar"></div></div></div>
+      </div>
+      <div id="clock" class="panel"><div class="clockMain" id="time">08:10</div><div class="clockSub" id="day">السبت · اليوم 1</div></div>
+    </div>
+    <div id="task" class="panel"><div class="taskTitle" id="taskTitle">أول يوم في الحارة</div><div class="taskText" id="taskText">انزل من البيت، لف في الشارع، وروح البقالة عشان تتعرف على المكان.</div></div>
+    <div id="minimapWrap" class="panel"><canvas id="minimap" width="280" height="280"></canvas></div>
+    <div id="crosshair"></div>
+    <div id="prompt" class="panel">E — تفاعل</div>
+    <div id="toast" class="panel"></div>
+  </div>
+
+  <div id="start">
+    <div id="card" class="panel">
+      <div class="title">حياة الحارة 🇪🇬</div>
+      <div class="subtitle">محاكي حياة مصرية ثلاثي الأبعاد: شوارع، عمارات، محلات، قهاوي، مواصلات، شغل، أكل، فلوس، ليل ونهار وتفاصيل يومية صغيرة تخلي المدينة تحس إنها عايشة.</div>
+      <div class="chips"><span class="chip">عالم مفتوح مصغّر</span><span class="chip">موبايل + كمبيوتر</span><span class="chip">حفظ تلقائي</span><span class="chip">مدينة إجرائية</span><span class="chip">NPCs ومواصلات</span></div>
+      <div id="startBtns"><button class="primary" id="playBtn">ابدأ اللعبة</button><button class="secondary" id="resetSaveBtn">مسح الحفظ</button></div>
+      <div class="hint">كمبيوتر: WASD للحركة · Shift للجري · E للتفاعل · حرّك الماوس للنظر. موبايل: العصا للحركة · اسحب يمين الشاشة للنظر.</div>
+    </div>
+  </div>
+
+  <div id="shop">
+    <div id="shopCard" class="panel">
+      <div class="shopHead"><div><div class="shopTitle" id="shopTitle">المحل</div><div style="font-size:12px;opacity:.65" id="shopDesc"></div></div><button class="secondary close" id="shopClose">اقفل</button></div>
+      <div class="shopItems" id="shopItems"></div>
+    </div>
+  </div>
+
+  <div id="mobile">
+    <div class="joyBase" id="joyBase"><div class="joyKnob" id="joyKnob"></div></div>
+    <button class="mBtn mSprint" id="mSprint">جري</button>
+    <button class="mBtn mInteract" id="mInteract">تفاعل</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
