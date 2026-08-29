@@ -27,6 +27,7 @@ jobs:
           grep -q "game-v9-facades.js?v=9" egypt-life-sim-v2/game-v8-layout.js
           grep -q "hip-knee-ankle-foot" egypt-life-sim-v2/game-v9.js
           grep -q "stance-swing-distance-driven" egypt-life-sim-v2/game-v9.js
+          grep -q "forwardAligned:true" egypt-life-sim-v2/game-v9.js
           grep -q "blankSidesFilled" egypt-life-sim-v2/game-v9-facades.js
       - name: Install browser test runtime
         run: |
@@ -55,6 +56,7 @@ jobs:
           if(state.oldVisualsDisabled!==28)throw new Error('Old blocky rigs still visible '+JSON.stringify(state));
           if(state.rig!=='hip-knee-ankle-foot')throw new Error('V9 hierarchy marker missing '+JSON.stringify(state));
           if(state.characterStyle!=='rounded-human-proportions')throw new Error('V9 character rebuild missing '+JSON.stringify(state));
+          if(!state.forwardAligned||state.forwardBodies!==28)throw new Error('V9 bodies are not aligned with travel '+JSON.stringify(state));
           if(state.facades!=='four-sided-lived-in-buildings')throw new Error('V9 four-sided facade pass missing '+JSON.stringify(state));
           if(!facades.blankSidesFilled||facades.buildings<20||facades.windows<180||facades.newMeshes<500)throw new Error('Blank building sides remain '+JSON.stringify(facades));
           if(facades.collisions!==0)throw new Error('V9 facade details must not collide '+JSON.stringify(facades));
@@ -77,13 +79,14 @@ jobs:
               bad,
               v9Meshes:scene.meshes.filter(m=>m.name.startsWith('v9_')).length,
               cylinders:scene.meshes.filter(m=>m.name.startsWith('v9_thigh')||m.name.startsWith('v9_calf')||m.name.startsWith('v9_upperArm')||m.name.startsWith('v9_foreArm')).length,
+              jointMeshes:scene.meshes.filter(m=>m.name.startsWith('v9_kneeJoint')||m.name.startsWith('v9_ankleJoint')||m.name.startsWith('v9_elbowJoint')||m.name.startsWith('v9_shoulderJoint')).length,
               facadeMeshes:scene.meshes.filter(m=>m.name.startsWith('v9f_')).length,
               fogDensity:scene.fogDensity,
               saturation:scene.imageProcessingConfiguration.saturation
             };
           });
           if(structure.bad.length)throw new Error('Broken leg hierarchy '+JSON.stringify(structure.bad));
-          if(structure.v9Meshes<350||structure.cylinders<200)throw new Error('Rounded character geometry incomplete '+JSON.stringify(structure));
+          if(structure.v9Meshes<500||structure.cylinders<200||structure.jointMeshes<200)throw new Error('Connected rounded character geometry incomplete '+JSON.stringify(structure));
           if(structure.facadeMeshes<500)throw new Error('Four-sided building geometry incomplete '+JSON.stringify(structure));
           if(!(structure.fogDensity>0&&structure.fogDensity<.003))throw new Error('V9 atmosphere out of range '+JSON.stringify(structure));
           if(!(structure.saturation>.6&&structure.saturation<.9))throw new Error('V9 colour grading missing '+JSON.stringify(structure));
@@ -131,6 +134,15 @@ jobs:
           const planted=ratios.filter(r=>r<.82).length/Math.max(1,ratios.length);
           if(planted<.25)throw new Error('V9 feet still slide continuously '+JSON.stringify({ratios,planted}));
 
+          await page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],camera=scene.activeCamera;
+            const root=scene.transformNodes.filter(n=>n.name==='personRoot')[5];
+            camera.position.set(root.position.x,1.45,root.position.z+3.1);
+            camera.rotation.x=.02;camera.rotation.y=Math.PI;camera.rotation.z=0;
+          });
+          await page.waitForTimeout(180);
+          await page.screenshot({path:'npc-v9.png',fullPage:true});
+
           const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(e.message));
           await mobile.goto('http://127.0.0.1:4173/?ci=v9-mobile-final',{waitUntil:'networkidle'});
@@ -151,5 +163,6 @@ jobs:
           path: |
             menu-v9.png
             street-v9.png
+            npc-v9.png
             mobile-v9.png
           if-no-files-found: ignore
