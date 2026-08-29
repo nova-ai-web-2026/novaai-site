@@ -22,12 +22,18 @@ jobs:
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
           node --check egypt-life-sim-v2/game-v9.js
+          node --check egypt-life-sim-v2/game-v9-gaitfix.js
+          node --check egypt-life-sim-v2/game-v9-character-polish.js
           node --check egypt-life-sim-v2/game-v9-facades.js
           grep -q "game-v9.js?v=9" egypt-life-sim-v2/game-v8-layout.js
+          grep -q "game-v9-gaitfix.js?v=9" egypt-life-sim-v2/game-v8-layout.js
+          grep -q "game-v9-character-polish.js?v=9" egypt-life-sim-v2/game-v8-layout.js
           grep -q "game-v9-facades.js?v=9" egypt-life-sim-v2/game-v8-layout.js
           grep -q "hip-knee-ankle-foot" egypt-life-sim-v2/game-v9.js
           grep -q "stance-swing-distance-driven" egypt-life-sim-v2/game-v9.js
           grep -q "forwardAligned:true" egypt-life-sim-v2/game-v9.js
+          grep -q "naturalAnkleRange:true" egypt-life-sim-v2/game-v9-gaitfix.js
+          grep -q "capsule-human" egypt-life-sim-v2/game-v9-character-polish.js
           grep -q "blankSidesFilled" egypt-life-sim-v2/game-v9-facades.js
       - name: Install browser test runtime
         run: |
@@ -49,14 +55,20 @@ jobs:
           page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v9-final',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V9_PATCH?.version===9,{timeout:20000});
+          await page.waitForFunction(()=>window.__V9_GAITFIX?.naturalAnkleRange===true,{timeout:20000});
+          await page.waitForFunction(()=>window.__V9_POLISH?.silhouette==='capsule-human',{timeout:20000});
           await page.waitForFunction(()=>window.__V9_FACADES?.blankSidesFilled===true,{timeout:20000});
           const state=await page.evaluate(()=>window.__egyptDebug.v9State());
+          const gaitFix=await page.evaluate(()=>window.__egyptDebug.v9GaitFixState());
+          const polish=await page.evaluate(()=>window.__egyptDebug.v9PolishState());
           const facades=await page.evaluate(()=>window.__egyptDebug.v9FacadeState());
           if(state.rigs!==28||state.ankles!==56)throw new Error('V9 rigs/ankles missing '+JSON.stringify(state));
           if(state.oldVisualsDisabled!==28)throw new Error('Old blocky rigs still visible '+JSON.stringify(state));
           if(state.rig!=='hip-knee-ankle-foot')throw new Error('V9 hierarchy marker missing '+JSON.stringify(state));
           if(state.characterStyle!=='rounded-human-proportions')throw new Error('V9 character rebuild missing '+JSON.stringify(state));
           if(!state.forwardAligned||state.forwardBodies!==28)throw new Error('V9 bodies are not aligned with travel '+JSON.stringify(state));
+          if(!gaitFix.naturalAnkleRange||gaitFix.ankles!==56||gaitFix.ankleLimit>.46)throw new Error('V9 ankle limiter missing '+JSON.stringify(gaitFix));
+          if(polish.rigs!==28||polish.silhouette!=='capsule-human'||polish.capsuleCount<350||!polish.bodyTwist)throw new Error('V9 capsule character polish missing '+JSON.stringify(polish));
           if(state.facades!=='four-sided-lived-in-buildings')throw new Error('V9 four-sided facade pass missing '+JSON.stringify(state));
           if(!facades.blankSidesFilled||facades.buildings<20||facades.windows<180||facades.newMeshes<500)throw new Error('Blank building sides remain '+JSON.stringify(facades));
           if(facades.collisions!==0)throw new Error('V9 facade details must not collide '+JSON.stringify(facades));
@@ -78,15 +90,14 @@ jobs:
             return {
               bad,
               v9Meshes:scene.meshes.filter(m=>m.name.startsWith('v9_')).length,
-              cylinders:scene.meshes.filter(m=>m.name.startsWith('v9_thigh')||m.name.startsWith('v9_calf')||m.name.startsWith('v9_upperArm')||m.name.startsWith('v9_foreArm')).length,
-              jointMeshes:scene.meshes.filter(m=>m.name.startsWith('v9_kneeJoint')||m.name.startsWith('v9_ankleJoint')||m.name.startsWith('v9_elbowJoint')||m.name.startsWith('v9_shoulderJoint')).length,
+              polishMeshes:scene.meshes.filter(m=>m.name.startsWith('v9p_')).length,
               facadeMeshes:scene.meshes.filter(m=>m.name.startsWith('v9f_')).length,
               fogDensity:scene.fogDensity,
               saturation:scene.imageProcessingConfiguration.saturation
             };
           });
           if(structure.bad.length)throw new Error('Broken leg hierarchy '+JSON.stringify(structure.bad));
-          if(structure.v9Meshes<500||structure.cylinders<200||structure.jointMeshes<200)throw new Error('Connected rounded character geometry incomplete '+JSON.stringify(structure));
+          if(structure.v9Meshes<500||structure.polishMeshes<500)throw new Error('Capsule character geometry incomplete '+JSON.stringify(structure));
           if(structure.facadeMeshes<500)throw new Error('Four-sided building geometry incomplete '+JSON.stringify(structure));
           if(!(structure.fogDensity>0&&structure.fogDensity<.003))throw new Error('V9 atmosphere out of range '+JSON.stringify(structure));
           if(!(structure.saturation>.6&&structure.saturation<.9))throw new Error('V9 colour grading missing '+JSON.stringify(structure));
@@ -146,12 +157,13 @@ jobs:
           const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(e.message));
           await mobile.goto('http://127.0.0.1:4173/?ci=v9-mobile-final',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V9_POLISH?.silhouette==='capsule-human',{timeout:20000});
           await mobile.waitForFunction(()=>window.__V9_FACADES?.blankSidesFilled===true,{timeout:20000});
           await mobile.click('#newGameBtn');await mobile.waitForTimeout(550);
           if(await mobile.isVisible('#errorBox'))throw new Error('V9 mobile runtime error: '+await mobile.textContent('#errorBox'));
           if(mobileErrors.length)throw new Error('V9 mobile pageerror: '+mobileErrors.join('; '));
           await mobile.screenshot({path:'mobile-v9.png',fullPage:true});
-          console.log('V9 full-cycle test passed',{state,facades,structure,travel,hipSpread,kneeSpread,ankleSpread,minFootY,maxFootY,planted,ratios});
+          console.log('V9 full-cycle test passed',{state,gaitFix,polish,facades,structure,travel,hipSpread,kneeSpread,ankleSpread,minFootY,maxFootY,planted,ratios});
           await browser.close();
           EOF
           node smoke.mjs
