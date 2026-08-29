@@ -54,16 +54,30 @@
     document.body.appendChild(s);
   }
 
+  function loadV9CharacterPolish(){
+    if(document.querySelector('script[data-egypt-v9-character-polish]')){
+      if(window.__V9_POLISH?.silhouette==='capsule-human')loadV9Facades();
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='game-v9-character-polish.js?v=9';
+    s.dataset.egyptV9CharacterPolish='true';
+    s.async=false;
+    s.onload=loadV9Facades;
+    s.onerror=()=>fail('V9 character polish script failed to load');
+    document.body.appendChild(s);
+  }
+
   function loadV9GaitFix(){
     if(document.querySelector('script[data-egypt-v9-gaitfix]')){
-      if(window.__V9_GAITFIX?.naturalAnkleRange)loadV9Facades();
+      if(window.__V9_GAITFIX?.naturalAnkleRange)loadV9CharacterPolish();
       return;
     }
     const s=document.createElement('script');
     s.src='game-v9-gaitfix.js?v=9';
     s.dataset.egyptV9Gaitfix='true';
     s.async=false;
-    s.onload=loadV9Facades;
+    s.onload=loadV9CharacterPolish;
     s.onerror=()=>fail('V9 gait fix script failed to load');
     document.body.appendChild(s);
   }
