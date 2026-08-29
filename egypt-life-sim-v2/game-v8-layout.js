@@ -54,16 +54,30 @@
     document.body.appendChild(s);
   }
 
+  function loadV9GaitFix(){
+    if(document.querySelector('script[data-egypt-v9-gaitfix]')){
+      if(window.__V9_GAITFIX?.naturalAnkleRange)loadV9Facades();
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='game-v9-gaitfix.js?v=9';
+    s.dataset.egyptV9Gaitfix='true';
+    s.async=false;
+    s.onload=loadV9Facades;
+    s.onerror=()=>fail('V9 gait fix script failed to load');
+    document.body.appendChild(s);
+  }
+
   function loadV9(){
     if(document.querySelector('script[data-egypt-v9]')){
-      if(window.__V9_PATCH?.version===9)loadV9Facades();
+      if(window.__V9_PATCH?.version===9)loadV9GaitFix();
       return;
     }
     const script=document.createElement('script');
     script.src='game-v9.js?v=9';
     script.dataset.egyptV9='true';
     script.async=false;
-    script.onload=loadV9Facades;
+    script.onload=loadV9GaitFix;
     script.onerror=()=>fail('V9 script failed to load');
     document.body.appendChild(script);
   }
