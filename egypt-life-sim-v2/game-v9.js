@@ -50,57 +50,75 @@
     const oldVisual=scene.transformNodes.find(n=>n.name==='personVisual'&&n.parent===root);
     if(oldVisual)oldVisual.setEnabled(false);
 
-    const visual=new BABYLON.TransformNode('v9_personVisual_'+i,scene);visual.parent=root;visual.position.y=.15;
+    const visual=new BABYLON.TransformNode('v9_personVisual_'+i,scene);
+    visual.parent=root;
+    visual.position.y=.15;
+    // The simulation's root treats +Z as forward. V9 geometry was authored facing -Z,
+    // so rotate the complete visible body once instead of making pedestrians look backwards.
+    visual.rotation.y=Math.PI;
+
     const shade=i%4;
     const skin=makeMat(scene,'v9_skin_'+i,['#a97758','#b98261','#8f634b','#c08b68'][shade]);
-    const shirts=['#5a6b70','#70594c','#50645a','#6b5d68','#756b50','#4f5a61'];
-    const pants=['#34383a','#3e3c39','#30373b','#39373f'];
+    const shirts=['#53666c','#6c5549','#4f6358','#655969','#6e664d','#4c585f'];
+    const pants=['#34383a','#3d3b38','#30373b','#38363e'];
     const shirt=makeMat(scene,'v9_shirt_'+i,shirts[i%shirts.length]);
     const pant=makeMat(scene,'v9_pants_'+i,pants[i%pants.length]);
-    const shoe=makeMat(scene,'v9_shoe_'+i,i%3===0?'#2f2925':'#272727');
-    const hair=makeMat(scene,'v9_hair_'+i,['#2b2522','#332821','#1f1d1b'][i%3]);
+    const shoe=makeMat(scene,'v9_shoe_'+i,i%3===0?'#2f2925':'#252525');
+    const hair=makeMat(scene,'v9_hair_'+i,['#282320','#30261f','#1f1d1b'][i%3]);
+    const eye=makeMat(scene,'v9_eye_'+i,'#24201e');
 
-    const bodyScale=.96+(i%5)*.018;
+    const bodyScale=.96+(i%5)*.014;
     visual.scaling.setAll(bodyScale);
 
     const pelvis=new BABYLON.TransformNode('v9_pelvis_'+i,scene);pelvis.parent=visual;pelvis.position.y=.82;
-    cylinder(scene,'v9_pelvisMesh_'+i,.24,.46,pelvis,0,pant,.42,.48);
+    cylinder(scene,'v9_pelvisMesh_'+i,.28,.49,pelvis,0,pant,.44,.5);
+    cylinder(scene,'v9_waist_'+i,.18,.43,pelvis,.17,shirt,.46,.41);
 
     const spine=new BABYLON.TransformNode('v9_spine_'+i,scene);spine.parent=pelvis;spine.position.y=.22;
-    cylinder(scene,'v9_torso_'+i,.68,.5,spine,.34,shirt,.54,.43);
-    cylinder(scene,'v9_neck_'+i,.14,.15,spine,.76,skin);
-    const head=sphere(scene,'v9_head_'+i,.43,spine,0,.98,0,skin,.92,1.02,.9);
-    sphere(scene,'v9_hair_'+i,.44,spine,0,1.09,-.01,hair,.94,.46,.94);
+    cylinder(scene,'v9_torso_'+i,.66,.54,spine,.34,shirt,.58,.45);
+    sphere(scene,'v9_chestBlend_'+i,.5,spine,0,.56,0,shirt,1.04,.55,.74);
+    cylinder(scene,'v9_neck_'+i,.14,.16,spine,.76,skin);
+    sphere(scene,'v9_head_'+i,.43,spine,0,.98,0,skin,.94,1.03,.92);
+    sphere(scene,'v9_hair_'+i,.44,spine,0,1.095,.015,hair,.95,.42,.93);
     sphere(scene,'v9_nose_'+i,.075,spine,0,.98,-.205,skin,.8,1,1.1);
+    sphere(scene,'v9_eyeL_'+i,.034,spine,-.073,1.015,-.197,eye,.8,.65,.45);
+    sphere(scene,'v9_eyeR_'+i,.034,spine,.073,1.015,-.197,eye,.8,.65,.45);
+    sphere(scene,'v9_earL_'+i,.09,spine,-.205,.99,0,skin,.45,.9,.6);
+    sphere(scene,'v9_earR_'+i,.09,spine,.205,.99,0,skin,.45,.9,.6);
 
     function makeLeg(side,label){
       const hip=new BABYLON.TransformNode('v9_hip'+label+'_'+i,scene);hip.parent=pelvis;hip.position.set(side*.145,-.04,0);
-      cylinder(scene,'v9_thigh'+label+'_'+i,.43,.17,hip,-.215,pant,.16,.18);
+      sphere(scene,'v9_hipJoint'+label+'_'+i,.205,hip,0,-.02,0,pant,.88,.92,.88);
+      cylinder(scene,'v9_thigh'+label+'_'+i,.43,.205,hip,-.215,pant,.19,.215);
       const knee=new BABYLON.TransformNode('v9_knee'+label+'_'+i,scene);knee.parent=hip;knee.position.y=-.43;
-      cylinder(scene,'v9_calf'+label+'_'+i,.41,.15,knee,-.205,pant,.145,.16);
+      sphere(scene,'v9_kneeJoint'+label+'_'+i,.19,knee,0,0,0,pant,.9,.82,.9);
+      cylinder(scene,'v9_calf'+label+'_'+i,.41,.175,knee,-.205,pant,.16,.185);
       const ankle=new BABYLON.TransformNode('v9_ankle'+label+'_'+i,scene);ankle.parent=knee;ankle.position.y=-.41;
-      cylinder(scene,'v9_ankleMesh'+label+'_'+i,.09,.13,ankle,-.035,pant,.12,.14);
-      const foot=box(scene,'v9_foot'+label+'_'+i,.18,.095,.31,ankle,0,-.09,-.065,shoe);
-      sphere(scene,'v9_toe'+label+'_'+i,.18,ankle,0,-.085,-.18,shoe,.92,.52,1.1);
+      sphere(scene,'v9_ankleJoint'+label+'_'+i,.15,ankle,0,-.015,0,pant,.86,.82,.86);
+      cylinder(scene,'v9_ankleMesh'+label+'_'+i,.09,.145,ankle,-.04,pant,.13,.155);
+      const foot=box(scene,'v9_foot'+label+'_'+i,.215,.105,.32,ankle,0,-.09,-.065,shoe);
+      sphere(scene,'v9_toe'+label+'_'+i,.205,ankle,0,-.085,-.19,shoe,1.02,.5,1.13);
       return {hip,knee,ankle,foot};
     }
 
     function makeArm(side,label){
       const shoulder=new BABYLON.TransformNode('v9_shoulder'+label+'_'+i,scene);shoulder.parent=spine;shoulder.position.set(side*.31,.61,0);
-      cylinder(scene,'v9_upperArm'+label+'_'+i,.36,.14,shoulder,-.18,shirt,.135,.15);
+      sphere(scene,'v9_shoulderJoint'+label+'_'+i,.205,shoulder,0,0,0,shirt,.88,.92,.88);
+      cylinder(scene,'v9_upperArm'+label+'_'+i,.36,.155,shoulder,-.18,shirt,.145,.17);
       const elbow=new BABYLON.TransformNode('v9_elbow'+label+'_'+i,scene);elbow.parent=shoulder;elbow.position.y=-.36;
-      cylinder(scene,'v9_foreArm'+label+'_'+i,.32,.125,elbow,-.16,skin,.115,.13);
-      sphere(scene,'v9_hand'+label+'_'+i,.15,elbow,0,-.34,0,skin,.85,1.08,.82);
+      sphere(scene,'v9_elbowJoint'+label+'_'+i,.145,elbow,0,0,0,skin,.9,.82,.9);
+      cylinder(scene,'v9_foreArm'+label+'_'+i,.32,.135,elbow,-.16,skin,.12,.145);
+      sphere(scene,'v9_hand'+label+'_'+i,.16,elbow,0,-.34,0,skin,.82,1.08,.78);
       return {shoulder,elbow};
     }
 
     const L=makeLeg(-1,'L'),R=makeLeg(1,'R'),AL=makeArm(-1,'L'),AR=makeArm(1,'R');
 
     const shadowMat=makeMat(scene,'v9_shadowMat_'+i,'#151310',.15);shadowMat.disableLighting=true;
-    const shadow=BABYLON.MeshBuilder.CreateDisc('v9_contactShadow_'+i,{radius:.34,tessellation:24},scene);
+    const shadow=BABYLON.MeshBuilder.CreateDisc('v9_contactShadow_'+i,{radius:.36,tessellation:24},scene);
     shadow.parent=root;shadow.rotation.x=Math.PI/2;shadow.position.y=.012;shadow.scaling.y=.58;shadow.material=shadowMat;shadow.isPickable=false;shadow.checkCollisions=false;
 
-    return {root,oldVisual,visual,pelvis,spine,head,L,R,AL,AR,phase:(i*.37)%1,lastX:root.position.x,lastZ:root.position.z,lastSpeed:0,strideBlend:0,index:i};
+    return {root,oldVisual,visual,pelvis,spine,L,R,AL,AR,phase:(i*.37)%1,lastX:root.position.x,lastZ:root.position.z,lastSpeed:0,strideBlend:0,index:i};
   }
 
   function poseLeg(rig,t,stride){
@@ -177,22 +195,22 @@
           r.pelvis.position.y=.82+Math.sin(r.phase*Math.PI*4)*.0045*stride;
           r.spine.rotation.z=Math.sin(r.phase*Math.PI*2)*.004*stride;
           r.spine.rotation.x=.012+Math.abs(Math.sin(r.phase*Math.PI*2))*.003*stride;
-          r.head.rotation.y=Math.sin((performance.now()/1000)*.7+r.index)*.018;
           r.lastX=r.root.position.x;r.lastZ=r.root.position.z;
         }
       });
 
       const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V9';
-      const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='حياة مصر — إعادة بناء بصرية للشخصيات والمشي: جسم أقل كرتونية، مفصل كاحل حقيقي، وخطوات ثابتة على الأرض بدل دوران القدم من الركبة.';
+      const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='حياة مصر — إعادة بناء بصرية للشخصيات والمشي: جسم متصل وأقل كرتونية، مفصل كاحل حقيقي، واتجاه جسم متوافق مع اتجاه الحركة.';
       const foot=document.querySelector('.menuFoot');if(foot)foot.textContent='V9 — visual + pedestrian rig rebuild';
 
-      window.__V9_PATCH={version:9,rig:'hip-knee-ankle-foot',pedestrians:'stance-swing-distance-driven',characterStyle:'rounded-human-proportions',artDirection:'muted-dusty-cairo',gaitCycleMeters:1.42};
+      window.__V9_PATCH={version:9,rig:'hip-knee-ankle-foot',pedestrians:'stance-swing-distance-driven',characterStyle:'rounded-human-proportions',artDirection:'muted-dusty-cairo',gaitCycleMeters:1.42,forwardAligned:true};
       if(window.__egyptDebug){
         window.__egyptDebug.v9State=()=>({
           ...window.__V9_PATCH,
           rigs:rigs.length,
           ankles:rigs.reduce((n,r)=>n+(r.L.ankle&&r.R.ankle?2:0),0),
           oldVisualsDisabled:rigs.filter(r=>r.oldVisual&&!r.oldVisual.isEnabled()).length,
+          forwardBodies:rigs.filter(r=>Math.abs(Math.abs(r.visual.rotation.y)-Math.PI)<.001).length,
           first:rigs[0]?{speed:rigs[0].lastSpeed,stride:rigs[0].strideBlend,phase:rigs[0].phase,hipL:rigs[0].L.hip.rotation.x,kneeL:rigs[0].L.knee.rotation.x,ankleL:rigs[0].L.ankle.rotation.x}:null
         });
       }
