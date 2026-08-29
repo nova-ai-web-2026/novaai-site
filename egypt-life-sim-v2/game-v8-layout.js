@@ -30,9 +30,13 @@
   }
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
+  function loadV11(){
+    if(document.querySelector('script[data-egypt-v11]'))return;
+    const s=document.createElement('script');s.src='game-v11.js?v=11';s.dataset.egyptV11='true';s.async=false;s.onerror=()=>fail('V11 script failed to load');document.body.appendChild(s);
+  }
   function loadV10(){
-    if(document.querySelector('script[data-egypt-v10]'))return;
-    const s=document.createElement('script');s.src='game-v10.js?v=10';s.dataset.egyptV10='true';s.async=false;s.onerror=()=>fail('V10 script failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v10]')){loadV11();return;}
+    const s=document.createElement('script');s.src='game-v10.js?v=10';s.dataset.egyptV10='true';s.async=false;s.onload=loadV11;s.onerror=()=>fail('V10 script failed to load');document.body.appendChild(s);
   }
   function loadV9Facades(){
     if(document.querySelector('script[data-egypt-v9-facades]'))return;
