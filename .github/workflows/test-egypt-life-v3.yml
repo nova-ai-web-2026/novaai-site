@@ -15,16 +15,19 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
-      - name: Check V9 JavaScript and loader
+      - name: Check V9 JavaScript and loaders
         run: |
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
           node --check egypt-life-sim-v2/game-v9.js
+          node --check egypt-life-sim-v2/game-v9-facades.js
           grep -q "game-v9.js?v=9" egypt-life-sim-v2/game-v8-layout.js
+          grep -q "game-v9-facades.js?v=9" egypt-life-sim-v2/game-v8-layout.js
           grep -q "hip-knee-ankle-foot" egypt-life-sim-v2/game-v9.js
           grep -q "stance-swing-distance-driven" egypt-life-sim-v2/game-v9.js
+          grep -q "blankSidesFilled" egypt-life-sim-v2/game-v9-facades.js
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
@@ -34,7 +37,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
           sleep 2
-      - name: Run V9 rig, animation and visual test
+      - name: Run V9 visual, rig and full gait-cycle test
         run: |
           cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -43,14 +46,18 @@ jobs:
           const failures=[];
           page.on('pageerror',e=>failures.push('pageerror: '+e.message));
           page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v9',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:4173/?ci=v9-final',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V9_PATCH?.version===9,{timeout:20000});
+          await page.waitForFunction(()=>window.__V9_FACADES?.blankSidesFilled===true,{timeout:20000});
           const state=await page.evaluate(()=>window.__egyptDebug.v9State());
-          if(state.rigs!==28)throw new Error('V9 rigs missing '+JSON.stringify(state));
-          if(state.ankles!==56)throw new Error('Real ankle joints missing '+JSON.stringify(state));
+          const facades=await page.evaluate(()=>window.__egyptDebug.v9FacadeState());
+          if(state.rigs!==28||state.ankles!==56)throw new Error('V9 rigs/ankles missing '+JSON.stringify(state));
           if(state.oldVisualsDisabled!==28)throw new Error('Old blocky rigs still visible '+JSON.stringify(state));
           if(state.rig!=='hip-knee-ankle-foot')throw new Error('V9 hierarchy marker missing '+JSON.stringify(state));
           if(state.characterStyle!=='rounded-human-proportions')throw new Error('V9 character rebuild missing '+JSON.stringify(state));
+          if(state.facades!=='four-sided-lived-in-buildings')throw new Error('V9 four-sided facade pass missing '+JSON.stringify(state));
+          if(!facades.blankSidesFilled||facades.buildings<20||facades.windows<180||facades.newMeshes<500)throw new Error('Blank building sides remain '+JSON.stringify(facades));
+          if(facades.collisions!==0)throw new Error('V9 facade details must not collide '+JSON.stringify(facades));
           if(!(await page.locator('.kicker').textContent()).includes('V9'))throw new Error('V9 menu label missing');
           await page.screenshot({path:'menu-v9.png',fullPage:true});
 
@@ -58,72 +65,81 @@ jobs:
             const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
             const bad=[];
             for(let i=0;i<28;i++){
-              const hip=scene.transformNodes.find(n=>n.name===`v9_hipL_${i}`);
-              const knee=scene.transformNodes.find(n=>n.name===`v9_kneeL_${i}`);
-              const ankle=scene.transformNodes.find(n=>n.name===`v9_ankleL_${i}`);
-              const foot=scene.meshes.find(n=>n.name===`v9_footL_${i}`);
-              if(!hip||!knee||!ankle||!foot||knee.parent!==hip||ankle.parent!==knee||foot.parent!==ankle)bad.push(i);
+              for(const side of ['L','R']){
+                const hip=scene.transformNodes.find(n=>n.name===`v9_hip${side}_${i}`);
+                const knee=scene.transformNodes.find(n=>n.name===`v9_knee${side}_${i}`);
+                const ankle=scene.transformNodes.find(n=>n.name===`v9_ankle${side}_${i}`);
+                const foot=scene.meshes.find(n=>n.name===`v9_foot${side}_${i}`);
+                if(!hip||!knee||!ankle||!foot||knee.parent!==hip||ankle.parent!==knee||foot.parent!==ankle)bad.push(`${i}${side}`);
+              }
             }
             return {
               bad,
               v9Meshes:scene.meshes.filter(m=>m.name.startsWith('v9_')).length,
               cylinders:scene.meshes.filter(m=>m.name.startsWith('v9_thigh')||m.name.startsWith('v9_calf')||m.name.startsWith('v9_upperArm')||m.name.startsWith('v9_foreArm')).length,
+              facadeMeshes:scene.meshes.filter(m=>m.name.startsWith('v9f_')).length,
               fogDensity:scene.fogDensity,
               saturation:scene.imageProcessingConfiguration.saturation
             };
           });
           if(structure.bad.length)throw new Error('Broken leg hierarchy '+JSON.stringify(structure.bad));
           if(structure.v9Meshes<350||structure.cylinders<200)throw new Error('Rounded character geometry incomplete '+JSON.stringify(structure));
+          if(structure.facadeMeshes<500)throw new Error('Four-sided building geometry incomplete '+JSON.stringify(structure));
           if(!(structure.fogDensity>0&&structure.fogDensity<.003))throw new Error('V9 atmosphere out of range '+JSON.stringify(structure));
           if(!(structure.saturation>.6&&structure.saturation<.9))throw new Error('V9 colour grading missing '+JSON.stringify(structure));
 
           await page.click('#newGameBtn');
           await page.waitForFunction(()=>getComputedStyle(document.querySelector('#menu')).display==='none');
-          await page.waitForTimeout(600);
+          await page.waitForTimeout(650);
           if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
           if(failures.length)throw new Error(failures.join('\n'));
+          await page.screenshot({path:'street-v9.png',fullPage:true});
 
           const sample=async()=>page.evaluate(()=>{
             const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],i=5;
-            const root=scene.transformNodes.filter(n=>n.name==='personRoot')[i];
-            const hip=scene.transformNodes.find(n=>n.name===`v9_hipL_${i}`);
-            const knee=scene.transformNodes.find(n=>n.name===`v9_kneeL_${i}`);
-            const ankle=scene.transformNodes.find(n=>n.name===`v9_ankleL_${i}`);
-            const foot=scene.meshes.find(n=>n.name===`v9_footL_${i}`);
-            const p=foot.getAbsolutePosition();
-            return {x:root.position.x,z:root.position.z,hip:hip.rotation.x,knee:knee.rotation.x,ankle:ankle.rotation.x,fx:p.x,fy:p.y,fz:p.z};
+            const roots=scene.transformNodes.filter(n=>n.name==='personRoot'),root=roots[i];
+            const get=(part,side)=>scene.transformNodes.find(n=>n.name===`v9_${part}${side}_${i}`);
+            const foot=(side)=>scene.meshes.find(n=>n.name===`v9_foot${side}_${i}`);
+            const hL=get('hip','L'),hR=get('hip','R'),kL=get('knee','L'),kR=get('knee','R'),aL=get('ankle','L'),aR=get('ankle','R');
+            const fL=foot('L').getAbsolutePosition(),fR=foot('R').getAbsolutePosition();
+            return {x:root.position.x,z:root.position.z,hL:hL.rotation.x,hR:hR.rotation.x,kL:kL.rotation.x,kR:kR.rotation.x,aL:aL.rotation.x,aR:aR.rotation.x,lx:fL.x,ly:fL.y,lz:fL.z,rx:fR.x,ry:fR.y,rz:fR.z};
           });
           const samples=[];
-          for(let i=0;i<18;i++){samples.push(await sample());await page.waitForTimeout(110);}
-          if(samples.some(s=>![s.x,s.z,s.hip,s.knee,s.ankle,s.fx,s.fy,s.fz].every(Number.isFinite)))throw new Error('V9 gait sample invalid '+JSON.stringify(samples));
+          for(let i=0;i<36;i++){samples.push(await sample());await page.waitForTimeout(110);}
+          if(samples.some(s=>Object.values(s).some(v=>!Number.isFinite(v))))throw new Error('V9 gait sample invalid '+JSON.stringify(samples));
           const spread=k=>Math.max(...samples.map(s=>s[k]))-Math.min(...samples.map(s=>s[k]));
           const travel=Math.hypot(samples.at(-1).x-samples[0].x,samples.at(-1).z-samples[0].z);
-          const hipSpread=spread('hip'),kneeSpread=spread('knee'),ankleSpread=spread('ankle');
-          if(travel<.45)throw new Error('Test NPC did not walk enough '+JSON.stringify({travel,samples}));
-          if(hipSpread<.18||hipSpread>.7)throw new Error('V9 hip animation not working '+JSON.stringify({hipSpread,samples}));
-          if(kneeSpread<.12||kneeSpread>.7)throw new Error('V9 knee animation not working '+JSON.stringify({kneeSpread,samples}));
-          if(ankleSpread<.12||ankleSpread>.9)throw new Error('V9 ankle/foot animation not working '+JSON.stringify({ankleSpread,samples}));
+          const hipSpread=Math.max(spread('hL'),spread('hR'));
+          const kneeSpread=Math.max(spread('kL'),spread('kR'));
+          const ankleSpread=Math.max(spread('aL'),spread('aR'));
+          const minFootY=Math.min(...samples.flatMap(s=>[s.ly,s.ry]));
+          const maxFootY=Math.max(...samples.flatMap(s=>[s.ly,s.ry]));
+          if(travel<1.05)throw new Error('NPC did not cover enough of a gait cycle '+JSON.stringify({travel}));
+          if(hipSpread<.35||hipSpread>.75)throw new Error('V9 hip animation weak or excessive '+JSON.stringify({hipSpread}));
+          if(kneeSpread<.24||kneeSpread>.75)throw new Error('V9 knee swing not working across full gait '+JSON.stringify({kneeSpread}));
+          if(ankleSpread<.28||ankleSpread>.95)throw new Error('V9 ankle/foot animation weak '+JSON.stringify({ankleSpread}));
+          if(minFootY<-.035)throw new Error('V9 foot sinks below ground '+JSON.stringify({minFootY,maxFootY}));
+          if(maxFootY>.42)throw new Error('V9 foot lifts unrealistically high '+JSON.stringify({minFootY,maxFootY}));
 
           const ratios=[];
           for(let i=1;i<samples.length;i++){
             const a=samples[i-1],b=samples[i];
             const rootMove=Math.hypot(b.x-a.x,b.z-a.z);if(rootMove<.004)continue;
-            const footMove=Math.hypot(b.fx-a.fx,b.fz-a.fz);
-            ratios.push(footMove/rootMove);
+            const lMove=Math.hypot(b.lx-a.lx,b.lz-a.lz),rMove=Math.hypot(b.rx-a.rx,b.rz-a.rz);
+            ratios.push(Math.min(lMove,rMove)/rootMove);
           }
-          const planted=ratios.filter(r=>r<.9).length/Math.max(1,ratios.length);
-          if(planted<.18)throw new Error('V9 foot still slides continuously '+JSON.stringify({ratios,planted}));
+          const planted=ratios.filter(r=>r<.82).length/Math.max(1,ratios.length);
+          if(planted<.25)throw new Error('V9 feet still slide continuously '+JSON.stringify({ratios,planted}));
 
-          await page.screenshot({path:'street-v9.png',fullPage:true});
           const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(e.message));
-          await mobile.goto('http://127.0.0.1:4173/?ci=v9-mobile',{waitUntil:'networkidle'});
-          await mobile.waitForFunction(()=>window.__V9_PATCH?.version===9,{timeout:20000});
-          await mobile.click('#newGameBtn');await mobile.waitForTimeout(500);
+          await mobile.goto('http://127.0.0.1:4173/?ci=v9-mobile-final',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V9_FACADES?.blankSidesFilled===true,{timeout:20000});
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(550);
           if(await mobile.isVisible('#errorBox'))throw new Error('V9 mobile runtime error: '+await mobile.textContent('#errorBox'));
           if(mobileErrors.length)throw new Error('V9 mobile pageerror: '+mobileErrors.join('; '));
           await mobile.screenshot({path:'mobile-v9.png',fullPage:true});
-          console.log('V9 passed',{state,structure,travel,hipSpread,kneeSpread,ankleSpread,ratios,planted});
+          console.log('V9 full-cycle test passed',{state,facades,structure,travel,hipSpread,kneeSpread,ankleSpread,minFootY,maxFootY,planted,ratios});
           await browser.close();
           EOF
           node smoke.mjs
