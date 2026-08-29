@@ -50,7 +50,7 @@
     const oldVisual=scene.transformNodes.find(n=>n.name==='personVisual'&&n.parent===root);
     if(oldVisual)oldVisual.setEnabled(false);
 
-    const visual=new BABYLON.TransformNode('v9_personVisual_'+i,scene);visual.parent=root;
+    const visual=new BABYLON.TransformNode('v9_personVisual_'+i,scene);visual.parent=root;visual.position.y=.15;
     const shade=i%4;
     const skin=makeMat(scene,'v9_skin_'+i,['#a97758','#b98261','#8f634b','#c08b68'][shade]);
     const shirts=['#5a6b70','#70594c','#50645a','#6b5d68','#756b50','#4f5a61'];
@@ -98,9 +98,9 @@
 
     const shadowMat=makeMat(scene,'v9_shadowMat_'+i,'#151310',.15);shadowMat.disableLighting=true;
     const shadow=BABYLON.MeshBuilder.CreateDisc('v9_contactShadow_'+i,{radius:.34,tessellation:24},scene);
-    shadow.parent=visual;shadow.rotation.x=Math.PI/2;shadow.position.y=.015;shadow.scaling.y=.58;shadow.material=shadowMat;shadow.isPickable=false;shadow.checkCollisions=false;
+    shadow.parent=root;shadow.rotation.x=Math.PI/2;shadow.position.y=.012;shadow.scaling.y=.58;shadow.material=shadowMat;shadow.isPickable=false;shadow.checkCollisions=false;
 
-    return {root,oldVisual,visual,pelvis,spine,head,L,R,AL,AR,phase:(i*.37)%1,lastX:root.position.x,lastZ:root.position.z,lastSpeed:0,index:i};
+    return {root,oldVisual,visual,pelvis,spine,head,L,R,AL,AR,phase:(i*.37)%1,lastX:root.position.x,lastZ:root.position.z,lastSpeed:0,strideBlend:0,index:i};
   }
 
   function poseLeg(rig,t,stride){
@@ -108,15 +108,15 @@
     let hip,knee,ankle;
     if(t<.62){
       const u=smooth(t/.62);
-      hip=lerp(.29,-.24,u);
-      knee=.035+.055*Math.sin(Math.PI*u);
-      const heelLift=clamp((u-.8)/.2,0,1)*.11;
+      hip=lerp(.34,-.28,u);
+      knee=.035+.07*Math.sin(Math.PI*u);
+      const heelLift=clamp((u-.8)/.2,0,1)*.12;
       ankle=-(hip+knee*.78)+heelLift;
     }else{
       const u=smooth((t-.62)/.38);
-      hip=lerp(-.24,.29,u);
-      knee=.11+.46*Math.sin(Math.PI*u);
-      ankle=-(hip+knee*.62)-.07*Math.sin(Math.PI*u);
+      hip=lerp(-.28,.34,u);
+      knee=.12+.54*Math.sin(Math.PI*u);
+      ankle=-(hip+knee*.62)-.08*Math.sin(Math.PI*u);
     }
     rig.hip.rotation.x=hip*stride;
     rig.knee.rotation.x=knee*stride;
@@ -165,8 +165,11 @@
           const dx=r.root.position.x-r.lastX,dz=r.root.position.z-r.lastZ,move=Math.hypot(dx,dz);
           const speed=move/dt;
           r.lastSpeed=lerp(r.lastSpeed,speed,Math.min(1,dt*8));
-          if(move>.0005)r.phase=(r.phase+move/1.42)%1;
-          const stride=clamp(r.lastSpeed/.72,0,1);
+          const moving=move>.0005;
+          if(moving)r.phase=(r.phase+move/1.42)%1;
+          const targetStride=moving?1:0;
+          r.strideBlend=lerp(r.strideBlend,targetStride,Math.min(1,dt*(moving?18:9)));
+          const stride=r.strideBlend;
           const lp=poseLeg(r.L,r.phase,stride),rp=poseLeg(r.R,r.phase+.5,stride);
           r.AL.shoulder.rotation.x=-rp.hip*.58;r.AR.shoulder.rotation.x=-lp.hip*.58;
           r.AL.elbow.rotation.x=.055+Math.max(0,-r.AL.shoulder.rotation.x)*.22;
@@ -190,7 +193,7 @@
           rigs:rigs.length,
           ankles:rigs.reduce((n,r)=>n+(r.L.ankle&&r.R.ankle?2:0),0),
           oldVisualsDisabled:rigs.filter(r=>r.oldVisual&&!r.oldVisual.isEnabled()).length,
-          first:rigs[0]?{speed:rigs[0].lastSpeed,phase:rigs[0].phase,hipL:rigs[0].L.hip.rotation.x,kneeL:rigs[0].L.knee.rotation.x,ankleL:rigs[0].L.ankle.rotation.x}:null
+          first:rigs[0]?{speed:rigs[0].lastSpeed,stride:rigs[0].strideBlend,phase:rigs[0].phase,hipL:rigs[0].L.hip.rotation.x,kneeL:rigs[0].L.knee.rotation.x,ankleL:rigs[0].L.ankle.rotation.x}:null
         });
       }
     }catch(err){fail('V9 visual/animation rebuild failed',err);}
