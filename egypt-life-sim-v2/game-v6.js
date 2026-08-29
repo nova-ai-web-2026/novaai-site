@@ -182,6 +182,10 @@
         };
       }
 
+      const menu=document.getElementById('menu'),hud=document.getElementById('hud');
+      const syncMenuHud=()=>{if(menu&&hud)hud.style.visibility=getComputedStyle(menu).display==='none'?'visible':'hidden';};
+      if(menu){new MutationObserver(syncMenuHud).observe(menu,{attributes:true,attributeFilter:['style']});syncMenuHud();}
+
       const scene=BABYLON.Engine.LastCreatedEngine?.scenes?.[0],cam=scene?.activeCamera;
       if(cam){cam.position.set(-58,3.15,67);cam.rotation.set(.035,2.33,0);cam.fov=.82;}
       const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V6';
