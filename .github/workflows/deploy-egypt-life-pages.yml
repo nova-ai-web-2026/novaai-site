@@ -78,7 +78,7 @@ jobs:
           grep -Fq 'mirroredBackfacesFixed' egypt-life-sim-v2/game-v11-1.js
           grep -Fq 'layered-procedural-cairo-v2' egypt-life-sim-v2/game-v11-1.js
           grep -Fq 'legacyLocked:true' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'v11BusLocked:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'v11BusDisconnected:true' egypt-life-sim-v2/game-v11-audiofix.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
