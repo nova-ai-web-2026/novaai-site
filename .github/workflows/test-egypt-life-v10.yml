@@ -5,6 +5,7 @@ on:
     paths:
       - 'egypt-life-sim-v2/**'
       - '.github/workflows/test-egypt-life-v10.yml'
+      - '.github/workflows/deploy-egypt-life-pages.yml'
 
 permissions:
   contents: read
@@ -27,6 +28,7 @@ jobs:
           grep -Fq "heel-strike-stance-toe-off-swing" egypt-life-sim-v2/game-v10.js
           grep -Fq 'roundedFootwear:true' egypt-life-sim-v2/game-v10.js
           grep -Fq "HAYAT MASR • V10" egypt-life-sim-v2/game-v10.js
+          grep -Fq 'game-v10.js?v=10' .github/workflows/deploy-egypt-life-pages.yml
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
