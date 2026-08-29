@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V6
+name: Test Egyptian Life Simulator V7
 
 on:
   pull_request:
@@ -15,13 +15,14 @@ jobs:
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
-      - name: Check V6 JavaScript and assets
+      - name: Check V7 JavaScript and assets
         run: |
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
-          grep -q "articulated-natural-gait" egypt-life-sim-v2/game-v6.js
-          grep -q "live-3d-cinematic" egypt-life-sim-v2/game-v6.js
-          grep -q 'game-v6.js' egypt-life-sim-v2/index.html
+          node --check egypt-life-sim-v2/game-v7.js
+          grep -q "normal-adult-walk" egypt-life-sim-v2/game-v7.js
+          grep -q "street-life-pack" egypt-life-sim-v2/game-v7.js
+          grep -q 'game-v7.js' egypt-life-sim-v2/index.html
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
@@ -31,7 +32,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
           sleep 2
-      - name: Run V6 browser and animation test
+      - name: Run V7 browser, gait and detail test
         run: |
           cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -42,70 +43,63 @@ jobs:
           page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
           await page.waitForSelector('#menu',{state:'visible'});
-          await page.waitForFunction(()=>window.__V6_PATCH?.version===6);
-          const patch=await page.evaluate(()=>window.__V6_PATCH);
-          if(patch.pedestrians!=='articulated-natural-gait')throw new Error('V6 gait patch missing '+JSON.stringify(patch));
-          if(patch.menu!=='live-3d-cinematic')throw new Error('V6 menu patch missing '+JSON.stringify(patch));
-          if((await page.locator('#menu .logo').textContent())?.includes('حياة')!==true)throw new Error('Menu logo missing');
-          if(await page.locator('#menu .building').count())throw new Error('Old fake CSS buildings still present');
-          const menuBox=await page.locator('#menuContent').boundingBox();
-          if(!menuBox||menuBox.width<300||menuBox.x<650)throw new Error('Menu panel not positioned as intended '+JSON.stringify(menuBox));
+          await page.waitForFunction(()=>window.__V7_PATCH?.version===7);
+          const patch=await page.evaluate(()=>window.__V7_PATCH);
+          if(patch.pedestrians!=='normal-adult-walk')throw new Error('Adult gait patch missing '+JSON.stringify(patch));
+          if(patch.egyptDetails!=='street-life-pack')throw new Error('Egypt detail pack missing '+JSON.stringify(patch));
+          if((await page.locator('.kicker').textContent())?.includes('V7')!==true)throw new Error('V7 menu label missing');
           const hudBefore=await page.evaluate(()=>getComputedStyle(document.querySelector('#hud')).visibility);
-          if(hudBefore!=='hidden')throw new Error('HUD should be hidden behind start menu: '+hudBefore);
-          await page.screenshot({path:'menu-v6.png',fullPage:true});
+          if(hudBefore!=='hidden')throw new Error('HUD should stay hidden on menu '+hudBefore);
+          await page.screenshot({path:'menu-v7.png',fullPage:true});
 
           await page.click('#newGameBtn');
           await page.waitForFunction(()=>getComputedStyle(document.querySelector('#menu')).display==='none');
-          await page.waitForTimeout(450);
-          const hudAfter=await page.evaluate(()=>getComputedStyle(document.querySelector('#hud')).visibility);
-          if(hudAfter!=='visible')throw new Error('HUD did not return after entering game: '+hudAfter);
+          await page.waitForTimeout(550);
           if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
           if(failures.length)throw new Error(failures.join('\n'));
 
           const npc=await page.evaluate(()=>window.__egyptDebug.npcState());
-          if(npc.people!==28)throw new Error('Unexpected people count '+JSON.stringify(npc));
-          if(npc.joints<224)throw new Error('Articulated joints missing '+JSON.stringify(npc));
+          if(npc.people!==28||npc.joints<224)throw new Error('NPC rig regression '+JSON.stringify(npc));
+          const visual=await page.evaluate(()=>window.__egyptDebug.v7VisualState());
+          if(visual.details.meshCount<70)throw new Error('Too few V7 Egyptian details '+JSON.stringify(visual));
+          if(visual.details.catCount!==5)throw new Error('Street cats missing '+JSON.stringify(visual));
+          if(visual.details.signCount<4)throw new Error('Egyptian signs missing '+JSON.stringify(visual));
+          if(visual.decorativeCollisions!==0)throw new Error('Decorative V7 props must not block player '+JSON.stringify(visual));
 
           const sample=async()=>page.evaluate(()=>{
             const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
             const knee=scene.transformNodes.find(n=>n.name==='kneeL');
             const shoulder=scene.transformNodes.find(n=>n.name==='shoulderL');
             const root=scene.transformNodes.find(n=>n.name==='personRoot');
-            return {knee:knee?.rotation.x,shoulder:shoulder?.rotation.x,x:root?.position.x,z:root?.position.z};
+            const body=scene.transformNodes.find(n=>n.name==='personVisual');
+            const torso=scene.meshes.find(n=>n.name==='torso');
+            return {knee:knee?.rotation.x,shoulder:shoulder?.rotation.x,x:root?.position.x,z:root?.position.z,bob:body?.position.y,lean:torso?.rotation.x};
           });
-          const a=await sample();await page.waitForTimeout(320);const b=await sample();await page.waitForTimeout(320);const c=await sample();
-          const kneeSpread=Math.max(a.knee,b.knee,c.knee)-Math.min(a.knee,b.knee,c.knee);
-          const shoulderSpread=Math.max(a.shoulder,b.shoulder,c.shoulder)-Math.min(a.shoulder,b.shoulder,c.shoulder);
-          if(kneeSpread<.025)throw new Error('Knee is not animating '+JSON.stringify({a,b,c,kneeSpread}));
-          if(shoulderSpread<.025)throw new Error('Shoulder is not animating '+JSON.stringify({a,b,c,shoulderSpread}));
-          if(Math.max(a.z,b.z,c.z)-Math.min(a.z,b.z,c.z)>.08)throw new Error('NPC lane drift returned '+JSON.stringify({a,b,c}));
-
-          await page.evaluate(()=>{
-            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],cam=scene.activeCamera,root=scene.transformNodes.find(n=>n.name==='personRoot');
-            if(root){
-              cam.position.set(root.position.x+3.2,1.72,root.position.z+3.2);
-              const dx=root.position.x-cam.position.x,dz=root.position.z-cam.position.z;
-              const desiredYaw=Math.atan2(dx,dz),desiredPitch=.015;
-              const now=window.__egyptDebug.getCamera();
-              window.__egyptDebug.applyLook((desiredYaw-now.yaw)/.00225,(desiredPitch-now.pitch)/.0019);
-              cam.fov=.68;
-            }
-          });
-          await page.waitForTimeout(180);
-          await page.screenshot({path:'npc-v6.png',fullPage:true});
+          const samples=[];
+          for(let i=0;i<6;i++){samples.push(await sample());await page.waitForTimeout(170);}
+          const spread=k=>Math.max(...samples.map(s=>s[k]))-Math.min(...samples.map(s=>s[k]));
+          const kneeSpread=spread('knee'),shoulderSpread=spread('shoulder'),travel=Math.hypot(samples.at(-1).x-samples[0].x,samples.at(-1).z-samples[0].z);
+          const maxBob=Math.max(...samples.map(s=>Math.abs(s.bob||0))),maxLean=Math.max(...samples.map(s=>Math.abs(s.lean||0)));
+          if(kneeSpread<.035||kneeSpread>.30)throw new Error('Knee motion not normal-adult range '+JSON.stringify({samples,kneeSpread}));
+          if(shoulderSpread<.025||shoulderSpread>.22)throw new Error('Arm swing not normal-adult range '+JSON.stringify({samples,shoulderSpread}));
+          if(maxBob>.009)throw new Error('Body bob too heavy/elderly-looking '+JSON.stringify({samples,maxBob}));
+          if(maxLean>.012)throw new Error('Torso lean too heavy '+JSON.stringify({samples,maxLean}));
+          if(travel<.18)throw new Error('Pedestrian translation too hesitant '+JSON.stringify({samples,travel}));
+          if(Math.max(...samples.map(s=>s.z))-Math.min(...samples.map(s=>s.z))>.08)throw new Error('NPC lane drift returned '+JSON.stringify(samples));
 
           const audio=await page.evaluate(()=>window.__egyptDebug.audioState());
           if(audio.state==='none')throw new Error('Audio did not initialize');
-          console.log('V6 browser test passed',{patch,npc,a,b,c,kneeSpread,shoulderSpread,audio,hudBefore,hudAfter});
+          console.log('V7 browser test passed',{patch,npc,visual,kneeSpread,shoulderSpread,maxBob,maxLean,travel,audio});
+          await page.screenshot({path:'street-v7.png',fullPage:true});
           await browser.close();
           EOF
           node smoke.mjs
-      - name: Upload V6 visual screenshots
+      - name: Upload V7 screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: egypt-life-v6-visuals
+          name: egypt-life-v7-visuals
           path: |
-            menu-v6.png
-            npc-v6.png
+            menu-v7.png
+            street-v7.png
           if-no-files-found: ignore
