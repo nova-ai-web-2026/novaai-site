@@ -20,9 +20,12 @@ jobs:
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
           grep -q "distance-synced-footplant" egypt-life-sim-v2/game-v7.js
           grep -q "researched-cairo-street-layers" egypt-life-sim-v2/game-v7.js
-          grep -q 'game-v7.js' egypt-life-sim-v2/index.html
+          grep -q "facadeAnchored" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v8-layout.js?v=8' egypt-life-sim-v2/index.html
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
@@ -32,7 +35,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
           sleep 2
-      - name: Run V8 browser, gait, foot-slide and detail test
+      - name: Run V8 browser, gait, layout and foot-slide test
         run: |
           cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -41,13 +44,19 @@ jobs:
           const failures=[];
           page.on('pageerror',e=>failures.push('pageerror: '+e.message));
           page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:4173/?ci=v8-layout',{waitUntil:'networkidle'});
           await page.waitForSelector('#menu',{state:'visible'});
           await page.waitForFunction(()=>window.__V8_PATCH?.version===8);
+          await page.waitForFunction(()=>window.__V8_LAYOUT?.facadeAnchored===true);
           const patch=await page.evaluate(()=>window.__V8_PATCH);
+          const layout=await page.evaluate(()=>window.__egyptDebug.v8LayoutState());
           if(patch.pedestrians!=='distance-synced-footplant')throw new Error('V8 gait patch missing '+JSON.stringify(patch));
           if(patch.egyptDetails!=='researched-cairo-street-layers')throw new Error('V8 Cairo detail pack missing '+JSON.stringify(patch));
+          if(patch.layout!=='building-facade-anchored')throw new Error('Facade layout patch missing '+JSON.stringify(patch));
           if(!(patch.gaitCycleMeters>1.25&&patch.gaitCycleMeters<1.6))throw new Error('Stride cycle is still shuffle-like '+JSON.stringify(patch.gaitCycleMeters));
+          if(layout.clusters.length!==16||layout.movedMeshes<100)throw new Error('Storefront clusters were not fully anchored '+JSON.stringify(layout));
+          if(layout.orphanSigns!==0||layout.minRoadDistance<7.15)throw new Error('Storefront still intrudes into road/sidewalk '+JSON.stringify(layout));
+          if(layout.clusters.some(c=>c.moved<3))throw new Error('A storefront cluster lost its facade parts '+JSON.stringify(layout.clusters));
           if((await page.locator('.kicker').textContent())?.includes('V8')!==true)throw new Error('V8 menu label missing');
           const hudBefore=await page.evaluate(()=>getComputedStyle(document.querySelector('#hud')).visibility);
           if(hudBefore!=='hidden')throw new Error('HUD should stay hidden on menu '+hudBefore);
@@ -118,8 +127,19 @@ jobs:
 
           const audio=await page.evaluate(()=>window.__egyptDebug.audioState());
           if(audio.state==='none')throw new Error('Audio did not initialize');
-          console.log('V8 browser test passed',{patch,npc,visual,hipSpread,kneeSpread,shoulderSpread,maxBob,maxLean,travel,ratios,plantedFraction,audio});
+          console.log('V8 browser test passed',{patch,layout,npc,visual,hipSpread,kneeSpread,shoulderSpread,maxBob,maxLean,travel,ratios,plantedFraction,audio});
           await page.screenshot({path:'street-v8.png',fullPage:true});
+
+          const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(e.message));
+          await mobile.goto('http://127.0.0.1:4173/?ci=v8-mobile',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V8_LAYOUT?.facadeAnchored===true);
+          if(!(await mobile.isVisible('#newGameBtn')))throw new Error('V8 mobile menu primary button missing');
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(500);
+          if(await mobile.isVisible('#errorBox'))throw new Error('V8 mobile runtime error: '+await mobile.textContent('#errorBox'));
+          if(mobileErrors.length)throw new Error('V8 mobile pageerror: '+mobileErrors.join('; '));
+          const mobileCanvas=await mobile.locator('#game').boundingBox();if(!mobileCanvas||mobileCanvas.width<380||mobileCanvas.height<820)throw new Error('Mobile canvas sizing regression '+JSON.stringify(mobileCanvas));
+          await mobile.screenshot({path:'mobile-v8.png',fullPage:true});
           await browser.close();
           EOF
           node smoke.mjs
@@ -131,4 +151,5 @@ jobs:
           path: |
             menu-v8.png
             street-v8.png
+            mobile-v8.png
           if-no-files-found: ignore
