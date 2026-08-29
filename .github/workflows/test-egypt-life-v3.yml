@@ -50,11 +50,15 @@ jobs:
           if(await page.locator('#menu .building').count())throw new Error('Old fake CSS buildings still present');
           const menuBox=await page.locator('#menuContent').boundingBox();
           if(!menuBox||menuBox.width<300||menuBox.x<650)throw new Error('Menu panel not positioned as intended '+JSON.stringify(menuBox));
+          const hudBefore=await page.evaluate(()=>getComputedStyle(document.querySelector('#hud')).visibility);
+          if(hudBefore!=='hidden')throw new Error('HUD should be hidden behind start menu: '+hudBefore);
           await page.screenshot({path:'menu-v6.png',fullPage:true});
 
           await page.click('#newGameBtn');
           await page.waitForFunction(()=>getComputedStyle(document.querySelector('#menu')).display==='none');
           await page.waitForTimeout(450);
+          const hudAfter=await page.evaluate(()=>getComputedStyle(document.querySelector('#hud')).visibility);
+          if(hudAfter!=='visible')throw new Error('HUD did not return after entering game: '+hudAfter);
           if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
           if(failures.length)throw new Error(failures.join('\n'));
 
@@ -76,16 +80,25 @@ jobs:
           if(shoulderSpread<.025)throw new Error('Shoulder is not animating '+JSON.stringify({a,b,c,shoulderSpread}));
           if(Math.max(a.z,b.z,c.z)-Math.min(a.z,b.z,c.z)>.08)throw new Error('NPC lane drift returned '+JSON.stringify({a,b,c}));
 
+          await page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],cam=scene.activeCamera,root=scene.transformNodes.find(n=>n.name==='personRoot');
+            if(root){cam.position.set(root.position.x+3.2,1.75,root.position.z+3.2);const dx=root.position.x-cam.position.x,dz=root.position.z-cam.position.z;cam.rotation.set(.02,Math.atan2(dx,dz),0);cam.fov=.7;}
+          });
+          await page.waitForTimeout(150);
+          await page.screenshot({path:'npc-v6.png',fullPage:true});
+
           const audio=await page.evaluate(()=>window.__egyptDebug.audioState());
           if(audio.state==='none')throw new Error('Audio did not initialize');
-          console.log('V6 browser test passed',{patch,npc,a,b,c,kneeSpread,shoulderSpread,audio});
+          console.log('V6 browser test passed',{patch,npc,a,b,c,kneeSpread,shoulderSpread,audio,hudBefore,hudAfter});
           await browser.close();
           EOF
           node smoke.mjs
-      - name: Upload V6 menu screenshot
+      - name: Upload V6 visual screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: egypt-life-v6-menu
-          path: menu-v6.png
+          name: egypt-life-v6-visuals
+          path: |
+            menu-v6.png
+            npc-v6.png
           if-no-files-found: ignore
