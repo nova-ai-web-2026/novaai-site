@@ -44,12 +44,26 @@
     return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));
   }
 
+  function loadV9Facades(){
+    if(document.querySelector('script[data-egypt-v9-facades]'))return;
+    const s=document.createElement('script');
+    s.src='game-v9-facades.js?v=9';
+    s.dataset.egyptV9Facades='true';
+    s.async=false;
+    s.onerror=()=>fail('V9 facade script failed to load');
+    document.body.appendChild(s);
+  }
+
   function loadV9(){
-    if(document.querySelector('script[data-egypt-v9]'))return;
+    if(document.querySelector('script[data-egypt-v9]')){
+      if(window.__V9_PATCH?.version===9)loadV9Facades();
+      return;
+    }
     const script=document.createElement('script');
     script.src='game-v9.js?v=9';
     script.dataset.egyptV9='true';
     script.async=false;
+    script.onload=loadV9Facades;
     script.onerror=()=>fail('V9 script failed to load');
     document.body.appendChild(script);
   }
