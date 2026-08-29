@@ -44,6 +44,58 @@
     return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));
   }
 
+  function loadV9Facades(){
+    if(document.querySelector('script[data-egypt-v9-facades]'))return;
+    const s=document.createElement('script');
+    s.src='game-v9-facades.js?v=9';
+    s.dataset.egyptV9Facades='true';
+    s.async=false;
+    s.onerror=()=>fail('V9 facade script failed to load');
+    document.body.appendChild(s);
+  }
+
+  function loadV9CharacterPolish(){
+    if(document.querySelector('script[data-egypt-v9-character-polish]')){
+      if(window.__V9_POLISH?.silhouette==='capsule-human')loadV9Facades();
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='game-v9-character-polish.js?v=9';
+    s.dataset.egyptV9CharacterPolish='true';
+    s.async=false;
+    s.onload=loadV9Facades;
+    s.onerror=()=>fail('V9 character polish script failed to load');
+    document.body.appendChild(s);
+  }
+
+  function loadV9GaitFix(){
+    if(document.querySelector('script[data-egypt-v9-gaitfix]')){
+      if(window.__V9_GAITFIX?.naturalAnkleRange)loadV9CharacterPolish();
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='game-v9-gaitfix.js?v=9';
+    s.dataset.egyptV9Gaitfix='true';
+    s.async=false;
+    s.onload=loadV9CharacterPolish;
+    s.onerror=()=>fail('V9 gait fix script failed to load');
+    document.body.appendChild(s);
+  }
+
+  function loadV9(){
+    if(document.querySelector('script[data-egypt-v9]')){
+      if(window.__V9_PATCH?.version===9)loadV9GaitFix();
+      return;
+    }
+    const script=document.createElement('script');
+    script.src='game-v9.js?v=9';
+    script.dataset.egyptV9='true';
+    script.async=false;
+    script.onload=loadV9GaitFix;
+    script.onerror=()=>fail('V9 script failed to load');
+    document.body.appendChild(script);
+  }
+
   async function boot(){
     try{
       const scene=await waitForV8();
@@ -71,6 +123,7 @@
       if(window.__egyptDebug){
         window.__egyptDebug.v8LayoutState=()=>({...window.__V8_LAYOUT,clusters:clusters.map(c=>({...c}))});
       }
+      loadV9();
     }catch(err){fail('V8 facade layout failed',err);}
   }
   boot();
