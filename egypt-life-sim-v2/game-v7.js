@@ -53,7 +53,6 @@
       const p=BABYLON.MeshBuilder.CreatePlane('v7_sign_'+text,{width:w,height:h},scene);p.position.set(x,y,z);p.rotation.y=rot;p.material=sm;p.isPickable=false;return p;
     };
 
-    // Plastic chairs outside buildings and the ahwa.
     const plastic=['#3c78a8','#8c3e36','#4d875c','#d6c15e'];
     function chair(x,z,i,rot=0){
       const m=mat('plastic'+i,plastic[i%plastic.length]);
@@ -63,7 +62,6 @@
     }
     [[-57,42,0,.1],[-54.8,42.5,1,-.1],[-57.2,46,2,.15],[-53.5,45.8,3,-.2],[-86,-18,1,.05],[-83.8,-18.4,0,-.08]].forEach(v=>chair(...v));
 
-    // Bread crates and baladi loaves near a bakery frontage.
     const crate=mat('breadCrate','#5a3f2d'),bread=mat('baladiBread','#c99755');
     for(let q=0;q<2;q++){
       box('breadCrate',2.0,.18,1.15,-38+q*2.25,.14,-17,crate);
@@ -72,24 +70,20 @@
       }
     }
 
-    // Public water cooler.
     box('waterCooler',.62,1.05,.55,-61,.55,-17.6,mat('cooler','#e6e0d5'));
     const bottle=cyl('waterBottle',.46,.72,-61,1.42,-17.6,mat('bottle','#5b9fc1','#10242c'),12);bottle.scaling.x=.84;
 
-    // Workshop tyre stack.
     const tyreMat=mat('tyre','#242526');
     for(let i=0;i<4;i++){
       const t=BABYLON.MeshBuilder.CreateTorus('v7_tyre',{diameter:1.0,thickness:.22,tessellation:12},scene);
       t.position.set(59,.24+i*.28,-17.3);t.rotation.x=Math.PI/2;t.material=tyreMat;t.checkCollisions=false;t.isPickable=false;
     }
 
-    // Familiar fictional neighborhood signs.
     sign('كاوتش وبنشر',59,2.05,-18.05,4,.66,'#374650',0);
     sign('مكوجي الحارة',-10,2.45,17.6,3.8,.66,'#76502f',0);
     sign('موبايلات النيل',10,2.45,17.6,4,.66,'#315b75',0);
     sign('حلاق الرجولة',36,2.45,17.6,3.8,.66,'#60416f',0);
 
-    // Electric meter boxes and short facade conduits.
     const buildings=scene.meshes.filter(m=>m.name==='building').slice(0,8);
     for(let i=0;i<buildings.length;i++){
       const b=buildings[i];b.computeWorldMatrix(true);const bb=b.getBoundingInfo().boundingBox,min=bb.minimumWorld;
@@ -98,7 +92,6 @@
       box('meterWire',.055,1.35,.055,x+.14,1.62,z-.03,mat('meterWire','#30302e'));
     }
 
-    // Rooftop pigeon coop.
     const roofBuilding=scene.meshes.filter(m=>m.name==='building').sort((a,b)=>Math.hypot(a.position.x,a.position.z)-Math.hypot(b.position.x,b.position.z))[0];
     if(roofBuilding){
       roofBuilding.computeWorldMatrix(true);const bb=roofBuilding.getBoundingInfo().boundingBox,max=bb.maximumWorld;
@@ -109,7 +102,6 @@
       for(let k=-2;k<=2;k++)box('pigeonCoopWire',3.25,.025,.025,cx,baseY+.35+k*.27,cz-1.18,wire);
     }
 
-    // Street cats: simple, stationary and non-colliding.
     const catCols=['#806752','#b7a28d','#4b4742','#c58a55','#7c7f77'];
     function cat(x,z,i,rot){
       const root=new BABYLON.TransformNode('v7_catRoot',scene);root.position.set(x,0,z);root.rotation.y=rot;
@@ -120,7 +112,6 @@
     }
     [[-31,-18,0,.2],[23,18,1,2.4],[77,66,2,1.2],[-74,63,3,4.4],[56,-63,4,5.1]].forEach(v=>cat(...v));
 
-    // Produce boxes, gas cylinders and a small tea tray add everyday clutter.
     const boxMat=mat('vegBox','#7d5a37'),green=mat('veg','#597b47'),red=mat('tomato','#a95442');
     for(let i=0;i<4;i++){box('produceCrate',1.25,.24,.9,39+i*1.4,.17,-38,boxMat);for(let j=0;j<5;j++){const f=BABYLON.MeshBuilder.CreateSphere('v7_produce',{diameter:.2,segments:6},scene);f.position.set(38.6+i*1.4+(j%3)*.28,.36,-38.2+Math.floor(j/3)*.3);f.material=j%2?green:red;f.isPickable=false;}}
     for(let i=0;i<3;i++)cyl('gasCylinder',.42,.92,68+i*.5,.48,17.8,mat('gas','#596b57'),12);
@@ -135,14 +126,13 @@
       if(!response.ok)throw new Error('تعذر تحميل V6');
       let source=await response.text();
 
-      // Adult everyday gait: less knee bend, less bob, lighter arms, normal cadence.
       source=replaceOrThrow(source,/speed:\.014\+\(i%5\)\*\.0022,cadence:\.88\+\(i%4\)\*\.08/,'speed:.0155+(i%5)*.0017,cadence:1.12+(i%4)*.06','pedestrian speed/cadence');
       source=replaceOrThrow(source,/if\(moving\)p\.phase\+=\.082\*dt\*p\.cadence;/,'if(moving)p.phase+=.092*dt*p.cadence;','gait cadence');
       source=replaceOrThrow(source,/const hip=s\*\.34\*stride;/,'const hip=s*.235*stride;','hip swing');
       source=replaceOrThrow(source,/\.035\+Math\.max\(0,-s\)\*\.52\*stride;/,'.025+Math.max(0,-s)*.245*stride;','left knee flex');
       source=replaceOrThrow(source,/\.035\+Math\.max\(0,s\)\*\.52\*stride;/,'.025+Math.max(0,s)*.245*stride;','right knee flex');
-      source=replaceOrThrow(source,/p\.shoulderL\.rotation\.x=-s\*\.25\*stride;p\.shoulderR\.rotation\.x=s\*\.25\*stride;/,'p.shoulderL.rotation.x=-s*.16*stride;p.shoulderR.rotation.x=s*.16*stride;','arm swing');
-      source=replaceOrThrow(source,/p\.elbowL\.rotation\.x=\.08\+Math\.max\(0,s\)\*\.17\*stride;p\.elbowR\.rotation\.x=\.08\+Math\.max\(0,-s\)\*\.17\*stride;/,'p.elbowL.rotation.x=.055+Math.max(0,s)*.09*stride;p.elbowR.rotation.x=.055+Math.max(0,-s)*.09*stride;','elbow swing');
+      source=replaceOrThrow(source,/p\.shoulderL\.rotation\.x=-s\*\.25\*stride;p\.shoulderR\.rotation\.x=s\*\.25\*stride;/,'p.shoulderL.rotation.x=-s*.11*stride;p.shoulderR.rotation.x=s*.11*stride;','arm swing');
+      source=replaceOrThrow(source,/p\.elbowL\.rotation\.x=\.08\+Math\.max\(0,s\)\*\.17\*stride;p\.elbowR\.rotation\.x=\.08\+Math\.max\(0,-s\)\*\.17\*stride;/,'p.elbowL.rotation.x=.045+Math.max(0,s)*.07*stride;p.elbowR.rotation.x=.045+Math.max(0,-s)*.07*stride;','elbow swing');
       source=replaceOrThrow(source,/p\.visual\.position\.y=Math\.abs\(Math\.sin\(g\*2\)\)\*\.017\*stride;/,'p.visual.position.y=Math.abs(Math.sin(g*2))*.006*stride;','body bob');
       source=replaceOrThrow(source,/p\.visual\.rotation\.z=Math\.sin\(g\)\*\.008\*stride;/,'p.visual.rotation.z=Math.sin(g)*.0025*stride;','body roll');
       source=replaceOrThrow(source,/p\.torso\.rotation\.x=\.018\+Math\.abs\(s\)\*\.006\*stride;/,'p.torso.rotation.x=.004+Math.abs(s)*.0015*stride;','torso posture');
