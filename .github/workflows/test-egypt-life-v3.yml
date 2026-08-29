@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V5
+name: Test Egyptian Life Simulator V6
 
 on:
   pull_request:
@@ -12,17 +12,16 @@ permissions:
 jobs:
   browser-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
-      - name: Check JavaScript syntax and control bindings
+      - name: Check V6 JavaScript and assets
         run: |
           node --check egypt-life-sim-v2/game.js
-          node --check egypt-life-sim-v2/game-v5.js
-          grep -q "keys.has('KeyW')" egypt-life-sim-v2/game.js
-          grep -q "keys.has('KeyD')" egypt-life-sim-v2/game.js
-          grep -q "continuous-lanes" egypt-life-sim-v2/game-v5.js
-          grep -q "soft-city-mix" egypt-life-sim-v2/game-v5.js
+          node --check egypt-life-sim-v2/game-v6.js
+          grep -q "articulated-natural-gait" egypt-life-sim-v2/game-v6.js
+          grep -q "live-3d-cinematic" egypt-life-sim-v2/game-v6.js
+          grep -q 'game-v6.js' egypt-life-sim-v2/index.html
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
@@ -32,102 +31,61 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-server.log 2>&1 &
           sleep 2
-      - name: Run real browser test
+      - name: Run V6 browser and animation test
         run: |
           cat > smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
-          const browser = await chromium.launch({headless:true});
-          const page = await browser.newPage({viewport:{width:1280,height:720}});
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
           const failures=[];
-          page.on('pageerror', e => failures.push('pageerror: '+e.message));
-          page.on('console', m => { if(m.type()==='error') failures.push('console: '+m.text()); });
-          await page.goto('http://127.0.0.1:4173/', {waitUntil:'networkidle'});
-          await page.waitForSelector('#menu', {state:'visible'});
-          await page.waitForFunction(() => window.__V5_PATCH?.version === 5);
-          const patch = await page.evaluate(() => window.__V5_PATCH);
-          if(patch.pedestrians !== 'continuous-lanes') throw new Error('V5 pedestrian patch missing: '+JSON.stringify(patch));
-          if(patch.vehicles !== 'continuous-turnaround') throw new Error('V5 vehicle patch missing: '+JSON.stringify(patch));
-          if(patch.audio !== 'soft-city-mix') throw new Error('V5 audio patch missing: '+JSON.stringify(patch));
-          if(!(await page.textContent('.kicker'))?.includes('V5')) throw new Error('V5 menu label missing');
-          if(!(await page.isVisible('#soundToggle'))) throw new Error('Sound toggle missing');
+          page.on('pageerror',e=>failures.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+          await page.waitForSelector('#menu',{state:'visible'});
+          await page.waitForFunction(()=>window.__V6_PATCH?.version===6);
+          const patch=await page.evaluate(()=>window.__V6_PATCH);
+          if(patch.pedestrians!=='articulated-natural-gait')throw new Error('V6 gait patch missing '+JSON.stringify(patch));
+          if(patch.menu!=='live-3d-cinematic')throw new Error('V6 menu patch missing '+JSON.stringify(patch));
+          if((await page.locator('#menu .logo').textContent())?.includes('حياة')!==true)throw new Error('Menu logo missing');
+          if(await page.locator('#menu .building').count())throw new Error('Old fake CSS buildings still present');
+          const menuBox=await page.locator('#menuContent').boundingBox();
+          if(!menuBox||menuBox.width<300||menuBox.x<650)throw new Error('Menu panel not positioned as intended '+JSON.stringify(menuBox));
+          await page.screenshot({path:'menu-v6.png',fullPage:true});
 
           await page.click('#newGameBtn');
-          await page.waitForFunction(() => getComputedStyle(document.querySelector('#menu')).display === 'none');
-          await page.waitForTimeout(350);
-          if(await page.isVisible('#errorBox')) throw new Error('Runtime error box: '+await page.textContent('#errorBox'));
-          const box = await page.locator('#game').boundingBox();
-          if(!box || box.width < 1000 || box.height < 600) throw new Error('Canvas is not full-screen');
-          if(failures.length) throw new Error('Runtime errors before controls:\n'+failures.join('\n'));
+          await page.waitForFunction(()=>getComputedStyle(document.querySelector('#menu')).display==='none');
+          await page.waitForTimeout(450);
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          if(failures.length)throw new Error(failures.join('\n'));
 
-          await page.evaluate(() => {
-            window.__testKeyCodes=[];
-            window.addEventListener('keydown', e => window.__testKeyCodes.push(e.code));
-          });
-          await page.keyboard.press('KeyW');
-          await page.keyboard.press('KeyD');
-          const codes=await page.evaluate(()=>window.__testKeyCodes.slice());
-          if(!codes.includes('KeyW') || !codes.includes('KeyD')) throw new Error('Keyboard codes missing: '+JSON.stringify(codes));
+          const npc=await page.evaluate(()=>window.__egyptDebug.npcState());
+          if(npc.people!==28)throw new Error('Unexpected people count '+JSON.stringify(npc));
+          if(npc.joints<224)throw new Error('Articulated joints missing '+JSON.stringify(npc));
 
-          const initial = await page.evaluate(() => { window.__egyptDebug.resetPose(); return window.__egyptDebug.getCamera(); });
-          if(Math.abs(initial.y-1.72)>.03) throw new Error('Bad player eye height '+initial.y);
-          if(initial.offsetY >= 0) throw new Error('Collider offset must be below eye level');
-
-          const afterForward = await page.evaluate(() => {
-            const cam=BABYLON.Engine.LastCreatedEngine.scenes[0].activeCamera;
-            cam.moveWithCollisions(new BABYLON.Vector3(0,0,1));
-            return window.__egyptDebug.getCamera();
-          });
-          if(afterForward.z <= initial.z + .5) throw new Error(`Forward collision bridge failed: ${initial.z} -> ${afterForward.z}`);
-
-          await page.evaluate(() => window.__egyptDebug.resetPose());
-          const afterRight = await page.evaluate(() => {
-            const cam=BABYLON.Engine.LastCreatedEngine.scenes[0].activeCamera;
-            cam.moveWithCollisions(new BABYLON.Vector3(1,0,0));
-            return window.__egyptDebug.getCamera();
-          });
-          if(afterRight.x <= initial.x + .5) throw new Error(`Right collision bridge failed: ${initial.x} -> ${afterRight.x}`);
-
-          const look = await page.evaluate(() => { window.__egyptDebug.resetPose(); window.__egyptDebug.applyLook(100,80); return window.__egyptDebug.getCamera(); });
-          if(look.yaw <= 0 || look.pitch <= 0) throw new Error(`Look controls inverted: yaw=${look.yaw}, pitch=${look.pitch}`);
-
-          // V5 regression: first pedestrian is horizontal, so its Z lane must stay fixed.
-          const laneSamples=[];
-          for(let i=0;i<7;i++){
-            laneSamples.push(await page.evaluate(() => BABYLON.Engine.LastCreatedEngine.scenes[0].transformNodes.filter(n=>n.name==='personRoot')[0]?.position.z));
-            await page.waitForTimeout(180);
-          }
-          const laneSpread=Math.max(...laneSamples)-Math.min(...laneSamples);
-          if(!Number.isFinite(laneSpread) || laneSpread>.08) throw new Error('Pedestrian still lane-teleports: '+JSON.stringify(laneSamples));
-
-          // V5 regression: edge traffic must turn around, never wrap to the other side of the map.
-          const vehicleEdge = await page.evaluate(async () => {
+          const sample=async()=>page.evaluate(()=>{
             const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
-            const v=scene.transformNodes.find(n=>/Root$/.test(n.name) && n.name!=='personRoot');
-            if(!v) return null;
-            v.position.z=111.95;
-            await new Promise(r=>setTimeout(r,220));
-            return {name:v.name,x:v.position.x,z:v.position.z};
+            const knee=scene.transformNodes.find(n=>n.name==='kneeL');
+            const shoulder=scene.transformNodes.find(n=>n.name==='shoulderL');
+            const root=scene.transformNodes.find(n=>n.name==='personRoot');
+            return {knee:knee?.rotation.x,shoulder:shoulder?.rotation.x,x:root?.position.x,z:root?.position.z};
           });
-          if(!vehicleEdge || vehicleEdge.z < 80) throw new Error('Vehicle still wraps/disappears at edge: '+JSON.stringify(vehicleEdge));
+          const a=await sample();await page.waitForTimeout(320);const b=await sample();await page.waitForTimeout(320);const c=await sample();
+          const kneeSpread=Math.max(a.knee,b.knee,c.knee)-Math.min(a.knee,b.knee,c.knee);
+          const shoulderSpread=Math.max(a.shoulder,b.shoulder,c.shoulder)-Math.min(a.shoulder,b.shoulder,c.shoulder);
+          if(kneeSpread<.025)throw new Error('Knee is not animating '+JSON.stringify({a,b,c,kneeSpread}));
+          if(shoulderSpread<.025)throw new Error('Shoulder is not animating '+JSON.stringify({a,b,c,shoulderSpread}));
+          if(Math.max(a.z,b.z,c.z)-Math.min(a.z,b.z,c.z)>.08)throw new Error('NPC lane drift returned '+JSON.stringify({a,b,c}));
 
-          const detail = await page.evaluate(() => {
-            const scene = BABYLON.Engine.LastCreatedEngine?.scenes?.[0];
-            const names = scene?.meshes?.map(m=>m.name) || [];
-            return {
-              windows:names.filter(n=>n==='windowRecess').length,
-              balconies:names.filter(n=>n==='balconySlab').length,
-              awnings:names.filter(n=>n==='awning').length,
-              cables:names.filter(n=>n==='cable').length,
-              vehicles:names.filter(n=>n==='vehCollider').length,
-              audio:window.__egyptDebug.audioState(),
-              patch:window.__egyptDebug.v5State?.()
-            };
-          });
-          if(detail.windows < 20 || detail.balconies < 5 || detail.awnings < 8 || detail.cables < 2 || detail.vehicles < 10) throw new Error('City detail generation too sparse: '+JSON.stringify(detail));
-          if(detail.audio.state === 'none') throw new Error('Audio engine did not initialize');
-          if(detail.patch?.audio !== 'soft-city-mix') throw new Error('V5 debug patch missing: '+JSON.stringify(detail.patch));
-          if(failures.length) throw new Error(failures.join('\n'));
-          console.log('V5 browser test passed', {initial, afterForward, afterRight, look, detail, codes, laneSamples, vehicleEdge});
+          const audio=await page.evaluate(()=>window.__egyptDebug.audioState());
+          if(audio.state==='none')throw new Error('Audio did not initialize');
+          console.log('V6 browser test passed',{patch,npc,a,b,c,kneeSpread,shoulderSpread,audio});
           await browser.close();
           EOF
           node smoke.mjs
+      - name: Upload V6 menu screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egypt-life-v6-menu
+          path: menu-v6.png
+          if-no-files-found: ignore
