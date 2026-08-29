@@ -50,7 +50,7 @@
   async function boot(){
     for(let wait=0;wait<240;wait++){
       const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
-      if(scene&&window.__V9_PATCH?.version===9&&window.__V9_GAITFIX?.naturalAnkleRange&&window.__V9_POLISH?.silhouette==='capsule-human'&&window.__V9_FACADES?.blankSidesFilled){
+      if(scene&&window.__V9_PATCH?.version===9&&window.__V9_GAITFIX?.naturalAnkleRange&&window.__V9_POLISH?.silhouette==='capsule-human'){
         const roots=scene.transformNodes.filter(n=>n.name==='personRoot');
         if(roots.length!==28)throw new Error(`Expected 28 pedestrian roots, got ${roots.length}`);
         const rigs=[];
@@ -100,13 +100,13 @@
         });
 
         const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V10';
-        window.__V10_PATCH={version:10,rigs:rigs.length,shoes,gait:'heel-strike-stance-toe-off-swing',phaseDrivenByDistance:true,ankleLimit:.34,turnStrideReduction:true,roundedFootwear:true,strideMeters:[1.34,1.48]};
+        window.__V10_PATCH={version:10,rigs:rigs.length,shoes,gait:'heel-strike-stance-toe-off-swing',phaseDrivenByDistance:true,ankleLimit:.34,turnStrideReduction:true,roundedFootwear:true,strideMeters:[1.34,1.48],fastMobileBoot:true};
         if(window.__egyptDebug)window.__egyptDebug.v10State=()=>({...window.__V10_PATCH});
         return;
       }
       await sleep(50);
     }
-    throw new Error('V9 layers did not finish before V10');
+    throw new Error('V9 rig/polish layers did not finish before V10');
   }
 
   boot().catch(err=>{
