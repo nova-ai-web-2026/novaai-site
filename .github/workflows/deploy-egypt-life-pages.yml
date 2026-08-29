@@ -37,15 +37,18 @@ jobs:
           test -s egypt-life-sim-v2/game-v6.js
           test -s egypt-life-sim-v2/game-v7.js
           test -s egypt-life-sim-v2/game-v8-layout.js
+          test -s egypt-life-sim-v2/game-v9.js
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
+          node --check egypt-life-sim-v2/game-v9.js
           grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=8' egypt-life-sim-v2/index.html
-          grep -Fq 'distance-synced-footplant' egypt-life-sim-v2/game-v7.js
-          grep -Fq 'researched-cairo-street-layers' egypt-life-sim-v2/game-v7.js
-          grep -Fq 'HAYAT MASR • V8' egypt-life-sim-v2/game-v7.js
+          grep -Fq 'game-v9.js?v=9' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'hip-knee-ankle-foot' egypt-life-sim-v2/game-v9.js
+          grep -Fq 'stance-swing-distance-driven' egypt-life-sim-v2/game-v9.js
+          grep -Fq 'rounded-human-proportions' egypt-life-sim-v2/game-v9.js
           grep -Fq 'facadeAnchored' egypt-life-sim-v2/game-v8-layout.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
