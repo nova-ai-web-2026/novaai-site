@@ -62,9 +62,9 @@
   <div id="menu">
     <div id="menuScene"><div class="sun"></div><div class="building b1"></div><div class="building b2"></div><div class="building b3"></div><div class="wire"></div><div class="wire w2"></div><div class="microbus"></div></div>
     <div id="menuContent">
-      <div class="kicker">EGYPTIAN OPEN-WORLD LIFE SIMULATOR — V4</div>
+      <div class="kicker">EGYPTIAN OPEN-WORLD LIFE SIMULATOR — V5</div>
       <div class="logo">حياة <span>مصر</span></div>
-      <div class="tagline">نسخة جديدة بتحكم موحّد وصوت شارع ومبانٍ أكثر تفصيلًا: محارة وشبابيك وبلكونات ومحلات ومظلات وأسلاك وخزانات ودِشّات، مع ميكروباصات وتكاتك وسوق وقهوة وحياة يومية مصرية.</div>
+      <div class="tagline">نسخة أثبت: الناس والعربيات ما بقتش تنط أو تختفي فجأة، والصوت اتعاد مزجه ليبقى أهدى وأقرب لجو شارع طبيعي بدل الأصوات الإلكترونية الحادة.</div>
       <div class="menuButtons">
         <button id="newGameBtn" class="menuBtn primary">▶ ابدأ يوم جديد</button>
         <button id="continueBtn" class="menuBtn">↻ كمّل من آخر حفظ</button>
@@ -80,9 +80,6 @@
   <div id="errorBox"></div>
 
   <script>
-    // Babylon's current UniversalCamera build doesn't expose the old moveWithCollisions
-    // helper used by the game core. Provide a small deterministic bridge with manual
-    // X/Z collision against meshes explicitly marked checkCollisions=true.
     (() => {
       const proto = window.BABYLON?.UniversalCamera?.prototype;
       if (!proto || typeof proto.moveWithCollisions === 'function') return;
@@ -109,6 +106,6 @@
       };
     })();
   </script>
-  <script src="game.js"></script>
+  <script src="game-v5.js"></script>
 </body>
 </html>
