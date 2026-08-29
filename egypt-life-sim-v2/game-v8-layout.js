@@ -44,6 +44,16 @@
     return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));
   }
 
+  function loadV9(){
+    if(document.querySelector('script[data-egypt-v9]'))return;
+    const script=document.createElement('script');
+    script.src='game-v9.js?v=9';
+    script.dataset.egyptV9='true';
+    script.async=false;
+    script.onerror=()=>fail('V9 script failed to load');
+    document.body.appendChild(script);
+  }
+
   async function boot(){
     try{
       const scene=await waitForV8();
@@ -71,6 +81,7 @@
       if(window.__egyptDebug){
         window.__egyptDebug.v8LayoutState=()=>({...window.__V8_LAYOUT,clusters:clusters.map(c=>({...c}))});
       }
+      loadV9();
     }catch(err){fail('V8 facade layout failed',err);}
   }
   boot();
