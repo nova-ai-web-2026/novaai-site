@@ -35,11 +35,13 @@ jobs:
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/game.js
           test -s egypt-life-sim-v2/game-v6.js
+          test -s egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
-          grep -Fq 'game-v6.js' egypt-life-sim-v2/index.html
-          grep -Fq 'articulated-natural-gait' egypt-life-sim-v2/game-v6.js
-          grep -Fq 'live-3d-cinematic' egypt-life-sim-v2/game-v6.js
+          node --check egypt-life-sim-v2/game-v7.js
+          grep -Fq 'game-v7.js' egypt-life-sim-v2/index.html
+          grep -Fq 'normal-adult-walk' egypt-life-sim-v2/game-v7.js
+          grep -Fq 'street-life-pack' egypt-life-sim-v2/game-v7.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
