@@ -18,11 +18,14 @@ jobs:
       - name: Validate V11.1 files and loader
         run: |
           node --check egypt-life-sim-v2/game-v11-1.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
           node --check egypt-life-sim-v2/game-v11.js
           node --check egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-1.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v11-audiofix.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'mirroredBackfacesFixed' egypt-life-sim-v2/game-v11-1.js
           grep -Fq 'layered-procedural-cairo-v2' egypt-life-sim-v2/game-v11-1.js
+          grep -Fq 'v11BusDisconnected:true' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'microRoute_' egypt-life-sim-v2/game-v11-1.js
           grep -Fq 'للإيجار' egypt-life-sim-v2/game-v11-1.js
       - name: Install Chromium
@@ -54,17 +57,17 @@ jobs:
           });
           if(visual.v111Meshes<100||visual.homeScale===null||visual.homeScale>=0||visual.routeCards<4)throw new Error('V11.1 visual correction incomplete '+JSON.stringify(visual));
           await page.screenshot({path:'menu-v111.png',fullPage:true});
-          await page.click('#newGameBtn');await page.waitForTimeout(1600);
+          await page.click('#newGameBtn');await page.waitForTimeout(1750);
           if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
-          await page.waitForFunction(()=>!!window.__V11_AUDIO_CONTEXT,{timeout:5000});
-          const audioRuntime=await page.evaluate(()=>({ctx:window.__V11_AUDIO_CONTEXT?.state,legacy:window.__V11_LEGACY_MASTER?.gain?.value??null,v11:window.__V11_OWN_MASTER?.gain?.value??null}));
-          if(!audioRuntime.ctx||audioRuntime.legacy===null||audioRuntime.legacy>.04||audioRuntime.v11===null||audioRuntime.v11>.08)throw new Error('Old synthetic audio not suppressed '+JSON.stringify(audioRuntime));
+          await page.waitForFunction(()=>!!window.__V11_AUDIO_CONTEXT&&window.__V11_AUDIOFIX?.v11BusDisconnected,{timeout:5000});
+          const audioRuntime=await page.evaluate(()=>({ctx:window.__V11_AUDIO_CONTEXT?.state,legacy:window.__V11_LEGACY_MASTER?.gain?.value??null,v11Gain:window.__V11_OWN_MASTER?.gain?.value??null,v11Disconnected:!!window.__V11_OWN_MASTER?.__v111Disconnected,lock:window.__V11_AUDIOFIX}));
+          if(!audioRuntime.ctx||audioRuntime.legacy===null||audioRuntime.legacy>.04||!audioRuntime.v11Disconnected||!audioRuntime.lock?.v11BusDisconnected)throw new Error('Old synthetic audio bus still connected '+JSON.stringify(audioRuntime));
           if(errors.length)throw new Error(errors.join('\n'));
           await page.screenshot({path:'street-v111.png',fullPage:true});
           const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           await mobile.goto('http://127.0.0.1:4173/?ci=v111-mobile',{waitUntil:'networkidle'});
           await mobile.waitForFunction(()=>window.__V111_PATCH?.version==='11.1',{timeout:30000});
-          await mobile.click('#newGameBtn');await mobile.waitForTimeout(900);
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(1000);
           if(await mobile.isVisible('#errorBox'))throw new Error('Mobile runtime error: '+await mobile.textContent('#errorBox'));
           await mobile.screenshot({path:'mobile-v111.png',fullPage:true});
           console.log('V11.1 test passed',{state,visual,audioRuntime});
