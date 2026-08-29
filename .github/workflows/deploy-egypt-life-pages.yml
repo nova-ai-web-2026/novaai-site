@@ -41,6 +41,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v9-gaitfix.js
           test -s egypt-life-sim-v2/game-v9-character-polish.js
           test -s egypt-life-sim-v2/game-v9-facades.js
+          test -s egypt-life-sim-v2/game-v10.js
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
@@ -49,19 +50,21 @@ jobs:
           node --check egypt-life-sim-v2/game-v9-gaitfix.js
           node --check egypt-life-sim-v2/game-v9-character-polish.js
           node --check egypt-life-sim-v2/game-v9-facades.js
+          node --check egypt-life-sim-v2/game-v10.js
           grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=8' egypt-life-sim-v2/index.html
           grep -Fq 'game-v9.js?v=9' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v9-gaitfix.js?v=9' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v9-character-polish.js?v=9' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v9-facades.js?v=9' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v10.js?v=10' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'hip-knee-ankle-foot' egypt-life-sim-v2/game-v9.js
-          grep -Fq 'stance-swing-distance-driven' egypt-life-sim-v2/game-v9.js
-          grep -Fq 'rounded-human-proportions' egypt-life-sim-v2/game-v9.js
           grep -Fq 'naturalAnkleRange:true' egypt-life-sim-v2/game-v9-gaitfix.js
           grep -Fq 'capsule-human' egypt-life-sim-v2/game-v9-character-polish.js
           grep -Fq 'blankSidesFilled' egypt-life-sim-v2/game-v9-facades.js
-          grep -Fq 'four-sided-lived-in-buildings' egypt-life-sim-v2/game-v9-facades.js
+          grep -Fq 'heel-strike-stance-toe-off-swing' egypt-life-sim-v2/game-v10.js
+          grep -Fq 'roundedFootwear:true' egypt-life-sim-v2/game-v10.js
+          grep -Fq 'HAYAT MASR • V10' egypt-life-sim-v2/game-v10.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:

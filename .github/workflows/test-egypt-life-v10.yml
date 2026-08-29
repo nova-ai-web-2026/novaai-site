@@ -1,0 +1,122 @@
+name: Test Egyptian Life Simulator V10
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v10.yml'
+      - '.github/workflows/deploy-egypt-life-pages.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check V10 files and loader
+        run: |
+          node --check egypt-life-sim-v2/game-v10.js
+          node --check egypt-life-sim-v2/game-v9.js
+          node --check egypt-life-sim-v2/game-v9-gaitfix.js
+          node --check egypt-life-sim-v2/game-v9-character-polish.js
+          node --check egypt-life-sim-v2/game-v9-facades.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v10.js?v=10' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "heel-strike-stance-toe-off-swing" egypt-life-sim-v2/game-v10.js
+          grep -Fq 'roundedFootwear:true' egypt-life-sim-v2/game-v10.js
+          grep -Fq "HAYAT MASR • V10" egypt-life-sim-v2/game-v10.js
+          grep -Fq 'game-v10.js?v=10' .github/workflows/deploy-egypt-life-pages.yml
+      - name: Install browser test runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 > /tmp/egypt-life-v10-server.log 2>&1 &
+          sleep 2
+      - name: Run V10 gait and visual test
+        run: |
+          cat > smoke-v10.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const failures=[];
+          page.on('pageerror',e=>failures.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')failures.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v10-unified',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V10_PATCH?.version===10,{timeout:25000});
+          const state=await page.evaluate(()=>window.__egyptDebug.v10State());
+          if(state.rigs!==28||state.shoes!==56)throw new Error('V10 rig/shoes incomplete '+JSON.stringify(state));
+          if(state.gait!=='heel-strike-stance-toe-off-swing'||!state.phaseDrivenByDistance)throw new Error('V10 gait marker missing '+JSON.stringify(state));
+          if(!state.roundedFootwear||!state.turnStrideReduction||state.ankleLimit>.35)throw new Error('V10 natural motion safeguards missing '+JSON.stringify(state));
+          if(!(await page.locator('.kicker').textContent()).includes('V10'))throw new Error('V10 menu marker missing');
+          await page.screenshot({path:'menu-v10.png',fullPage:true});
+          await page.click('#newGameBtn');
+          await page.waitForFunction(()=>getComputedStyle(document.querySelector('#menu')).display==='none');
+          await page.waitForTimeout(650);
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          if(failures.length)throw new Error(failures.join('\n'));
+          await page.screenshot({path:'street-v10.png',fullPage:true});
+
+          const sample=async()=>page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],i=5;
+            const root=scene.transformNodes.filter(n=>n.name==='personRoot')[i];
+            const n=x=>scene.transformNodes.find(v=>v.name===x);
+            const m=x=>scene.meshes.find(v=>v.name===x);
+            const hipL=n(`v9_hipL_${i}`),hipR=n(`v9_hipR_${i}`),kneeL=n(`v9_kneeL_${i}`),kneeR=n(`v9_kneeR_${i}`),ankleL=n(`v9_ankleL_${i}`),ankleR=n(`v9_ankleR_${i}`),pelvis=n(`v9_pelvis_${i}`);
+            const shoeL=m(`v10_shoeL_${i}`),shoeR=m(`v10_shoeR_${i}`);
+            const lp=shoeL.getAbsolutePosition(),rp=shoeR.getAbsolutePosition();
+            return {x:root.position.x,z:root.position.z,hL:hipL.rotation.x,hR:hipR.rotation.x,kL:kneeL.rotation.x,kR:kneeR.rotation.x,aL:ankleL.rotation.x,aR:ankleR.rotation.x,fL:shoeL.rotation.x-Math.PI/2,fR:shoeR.rotation.x-Math.PI/2,py:pelvis.position.y,ly:lp.y,ry:rp.y};
+          });
+          const samples=[];
+          for(let i=0;i<46;i++){samples.push(await sample());await page.waitForTimeout(95);}
+          const spread=k=>Math.max(...samples.map(s=>s[k]))-Math.min(...samples.map(s=>s[k]));
+          const travel=Math.hypot(samples.at(-1).x-samples[0].x,samples.at(-1).z-samples[0].z);
+          const hipSpread=Math.max(spread('hL'),spread('hR'));
+          const kneeSpread=Math.max(spread('kL'),spread('kR'));
+          const ankleSpread=Math.max(spread('aL'),spread('aR'));
+          const footRollSpread=Math.max(spread('fL'),spread('fR'));
+          const pelvisBob=spread('py');
+          const minShoeY=Math.min(...samples.flatMap(s=>[s.ly,s.ry]));
+          if(travel<1.05)throw new Error('V10 did not cover a full gait cycle '+JSON.stringify({travel}));
+          if(hipSpread<.38||hipSpread>.62)throw new Error('V10 hip motion out of range '+JSON.stringify({hipSpread}));
+          if(kneeSpread<.27||kneeSpread>.58)throw new Error('V10 knee motion out of range '+JSON.stringify({kneeSpread}));
+          if(ankleSpread<.18||ankleSpread>.68)throw new Error('V10 ankle motion out of range '+JSON.stringify({ankleSpread}));
+          if(footRollSpread<.08||footRollSpread>.30)throw new Error('V10 heel/toe roll missing or excessive '+JSON.stringify({footRollSpread}));
+          if(pelvisBob<.002||pelvisBob>.014)throw new Error('V10 pelvis bob unnatural '+JSON.stringify({pelvisBob}));
+          if(minShoeY<-.08)throw new Error('V10 rounded shoe sinks below ground '+JSON.stringify({minShoeY}));
+
+          await page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],root=scene.transformNodes.filter(n=>n.name==='personRoot')[5],camera=scene.activeCamera;
+            camera.position.set(root.position.x,1.45,root.position.z+3.15);camera.rotation.x=.02;camera.rotation.y=Math.PI;camera.rotation.z=0;
+          });
+          await page.waitForTimeout(180);
+          await page.screenshot({path:'npc-v10.png',fullPage:true});
+
+          const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(e.message));
+          await mobile.goto('http://127.0.0.1:4173/?ci=v10-mobile',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V10_PATCH?.version===10,{timeout:25000});
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(550);
+          if(await mobile.isVisible('#errorBox'))throw new Error('V10 mobile runtime error: '+await mobile.textContent('#errorBox'));
+          if(mobileErrors.length)throw new Error('V10 mobile pageerror: '+mobileErrors.join('; '));
+          await mobile.screenshot({path:'mobile-v10.png',fullPage:true});
+          console.log('V10 unified test passed',{state,travel,hipSpread,kneeSpread,ankleSpread,footRollSpread,pelvisBob,minShoeY});
+          await browser.close();
+          EOF
+          node smoke-v10.mjs
+      - name: Upload V10 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egypt-life-v10-visuals
+          path: |
+            menu-v10.png
+            street-v10.png
+            npc-v10.png
+            mobile-v10.png
+          if-no-files-found: ignore
