@@ -13,7 +13,7 @@
   }
 
   const oldAnchors=[[-86,-18.05],[-73,-18.05],[-59,-18.05],[-44,-18.05],[-28,-18.05],[-10,-18.05],[10,-18.05],[28,-18.05],[46,-18.05],[64,-18.05],[82,-18.05],[-72,17.62],[-50,17.62],[-26,17.62],[4,17.62],[34,17.62]];
-  const movablePrefixes=['v8_shopSign_','v8_rollingShutter','v8_shutterSlat','v8_awning','v8_awningStripe','v8_grocerySnackBox','v8_stationeryStack','v8_bakeryRack','v8_baladiLoaf','v8_spiceSack','v8_attarJar','v8_sugarCane','v8_juiceMachine','v8_juiceCup','v8_tyreStack','v8_workBench','v8_oilCan','v8_fabricRoll','v8_smallSign_','v8_kosharyPot','v8_ahwaTable','v8_plasticChair','v8_teaGlass','v8_dominoBoard','v8_produceCrate','v8_produce','v8_hangingBulb','v8_bulbWire'];
+  const movablePrefixes=['v8_shopSign_','v8_rollingShutter','v8_shutterSlat','v8_awning','v8_awningStripe','v8_grocerySnackBox','v8_stationeryStack','v8_bakeryRack','v8_baladiLoaf','v8_spiceSack','v8_sugarCane','v8_juiceMachine','v8_juiceCup','v8_tyreStack','v8_workBench','v8_oilCan','v8_fabricRoll','v8_smallSign_','v8_kosharyPot','v8_ahwaTable','v8_plasticChair','v8_teaGlass','v8_dominoBoard','v8_produceCrate','v8_produce','v8_hangingBulb','v8_bulbWire'];
   const isMovable=name=>movablePrefixes.some(p=>name.startsWith(p));
 
   function frontSlots(scene,rowZ,count){
@@ -30,9 +30,13 @@
   }
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
+  function loadV111(){
+    if(document.querySelector('script[data-egypt-v111]'))return;
+    const s=document.createElement('script');s.src='game-v11-1.js?v=11.1';s.dataset.egyptV111='true';s.async=false;s.onerror=()=>fail('V11.1 script failed to load');document.body.appendChild(s);
+  }
   function loadV11(){
-    if(document.querySelector('script[data-egypt-v11]'))return;
-    const s=document.createElement('script');s.src='game-v11.js?v=11';s.dataset.egyptV11='true';s.async=false;s.onerror=()=>fail('V11 script failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v11]')){if(window.__V11_PATCH?.version===11)loadV111();return;}
+    const s=document.createElement('script');s.src='game-v11.js?v=11';s.dataset.egyptV11='true';s.async=false;s.onload=loadV111;s.onerror=()=>fail('V11 script failed to load');document.body.appendChild(s);
   }
   function loadV10(){
     if(document.querySelector('script[data-egypt-v10]')){loadV11();return;}
