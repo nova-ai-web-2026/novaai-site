@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V4
+name: Test Egyptian Life Simulator V5
 
 on:
   pull_request:
@@ -18,8 +18,11 @@ jobs:
       - name: Check JavaScript syntax and control bindings
         run: |
           node --check egypt-life-sim-v2/game.js
+          node --check egypt-life-sim-v2/game-v5.js
           grep -q "keys.has('KeyW')" egypt-life-sim-v2/game.js
           grep -q "keys.has('KeyD')" egypt-life-sim-v2/game.js
+          grep -q "continuous-lanes" egypt-life-sim-v2/game-v5.js
+          grep -q "soft-city-mix" egypt-life-sim-v2/game-v5.js
       - name: Install browser test runtime
         run: |
           npm init -y >/dev/null 2>&1
@@ -40,8 +43,14 @@ jobs:
           page.on('console', m => { if(m.type()==='error') failures.push('console: '+m.text()); });
           await page.goto('http://127.0.0.1:4173/', {waitUntil:'networkidle'});
           await page.waitForSelector('#menu', {state:'visible'});
-          if(!(await page.textContent('.logo'))?.includes('حياة')) throw new Error('Menu title missing');
+          await page.waitForFunction(() => window.__V5_PATCH?.version === 5);
+          const patch = await page.evaluate(() => window.__V5_PATCH);
+          if(patch.pedestrians !== 'continuous-lanes') throw new Error('V5 pedestrian patch missing: '+JSON.stringify(patch));
+          if(patch.vehicles !== 'continuous-turnaround') throw new Error('V5 vehicle patch missing: '+JSON.stringify(patch));
+          if(patch.audio !== 'soft-city-mix') throw new Error('V5 audio patch missing: '+JSON.stringify(patch));
+          if(!(await page.textContent('.kicker'))?.includes('V5')) throw new Error('V5 menu label missing');
           if(!(await page.isVisible('#soundToggle'))) throw new Error('Sound toggle missing');
+
           await page.click('#newGameBtn');
           await page.waitForFunction(() => getComputedStyle(document.querySelector('#menu')).display === 'none');
           await page.waitForTimeout(350);
@@ -81,6 +90,26 @@ jobs:
           const look = await page.evaluate(() => { window.__egyptDebug.resetPose(); window.__egyptDebug.applyLook(100,80); return window.__egyptDebug.getCamera(); });
           if(look.yaw <= 0 || look.pitch <= 0) throw new Error(`Look controls inverted: yaw=${look.yaw}, pitch=${look.pitch}`);
 
+          // V5 regression: first pedestrian is horizontal, so its Z lane must stay fixed.
+          const laneSamples=[];
+          for(let i=0;i<7;i++){
+            laneSamples.push(await page.evaluate(() => BABYLON.Engine.LastCreatedEngine.scenes[0].transformNodes.filter(n=>n.name==='personRoot')[0]?.position.z));
+            await page.waitForTimeout(180);
+          }
+          const laneSpread=Math.max(...laneSamples)-Math.min(...laneSamples);
+          if(!Number.isFinite(laneSpread) || laneSpread>.08) throw new Error('Pedestrian still lane-teleports: '+JSON.stringify(laneSamples));
+
+          // V5 regression: edge traffic must turn around, never wrap to the other side of the map.
+          const vehicleEdge = await page.evaluate(async () => {
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+            const v=scene.transformNodes.find(n=>/Root$/.test(n.name) && n.name!=='personRoot');
+            if(!v) return null;
+            v.position.z=111.95;
+            await new Promise(r=>setTimeout(r,220));
+            return {name:v.name,x:v.position.x,z:v.position.z};
+          });
+          if(!vehicleEdge || vehicleEdge.z < 80) throw new Error('Vehicle still wraps/disappears at edge: '+JSON.stringify(vehicleEdge));
+
           const detail = await page.evaluate(() => {
             const scene = BABYLON.Engine.LastCreatedEngine?.scenes?.[0];
             const names = scene?.meshes?.map(m=>m.name) || [];
@@ -90,13 +119,15 @@ jobs:
               awnings:names.filter(n=>n==='awning').length,
               cables:names.filter(n=>n==='cable').length,
               vehicles:names.filter(n=>n==='vehCollider').length,
-              audio:window.__egyptDebug.audioState()
+              audio:window.__egyptDebug.audioState(),
+              patch:window.__egyptDebug.v5State?.()
             };
           });
           if(detail.windows < 20 || detail.balconies < 5 || detail.awnings < 8 || detail.cables < 2 || detail.vehicles < 10) throw new Error('City detail generation too sparse: '+JSON.stringify(detail));
           if(detail.audio.state === 'none') throw new Error('Audio engine did not initialize');
+          if(detail.patch?.audio !== 'soft-city-mix') throw new Error('V5 debug patch missing: '+JSON.stringify(detail.patch));
           if(failures.length) throw new Error(failures.join('\n'));
-          console.log('V4 browser test passed', {initial, afterForward, afterRight, look, detail, codes});
+          console.log('V5 browser test passed', {initial, afterForward, afterRight, look, detail, codes, laneSamples, vehicleEdge});
           await browser.close();
           EOF
           node smoke.mjs
