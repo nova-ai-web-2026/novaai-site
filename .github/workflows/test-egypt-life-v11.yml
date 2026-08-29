@@ -1,0 +1,91 @@
+name: Test Egyptian Life Simulator V11
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v11-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11 files and loader
+        run: |
+          node --check egypt-life-sim-v2/game-v11.js
+          node --check egypt-life-sim-v2/game-v10.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v11.js?v=11' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "rtl-shaped-signage" egypt-life-sim-v2/game-v11.js
+          grep -Fq "location-aware" egypt-life-sim-v2/game-v11.js
+          grep -Fq "موقف الحارة" egypt-life-sim-v2/game-v11.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v11-server.log 2>&1 &
+          sleep 2
+      - name: Run V11 browser regression
+        run: |
+          cat > v11-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v11',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V10_PATCH?.version===10,{timeout:25000});
+          await page.waitForFunction(()=>window.__V11_PATCH?.version===11,{timeout:25000});
+          const state=await page.evaluate(()=>window.__egyptDebug.v11State());
+          if(state.arabic!=='rtl-shaped-signage')throw new Error('RTL Arabic repair missing '+JSON.stringify(state));
+          if(state.repairedSigns<18)throw new Error('Too few repaired Arabic signs '+JSON.stringify(state));
+          if(state.legacySigns.hidden<20||state.legacySigns.made<20)throw new Error('Legacy Arabic signs not rebuilt '+JSON.stringify(state.legacySigns));
+          if(state.details.numbers<20||state.details.meters<40||state.details.intercoms<20)throw new Error('Egyptian building micro-details missing '+JSON.stringify(state.details));
+          if(state.details.handCarts!==3||state.details.waterCrates!==8||state.details.curtains!==24)throw new Error('Street props incomplete '+JSON.stringify(state.details));
+          if(!state.audio.captureInstalled||!state.audio.spatialZones||state.audio.layers.length<5)throw new Error('V11 audio layer missing '+JSON.stringify(state.audio));
+          if(!(await page.locator('.kicker').textContent()).includes('V11'))throw new Error('V11 menu label missing');
+          const visual=await page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+            return {
+              v11Meshes:scene.meshes.filter(m=>m.name.startsWith('v11_')).length,
+              genericSignsEnabled:scene.meshes.filter(m=>m.name==='sign'&&m.isEnabled()).length,
+              repairedTextures:scene.textures.filter(t=>t.name?.startsWith('v11_repair_')).length,
+              numberSigns:scene.meshes.filter(m=>m.name.startsWith('v11_buildingNo_')).length
+            };
+          });
+          if(visual.v11Meshes<150||visual.genericSignsEnabled!==0||visual.repairedTextures<18||visual.numberSigns<20)throw new Error('V11 visual layer incomplete '+JSON.stringify(visual));
+          await page.screenshot({path:'menu-v11.png',fullPage:true});
+          await page.click('#newGameBtn');await page.waitForTimeout(1200);
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          await page.waitForFunction(()=>!!window.__V11_AUDIO_CONTEXT,{timeout:5000});
+          const audio=await page.evaluate(()=>({ctx:window.__V11_AUDIO_CONTEXT?.state,legacy:window.__V11_LEGACY_MASTER?.gain?.value??null}));
+          if(!audio.ctx||audio.legacy===null||audio.legacy>.12)throw new Error('V11 audio takeover did not start '+JSON.stringify(audio));
+          if(errors.length)throw new Error(errors.join('\n'));
+          await page.screenshot({path:'street-v11.png',fullPage:true});
+          const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          await mobile.goto('http://127.0.0.1:4173/?ci=v11-mobile',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V11_PATCH?.version===11,{timeout:25000});
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(700);
+          if(await mobile.isVisible('#errorBox'))throw new Error('Mobile runtime error: '+await mobile.textContent('#errorBox'));
+          await mobile.screenshot({path:'mobile-v11.png',fullPage:true});
+          console.log('V11 test passed',{state,visual,audio});
+          await browser.close();
+          EOF
+          node v11-smoke.mjs
+      - name: Upload V11 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egypt-life-v11-visuals
+          path: |
+            menu-v11.png
+            street-v11.png
+            mobile-v11.png
+          if-no-files-found: ignore
