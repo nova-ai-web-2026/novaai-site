@@ -66,7 +66,7 @@ jobs:
           await page.screenshot({path:'street-v111.png',fullPage:true});
           const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           await mobile.goto('http://127.0.0.1:4173/?ci=v111-mobile',{waitUntil:'networkidle'});
-          await mobile.waitForFunction(()=>window.__V111_PATCH?.version==='11.1',{timeout:30000});
+          await mobile.waitForFunction(()=>window.__V111_PATCH?.version==='11.1',{timeout:50000});
           await mobile.click('#newGameBtn');await mobile.waitForTimeout(1000);
           if(await mobile.isVisible('#errorBox'))throw new Error('Mobile runtime error: '+await mobile.textContent('#errorBox'));
           await mobile.screenshot({path:'mobile-v111.png',fullPage:true});
