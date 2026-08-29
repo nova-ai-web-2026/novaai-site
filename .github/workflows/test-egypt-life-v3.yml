@@ -82,9 +82,16 @@ jobs:
 
           await page.evaluate(()=>{
             const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],cam=scene.activeCamera,root=scene.transformNodes.find(n=>n.name==='personRoot');
-            if(root){cam.position.set(root.position.x+3.2,1.75,root.position.z+3.2);const dx=root.position.x-cam.position.x,dz=root.position.z-cam.position.z;cam.rotation.set(.02,Math.atan2(dx,dz),0);cam.fov=.7;}
+            if(root){
+              cam.position.set(root.position.x+3.2,1.72,root.position.z+3.2);
+              const dx=root.position.x-cam.position.x,dz=root.position.z-cam.position.z;
+              const desiredYaw=Math.atan2(dx,dz),desiredPitch=.015;
+              const now=window.__egyptDebug.getCamera();
+              window.__egyptDebug.applyLook((desiredYaw-now.yaw)/.00225,(desiredPitch-now.pitch)/.0019);
+              cam.fov=.68;
+            }
           });
-          await page.waitForTimeout(150);
+          await page.waitForTimeout(180);
           await page.screenshot({path:'npc-v6.png',fullPage:true});
 
           const audio=await page.evaluate(()=>window.__egyptDebug.audioState());
