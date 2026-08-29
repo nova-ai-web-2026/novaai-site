@@ -46,6 +46,20 @@
     if(index%8===0)wb(scene,'leftShutter',.08,.62,1.8,x-.14,y-.18,z,shutter);
   }
 
+  function addRightGroundWindow(scene,x,y,z){
+    const glass=mat(scene,'glass','#253237','#071014'),frame=mat(scene,'frame','#c6b79f');
+    wb(scene,'rightGroundWindow',.11,1.08,1.55,x+.06,y,z,glass);
+    wb(scene,'rightGroundFrameT',.15,.075,1.72,x+.1,y+.58,z,frame);wb(scene,'rightGroundFrameB',.15,.075,1.72,x+.1,y-.58,z,frame);
+    wb(scene,'rightGroundFrameA',.15,1.16,.075,x+.1,y,z-.82,frame);wb(scene,'rightGroundFrameB2',.15,1.16,.075,x+.1,y,z+.82,frame);
+  }
+
+  function addLeftGroundWindow(scene,x,y,z){
+    const glass=mat(scene,'glass','#253237','#071014'),frame=mat(scene,'frame','#c6b79f');
+    wb(scene,'leftGroundWindow',.11,1.08,1.55,x-.06,y,z,glass);
+    wb(scene,'leftGroundFrameT',.15,.075,1.72,x-.1,y+.58,z,frame);wb(scene,'leftGroundFrameB',.15,.075,1.72,x-.1,y-.58,z,frame);
+    wb(scene,'leftGroundFrameA',.15,1.16,.075,x-.1,y,z-.82,frame);wb(scene,'leftGroundFrameB2',.15,1.16,.075,x-.1,y,z+.82,frame);
+  }
+
   function addBackBalcony(scene,min,max,y,index){
     const rail=mat(scene,'rail','#45423d'),slab=mat(scene,'slab','#ad9b82');
     const width=Math.min((max.x-min.x)*.48,8.5),cx=(min.x+max.x)/2,z=max.z+.58;
@@ -69,6 +83,40 @@
     const ac=mat(scene,'ac','#d2cec4'),vent=mat(scene,'vent','#6e706e');
     wb(scene,'leftAC',.32,.48,.8,x-.19,y,z,ac);
     for(let i=-2;i<=2;i++)wb(scene,'leftACVent',.015,.022,.5,x-.36,y+i*.056,z,vent);
+  }
+
+  function addGroundSideLife(scene,min,max,index,height){
+    const door=mat(scene,'serviceDoor','#46372d'),metal=mat(scene,'utility','#77736b'),dark=mat(scene,'utilityDark','#4c4b47'),patch=mat(scene,'wallPatch','#8f7c65');
+    const cz=(min.z+max.z)/2,depth=max.z-min.z;
+    const rightX=max.x+.09,leftX=min.x-.09;
+
+    // Service entrances break up the huge blank ground-floor side walls.
+    wb(scene,'rightServiceDoor',.14,2.15,1.35,rightX,1.1,cz,door);
+    wb(scene,'rightDoorLintel',.18,.12,1.6,rightX+.02,2.23,cz,patch);
+    wb(scene,'leftServiceDoor',.14,2.15,1.35,leftX,1.1,cz-depth*.18,door);
+    wb(scene,'leftDoorLintel',.18,.12,1.6,leftX-.02,2.23,cz-depth*.18,patch);
+
+    if(depth>19){
+      addRightGroundWindow(scene,max.x+.02,1.35,cz-depth*.27);
+      addRightGroundWindow(scene,max.x+.02,1.35,cz+depth*.27);
+      addLeftGroundWindow(scene,min.x-.02,1.35,cz+depth*.26);
+    }
+
+    // Meter boxes, conduits and patched plaster give the lower facade believable scale.
+    for(let k=0;k<3;k++){
+      const z=cz-depth*.36+k*.72;
+      wb(scene,'rightMeterBox',.16,.54,.42,rightX+.03,.95,z,metal);
+      wb(scene,'rightMeterInset',.18,.29,.23,rightX+.05,.96,z,dark);
+    }
+    wb(scene,'rightConduit',.08,height-.9,.08,rightX+.05,height/2,cz+depth*.39,metal);
+    wb(scene,'leftConduit',.08,height-.9,.08,leftX-.05,height/2,cz-depth*.4,metal);
+
+    const patchY=[.55,1.75,2.55];
+    patchY.forEach((y,k)=>{
+      const z=cz+((index+k)%3-1)*depth*.25;
+      wb(scene,'rightPlasterPatch',.055,.34,1.25,rightX+.015,y,z,patch);
+      if(k<2)wb(scene,'leftPlasterPatch',.055,.28,1.05,leftX-.015,y,cz-z+cz,patch);
+    });
   }
 
   function skinBuilding(scene,b,index){
@@ -97,6 +145,7 @@
     wb(scene,'backDoor',1.5,2.25,.14,(min.x+max.x)/2,1.16,max.z+.09,door);
     wb(scene,'backDoorTop',1.8,.12,.18,(min.x+max.x)/2,2.35,max.z+.1,band);
     wb(scene,'leftDrain',.1,height-.7,.1,min.x-.14,height/2,(min.z+max.z)/2,mat(scene,'pipe','#6f6b64'));
+    addGroundSideLife(scene,min,max,index,height);
     return windows;
   }
 
@@ -107,7 +156,7 @@
       let windows=0;
       buildings.forEach((b,i)=>{windows+=skinBuilding(scene,b,i);});
       const newMeshes=scene.meshes.filter(m=>m.name.startsWith('v9f_'));
-      window.__V9_FACADES={version:1,buildings:buildings.length,windows,newMeshes:newMeshes.length,blankSidesFilled:true,collisions:newMeshes.filter(m=>m.checkCollisions).length};
+      window.__V9_FACADES={version:2,buildings:buildings.length,windows,newMeshes:newMeshes.length,blankSidesFilled:true,groundSidesDetailed:true,collisions:newMeshes.filter(m=>m.checkCollisions).length};
       window.__V9_PATCH.facades='four-sided-lived-in-buildings';
       if(window.__egyptDebug)window.__egyptDebug.v9FacadeState=()=>({...window.__V9_FACADES});
     }catch(err){fail('V9 four-side facade rebuild failed',err);}
