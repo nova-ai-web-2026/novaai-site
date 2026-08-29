@@ -21,8 +21,6 @@
     #toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);padding:10px 15px;border-radius:12px;opacity:0;transition:.2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
     #mapWrap{position:absolute;left:12px;bottom:max(12px,env(safe-area-inset-bottom));width:154px;height:154px;padding:7px;border-radius:18px}#minimap{width:100%;height:100%;display:block;border-radius:12px;background:#2f352b}
     #cross{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border:1px solid rgba(255,255,255,.62);border-radius:50%}
-
-    /* V6 menu: the actual 3D world stays visible behind this cinematic overlay. */
     #menu{position:fixed;inset:0;z-index:40;overflow:auto;background:linear-gradient(90deg,rgba(8,8,7,.10) 0%,rgba(8,8,7,.28) 34%,rgba(8,8,7,.72) 68%,rgba(8,8,7,.94) 100%)}
     #menu:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(7,7,6,.75),transparent 42%),radial-gradient(circle at 25% 28%,rgba(236,177,72,.13),transparent 34%)}
     #menuScene{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 130px rgba(0,0,0,.42)}
@@ -35,7 +33,6 @@
     .menuMeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px;max-width:430px}.pill{font-size:10px;padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.11);background:rgba(8,8,7,.28);color:#e9dfcf}
     #menuStatus{margin-top:13px;font-size:12px;color:#e8c77e;min-height:18px}.menuFoot{margin-top:20px;font-size:10px;opacity:.42;letter-spacing:.2px}
     #errorBox{display:none;position:fixed;z-index:60;left:18px;right:18px;bottom:18px;padding:14px;border-radius:14px;background:#4a1f1b;border:1px solid #ff8c7e;color:#fff;line-height:1.6}
-
     #mobile{display:none;position:absolute;inset:0;pointer-events:none}#joy{position:absolute;left:20px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);pointer-events:auto;touch-action:none}#knob{position:absolute;left:39px;top:39px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.42)}#act,#run{position:absolute;right:20px;border:1px solid rgba(255,255,255,.16);border-radius:50%;color:#fff;background:rgba(31,24,19,.76);pointer-events:auto;font-weight:900}#act{bottom:40px;width:72px;height:72px}#run{bottom:122px;right:33px;width:50px;height:50px;font-size:11px}
     #shop,#dialog{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.54);pointer-events:auto}.modal{width:min(560px,96vw);max-height:80vh;overflow:auto;padding:20px;border-radius:20px;background:#2b211b;border:1px solid var(--line)}.modal h2{margin:0 0 6px}.desc{opacity:.76;line-height:1.6}.item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border-radius:11px;background:rgba(255,255,255,.06);margin-top:7px}.item button,.closeBtn{border:0;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}.item button{background:var(--gold);color:#20150d}.closeBtn{margin-top:12px;width:100%;background:#4a3a30;color:#fff}.who{color:var(--gold);font-weight:900;margin-bottom:8px}#dialogText{line-height:1.8}
     @media(max-width:760px){#stats{grid-template-columns:repeat(2,minmax(72px,1fr));width:64vw;min-width:0}.stat{padding:5px 7px}.val{font-size:13px}#clock{min-width:102px;padding:8px}.clockMain{font-size:17px}#mission{top:152px;width:72vw}#soundToggle{top:132px;left:10px}#mapWrap{width:116px;height:116px;bottom:170px}#mobile{display:block}#menu{background:linear-gradient(0deg,rgba(8,8,7,.95) 0%,rgba(8,8,7,.8) 62%,rgba(8,8,7,.34) 100%)}#menuContent{width:100%;padding:34vh 22px 32px;justify-content:flex-end}.logo{font-size:58px}.tagline{font-size:14px;line-height:1.7}.menuButtons{width:100%}.menuTopline{margin-bottom:12px}}
@@ -44,63 +41,12 @@
 <body>
   <canvas id="game"></canvas>
   <div id="hud">
-    <div id="top"><div id="stats" class="glass">
-      <div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">300 ج</div></div>
-      <div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">84%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div>
-      <div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">92%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div>
-      <div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">76%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div>
-    </div><div id="clock" class="glass"><div id="time" class="clockMain">08:20</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
-    <button id="soundToggle">🔊 الصوت</button>
-    <div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل وافطر ولف السوق.</div></div>
-    <div id="prompt" class="glass">E — تفاعل</div><div id="toast" class="glass"></div>
-    <div id="mapWrap" class="glass"><canvas id="minimap" width="300" height="300"></canvas></div><div id="cross"></div>
-    <div id="mobile"><div id="joy"><div id="knob"></div></div><button id="run">جري</button><button id="act">تفاعل</button></div>
+    <div id="top"><div id="stats" class="glass"><div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">300 ج</div></div><div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">84%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div><div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">92%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div><div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">76%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div></div><div id="clock" class="glass"><div id="time" class="clockMain">08:20</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
+    <button id="soundToggle">🔊 الصوت</button><div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل وافطر ولف السوق.</div></div><div id="prompt" class="glass">E — تفاعل</div><div id="toast" class="glass"></div><div id="mapWrap" class="glass"><canvas id="minimap" width="300" height="300"></canvas></div><div id="cross"></div><div id="mobile"><div id="joy"><div id="knob"></div></div><button id="run">جري</button><button id="act">تفاعل</button></div>
   </div>
-
-  <div id="menu">
-    <div id="menuScene"></div>
-    <div id="menuContent">
-      <div class="menuTopline"><span class="kicker">HAYAT MASR • V6</span><span class="menuLocation">القاهرة • يوم جديد</span></div>
-      <h1 class="logo">حياة <span>مصر</span></h1>
-      <div class="tagline">انزل الشارع، افطر، اشتغل، قابل الناس وعيش يوم مصري كامل في حارة مفتوحة بتفاصيلها وحركتها.</div>
-      <div class="menuRule"></div>
-      <div class="menuButtons">
-        <button id="newGameBtn" class="menuBtn primary">ابدأ يوم جديد&nbsp;&nbsp;←</button>
-        <button id="continueBtn" class="menuBtn">كمّل من آخر حفظ</button>
-        <button id="resetBtn" class="menuBtn danger">مسح الحفظ</button>
-      </div>
-      <div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">الماوس نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">M صوت</span></div>
-      <div id="menuStatus"></div>
-      <div class="menuFoot">الخلفية اللي قدامك هي العالم الـ3D نفسه، مش صورة ثابتة.</div>
-    </div>
-  </div>
-
-  <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div>
-  <div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div>
-  <div id="errorBox"></div>
-
-  <script>
-    (() => {
-      const proto=window.BABYLON?.UniversalCamera?.prototype;
-      if(!proto||typeof proto.moveWithCollisions==='function')return;
-      proto.moveWithCollisions=function(delta){
-        const scene=this.getScene(),radius=.38;
-        const blocked=(x,z)=>{
-          if(Math.abs(x)>105.5||Math.abs(z)>105.5)return true;
-          for(const mesh of scene.meshes){
-            if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;
-            mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;
-            if(max.y<.08||min.y>2.45)continue;
-            if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;
-          }
-          return false;
-        };
-        const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;
-        const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;
-        return this;
-      };
-    })();
-  </script>
-  <script src="game-v6.js"></script>
+  <div id="menu"><div id="menuScene"></div><div id="menuContent"><div class="menuTopline"><span class="kicker">HAYAT MASR • V7</span><span class="menuLocation">القاهرة • يوم جديد</span></div><h1 class="logo">حياة <span>مصر</span></h1><div class="tagline">حياة مصر — مدينة مصرية مفتوحة بتفاصيل يومية أكثر، ومشية طبيعية للشخصيات من غير الحركة الثقيلة القديمة.</div><div class="menuRule"></div><div class="menuButtons"><button id="newGameBtn" class="menuBtn primary">ابدأ يوم جديد&nbsp;&nbsp;←</button><button id="continueBtn" class="menuBtn">كمّل من آخر حفظ</button><button id="resetBtn" class="menuBtn danger">مسح الحفظ</button></div><div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">الماوس نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">M صوت</span></div><div id="menuStatus"></div><div class="menuFoot">الخلفية اللي قدامك هي العالم الـ3D نفسه، مش صورة ثابتة.</div></div></div>
+  <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div><div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div><div id="errorBox"></div>
+  <script>(()=>{const proto=window.BABYLON?.UniversalCamera?.prototype;if(!proto||typeof proto.moveWithCollisions==='function')return;proto.moveWithCollisions=function(delta){const scene=this.getScene(),radius=.38;const blocked=(x,z)=>{if(Math.abs(x)>105.5||Math.abs(z)>105.5)return true;for(const mesh of scene.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.08||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;};})();</script>
+  <script src="game-v7.js"></script>
 </body>
 </html>
