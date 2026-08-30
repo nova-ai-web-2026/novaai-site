@@ -32,7 +32,7 @@
 
   function loadV11AudioFix(){
     if(document.querySelector('script[data-egypt-v11-audiofix]'))return;
-    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.6';s.dataset.egyptV11Audiofix='true';s.async=false;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.7';s.dataset.egyptV11Audiofix='true';s.async=false;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
   }
   function loadV111(){
     if(document.querySelector('script[data-egypt-v111]')){if(window.__V111_PATCH?.version==='11.1')loadV11AudioFix();return;}
