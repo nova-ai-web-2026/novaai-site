@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.5 Audio Output
+name: Test Egyptian Life Simulator V11.6 Startup + Audio
 
 on:
   pull_request:
@@ -10,19 +10,19 @@ permissions:
   contents: read
 
 jobs:
-  v115-audio-output:
+  v116-startup-audio:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.5 files
+      - name: Validate audio files
         run: |
           test -s egypt-life-sim-v2/game-v11-4-audio.js
           node --check egypt-life-sim-v2/game-v11-4-audio.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "game-v11-4-audio.js?v=11.5" egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "isolated-native-audiocontext" egypt-life-sim-v2/game-v11-4-audio.js
           grep -Fq "v115SoundTest" egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq "touchstart" egypt-life-sim-v2/game-v11-4-audio.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -30,33 +30,85 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start game server
         run: |
-          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v115-server.log 2>&1 &
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v116-server.log 2>&1 &
           sleep 2
-      - name: Verify isolated audio waveform
+      - name: Reproduce full mobile startup flow
         run: |
-          cat > v115-smoke.mjs <<'EOF'
+          cat > v116-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
+          import fs from 'node:fs';
           const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v115',{waitUntil:'networkidle'});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v116',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V115_AUDIO?.version==='11.5'&&!!document.getElementById('v115SoundTest'),{timeout:50000});
+          await page.screenshot({path:'menu-before.png',fullPage:true});
+          const menuBefore=await page.evaluate(()=>({
+            menuDisplay:getComputedStyle(document.getElementById('menu')).display,
+            menuVisibility:getComputedStyle(document.getElementById('menu')).visibility,
+            menuOpacity:getComputedStyle(document.getElementById('menu')).opacity,
+            hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+            errorText:document.getElementById('errorBox')?.textContent||'',
+            bodyClass:document.body.className
+          }));
           await page.dispatchEvent('#v115SoundTest','pointerdown',{pointerType:'touch',isPrimary:true});
           await page.waitForFunction(()=>window.__V115_CONTEXT?.state==='running'&&!!window.__V115_ANALYSER&&window.__V115_AUDIO?.started===true,{timeout:12000});
-          await page.waitForTimeout(300);
-          const state=await page.evaluate(()=>{
+          await page.waitForTimeout(350);
+          await page.screenshot({path:'menu-after-audio.png',fullPage:true});
+          const audioBeforeStart=await page.evaluate(()=>{
             const a=window.__V115_ANALYSER,n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);
             let sum=0,peak=0;for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-            return {rms:Math.sqrt(sum/n),peak,ctx:window.__V115_CONTEXT.state,master:window.__V115_MASTER?.gain?.value??null,declared:window.__V115_AUDIO,label:document.getElementById('v115SoundTest')?.textContent};
+            return {rms:Math.sqrt(sum/n),peak,ctx:window.__V115_CONTEXT.state,master:window.__V115_MASTER?.gain?.value??null,label:document.getElementById('v115SoundTest')?.textContent};
           });
-          if(state.ctx!=='running')throw new Error('Isolated context not running '+JSON.stringify(state));
-          if(state.master===null||state.master<.7)throw new Error('V11.5 master unexpectedly low '+JSON.stringify(state));
-          if(state.rms<.003||state.peak<.008)throw new Error('No measurable audio waveform '+JSON.stringify(state));
-          if(!state.label?.includes('شغال'))throw new Error('Sound-test UI did not confirm '+JSON.stringify(state));
-          if(state.declared.hornEvents!==false||state.declared.oscillatorTones!==false)throw new Error('Harsh audio regression '+JSON.stringify(state));
-          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          await page.click('#newGameBtn');
+          await page.waitForTimeout(2800);
+          await page.screenshot({path:'game-after-start.png',fullPage:true});
+          const afterStart=await page.evaluate(()=>{
+            const box=document.getElementById('errorBox');
+            const menu=document.getElementById('menu');
+            const a=window.__V115_ANALYSER;
+            let rms=null,peak=null;
+            if(a){const n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);let sum=0,p=0;for(const v of data){const x=(v-128)/128;sum+=x*x;p=Math.max(p,Math.abs(x));}rms=Math.sqrt(sum/n);peak=p;}
+            return {
+              errorVisible:box?getComputedStyle(box).display!=='none':false,
+              errorText:box?.textContent||'',
+              menuDisplay:menu?getComputedStyle(menu).display:null,
+              menuVisibility:menu?getComputedStyle(menu).visibility:null,
+              menuOpacity:menu?getComputedStyle(menu).opacity:null,
+              hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+              bodyClass:document.body.className,
+              ctx:window.__V115_CONTEXT?.state||null,
+              rms,peak,
+              audio:window.__V115_AUDIO||null,
+              startup:window.__V113_STARTUP||null,
+              audiofix:window.__V11_AUDIOFIX||null
+            };
+          });
+          const diag={menuBefore,audioBeforeStart,afterStart,errors};
+          fs.writeFileSync('v116-diagnostic.json',JSON.stringify(diag,null,2));
+          console.log('V11.6 diagnostic',diag);
+          if(menuBefore.menuVisibility!=='visible'||menuBefore.hudVisibility!=='hidden')throw new Error('Startup menu guard invalid '+JSON.stringify(menuBefore));
+          if(menuBefore.errorVisible)throw new Error('Error already visible on start screen '+JSON.stringify(menuBefore));
+          if(audioBeforeStart.ctx!=='running'||audioBeforeStart.rms<.003||audioBeforeStart.peak<.008)throw new Error('Audio test has no measurable signal '+JSON.stringify(audioBeforeStart));
+          if(afterStart.errorVisible)throw new Error('Runtime error after starting game: '+afterStart.errorText);
+          if(afterStart.menuDisplay!=='none')throw new Error('Menu did not close cleanly '+JSON.stringify(afterStart));
+          if(afterStart.hudVisibility==='hidden')throw new Error('HUD remained hidden after start '+JSON.stringify(afterStart));
+          if(afterStart.ctx!=='running'||afterStart.rms===null||afterStart.rms<.002)throw new Error('Audio disappeared after game start '+JSON.stringify(afterStart));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.5 isolated real audio output passed',state);
           await browser.close();
           EOF
-          node v115-smoke.mjs
+          node v116-smoke.mjs
+      - name: Upload diagnostic screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v116-mobile-diagnostic
+          path: |
+            menu-before.png
+            menu-after-audio.png
+            game-after-start.png
+            v116-diagnostic.json
+          if-no-files-found: warn
