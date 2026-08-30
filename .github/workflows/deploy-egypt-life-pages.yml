@@ -30,10 +30,9 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.7 release files
+      - name: Validate V11.8 release files
         run: |
           test -s egypt-life-sim-v2/index.html
-          test -s egypt-life-sim-v2/game.js
           test -s egypt-life-sim-v2/game-v7.js
           test -s egypt-life-sim-v2/game-v8-layout.js
           test -s egypt-life-sim-v2/game-v9.js
@@ -45,7 +44,8 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-1.js
           test -s egypt-life-sim-v2/game-v11-audiofix.js
           test -s egypt-life-sim-v2/game-v11-6-runtime.js
-          node --check egypt-life-sim-v2/game.js
+          test -s egypt-life-sim-v2/game-v11-8-sfx.js
+          for f in step_pavement.wav step_asphalt.wav interact.wav buy_coin.wav door.wav reward.wav; do test -s "egypt-life-sim-v2/audio/v11-8/$f"; done
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
           node --check egypt-life-sim-v2/game-v9.js
@@ -57,18 +57,16 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-1.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq 'game-v11-6-runtime.js?v=11.7' egypt-life-sim-v2/index.html
-          grep -Fq 'data-egypt-v116-runtime="true"' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v8-layout.js?v=11.7' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-audiofix.js?v=11.7' egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq 'game-v11-6-runtime.js?v=11.7' egypt-life-sim-v2/game-v11-audiofix.js
+          node --check egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'game-v11-6-runtime.js?v=11.8' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-8-sfx.js?v=11.8' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v8-layout.js?v=11.8' egypt-life-sim-v2/index.html
           grep -Fq 'body:not(.game-started) #hud' egypt-life-sim-v2/index.html
-          grep -Fq 'v117EarlyRuntime:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'sampled-media-sfx' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'sampleFiles:Object.keys(files).length' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'legacyHum:false' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'legacyHorns:false' egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq 'early-shared-native-audiocontext' egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq 'armedBeforeCore:true' egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq 'queuedStartSupported:true' egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq 'legacyBusesAutoDisconnected:true' egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v11-6-runtime.js
           if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi

@@ -1,0 +1,97 @@
+name: Test Egyptian Life Simulator V11.8 SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-8.yml'
+  workflow_dispatch:
+
+jobs:
+  v118-sfx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.8 sample SFX files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-8-sfx.js
+          for f in step_pavement.wav step_asphalt.wav interact.wav buy_coin.wav door.wav reward.wav; do test -s "egypt-life-sim-v2/audio/v11-8/$f"; done
+          node --check egypt-life-sim-v2/game-v11-8-sfx.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-8-sfx.js?v=11.8" egypt-life-sim-v2/index.html
+          grep -Fq "sampled-media-sfx" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "legacyHum:false" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "legacyHorns:false" egypt-life-sim-v2/game-v11-8-sfx.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v118-server.log 2>&1 &
+          sleep 2
+      - name: Verify real WAV gameplay effects on mobile gesture policy
+        run: |
+          cat > v118-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v118-samples-real-policy',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.engine==='sampled-media-sfx'&&!!window.__V118_SFX_API,{timeout:55000});
+          const assets=await page.evaluate(async()=>Promise.all(['step_pavement.wav','step_asphalt.wav','interact.wav','buy_coin.wav','door.wav','reward.wav'].map(async n=>{const r=await fetch('audio/v11-8/'+n+'?ci=1');return {n,status:r.status,size:(await r.arrayBuffer()).byteLength};})));
+          for(const a of assets)if(a.status!==200||a.size<500)throw new Error('Bad WAV asset '+JSON.stringify(a));
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V118_SFX_API.state().unlockAttempted===true,{timeout:12000});
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().mediaUnlocked===true,{timeout:5000});
+          const unlocked=await page.evaluate(()=>window.__V118_SFX_API.state());
+          if(unlocked.unlockFailures!==0)throw new Error('Mobile media unlock failed '+JSON.stringify(unlocked));
+
+          const checkSample=async(apiName,key)=>{
+            const beforeResolved=await page.evaluate(({key})=>window.__V118_SFX_API.state().resolvedByKey[key]||0,{key});
+            await page.evaluate(({apiName})=>window.__V118_SFX_API.play(apiName),{apiName});
+            await page.waitForFunction(({key,beforeResolved})=>(window.__V118_SFX_API.state().resolvedByKey[key]||0)>beforeResolved,{key,beforeResolved},{timeout:5000});
+            await page.waitForTimeout(35);
+            return page.evaluate(({key})=>({state:window.__V118_SFX_API.state(),pool:window.__V118_MEDIA_POOLS[key].map(a=>({t:a.currentTime,p:a.paused,r:a.readyState,e:a.ended}))}),{key});
+          };
+
+          await page.dispatchEvent('#act','pointerdown',{pointerType:'touch',isPrimary:true});
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().events.interact>=1);
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().resolvedByKey.interact>=1);
+          const interact=await page.evaluate(()=>({state:window.__V118_SFX_API.state(),pool:window.__V118_MEDIA_POOLS.interact.map(a=>({t:a.currentTime,p:a.paused,r:a.readyState,e:a.ended}))}));
+          if(!interact.pool.some(a=>a.t>0||!a.p||a.e))throw new Error('Interact WAV media never advanced '+JSON.stringify(interact));
+
+          const buy=await checkSample('buy','buy');
+          const door=await checkSample('door','door');
+          const reward=await checkSample('reward','reward');
+          for(const [name,result] of Object.entries({buy,door,reward}))if(!result.pool.some(a=>a.t>0||!a.p||a.e))throw new Error(name+' WAV media never advanced '+JSON.stringify(result));
+
+          const moveCamera=async(axis,amount)=>page.evaluate(async({axis,amount})=>{
+            const cam=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera;
+            if(!cam)throw new Error('No active camera');
+            const n=14,delta=amount/n;
+            for(let i=0;i<n;i++){cam.position[axis]+=delta;await new Promise(r=>setTimeout(r,105));}
+          },{axis,amount});
+
+          const beforePavement=await page.evaluate(()=>window.__V118_SFX_API.state().resolvedByKey.step_pavement||0);
+          await moveCamera('x',1.05);
+          await page.waitForFunction(before=>(window.__V118_SFX_API.state().resolvedByKey.step_pavement||0)>before,beforePavement,{timeout:6000});
+
+          await page.evaluate(()=>{const cam=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera;if(!cam)throw new Error('No active camera');cam.position.x=-24;});
+          await page.waitForTimeout(250);
+          const beforeAsphalt=await page.evaluate(()=>window.__V118_SFX_API.state().resolvedByKey.step_asphalt||0);
+          await moveCamera('z',1.05);
+          await page.waitForFunction(before=>(window.__V118_SFX_API.state().resolvedByKey.step_asphalt||0)>before,beforeAsphalt,{timeout:6000});
+
+          const finalState=await page.evaluate(()=>window.__V118_SFX_API.state());
+          if(finalState.sampleFiles!==6||finalState.playRejected!==0||finalState.unlockFailures!==0)throw new Error('Sample engine unhealthy '+JSON.stringify(finalState));
+          for(const key of ['interact','buy','door','reward','step_pavement','step_asphalt'])if((finalState.resolvedByKey[key]||0)<1)throw new Error('SFX did not resolve: '+key+' '+JSON.stringify(finalState));
+          if(!finalState.footsteps||!finalState.purchase||!finalState.doors||!finalState.rewards)throw new Error('SFX features missing '+JSON.stringify(finalState));
+          if(finalState.legacyHum!==false||finalState.legacyHorns!==false)throw new Error('Legacy harsh audio returned '+JSON.stringify(finalState));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.8 WAV SFX real mobile-policy passed',{assets,finalState});
+          await browser.close();
+          EOF
+          node v118-smoke.mjs

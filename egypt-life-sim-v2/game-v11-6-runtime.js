@@ -44,7 +44,6 @@
     try{
       window.AudioContext=SharedAudioContext;
       if(window.webkitAudioContext)window.webkitAudioContext=SharedAudioContext;
-      // Prevent V11 from wrapping the constructor again later in the patch chain.
       window.__V11_AUDIO_WRAPPED=true;
       return true;
     }catch(err){fail('V11.7 could not install shared AudioContext',err);return false;}
