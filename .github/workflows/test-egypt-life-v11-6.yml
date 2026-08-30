@@ -1,0 +1,85 @@
+name: Test Egyptian Life Simulator V11.6 Runtime
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-6.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v116-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.6 files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-6-runtime.js
+          node --check egypt-life-sim-v2/game-v11-6-runtime.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "game-v8-layout.js?v=11.6" egypt-life-sim-v2/index.html
+          grep -Fq "game-v11-audiofix.js?v=11.6" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "game-v11-6-runtime.js?v=11.6" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "single-top-level-audiocontext" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "body:not(.game-started) #hud" egypt-life-sim-v2/index.html
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v116-server.log 2>&1 &
+          sleep 2
+      - name: Verify direct mobile start, startup screen and audio waveform
+        run: |
+          cat > v116-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v116-direct',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V116_AUDIO?.version==='11.6',{timeout:50000});
+          const before=await page.evaluate(()=>({
+            menuVisible:getComputedStyle(document.getElementById('menu')).display!=='none',
+            hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+            oldGuard:document.body.classList.contains('v113-menu-open'),
+            oldTest:!!document.getElementById('v115SoundTest'),
+            old115:!!window.__V115_CONTEXT,
+            old112:!!window.__V112_MASTER
+          }));
+          if(!before.menuVisible||before.hudVisibility!=='hidden'||before.oldGuard||before.oldTest)throw new Error('Startup screen regression '+JSON.stringify(before));
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>window.__V116_AUDIO?.started===true&&window.__V116_CONTEXT?.state==='running'&&!!window.__V116_ANALYSER,{timeout:12000});
+          await page.waitForTimeout(700);
+          const after=await page.evaluate(()=>{
+            const a=window.__V116_ANALYSER,n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);
+            let sum=0,peak=0;for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+            return {
+              rms:Math.sqrt(sum/n),peak,
+              ctx:window.__V116_CONTEXT?.state,
+              master:window.__V116_MASTER?.gain?.value??null,
+              gameMaster:window.__V116_GAME_MASTER?.gain?.value??null,
+              menuDisplay:getComputedStyle(document.getElementById('menu')).display,
+              hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+              state:window.__egyptDebug?.v116AudioState?.(),
+              errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+              errorText:document.getElementById('errorBox')?.textContent||''
+            };
+          });
+          if(after.ctx!=='running')throw new Error('AudioContext not running '+JSON.stringify(after));
+          if(after.master===null||after.master<.65)throw new Error('V11.6 master too low '+JSON.stringify(after));
+          if(after.rms<.0025||after.peak<.006)throw new Error('No measurable V11.6 waveform '+JSON.stringify(after));
+          if(after.menuDisplay!=='none'||after.hudVisibility==='hidden')throw new Error('Start transition broken '+JSON.stringify(after));
+          if(after.errorVisible)throw new Error('Runtime errorBox: '+after.errorText);
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.6 direct-start runtime passed',{before,after});
+          await browser.close();
+          EOF
+          node v116-smoke.mjs
