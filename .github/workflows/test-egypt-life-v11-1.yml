@@ -1,0 +1,86 @@
+name: Test Egyptian Life Simulator V11.1
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v111-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.1 files and loader
+        run: |
+          node --check egypt-life-sim-v2/game-v11-1.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          node --check egypt-life-sim-v2/game-v11.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v11-1.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v11-audiofix.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'mirroredBackfacesFixed' egypt-life-sim-v2/game-v11-1.js
+          grep -Fq 'layered-procedural-cairo-v2' egypt-life-sim-v2/game-v11-1.js
+          grep -Fq 'v11BusDisconnected:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'microRoute_' egypt-life-sim-v2/game-v11-1.js
+          grep -Fq 'للإيجار' egypt-life-sim-v2/game-v11-1.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v111-server.log 2>&1 &
+          sleep 2
+      - name: Run V11.1 browser regression
+        run: |
+          cat > v111-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v111',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V111_PATCH?.version==='11.1',{timeout:30000});
+          const state=await page.evaluate(()=>window.__egyptDebug.v111State());
+          if(!state.arabicUV.mirroredBackfacesFixed||state.arabicUV.flipped<3)throw new Error('Arabic UV backface correction missing '+JSON.stringify(state.arabicUV));
+          if(state.details.routeCards<4||state.details.plates<4)throw new Error('Microbus Egyptian details missing '+JSON.stringify(state.details));
+          if(state.details.curbMarks<60||state.details.posters<6||state.details.coolers!==3)throw new Error('Street micro-details incomplete '+JSON.stringify(state.details));
+          if(state.audio.engine!=='layered-procedural-cairo-v2'||!state.audio.locationAware||state.audio.events.length<5)throw new Error('V11.1 audio engine missing '+JSON.stringify(state.audio));
+          const visual=await page.evaluate(()=>{
+            const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],home=scene.meshes.find(m=>m.name==='v11_homeLabel');
+            return {v111Meshes:scene.meshes.filter(m=>m.name.startsWith('v111_')).length,homeScale:home?.material?.diffuseTexture?.uScale??null,homeRotation:home?.rotation?.y??null,routeCards:scene.meshes.filter(m=>m.name.startsWith('v111_microRoute_')).length};
+          });
+          if(visual.v111Meshes<100||visual.homeScale===null||visual.homeScale>=0||visual.routeCards<4)throw new Error('V11.1 visual correction incomplete '+JSON.stringify(visual));
+          await page.screenshot({path:'menu-v111.png',fullPage:true});
+          await page.click('#newGameBtn');await page.waitForTimeout(1750);
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          await page.waitForFunction(()=>!!window.__V11_AUDIO_CONTEXT&&window.__V11_AUDIOFIX?.v11BusDisconnected,{timeout:5000});
+          const audioRuntime=await page.evaluate(()=>({ctx:window.__V11_AUDIO_CONTEXT?.state,legacy:window.__V11_LEGACY_MASTER?.gain?.value??null,v11Gain:window.__V11_OWN_MASTER?.gain?.value??null,v11Disconnected:!!window.__V11_OWN_MASTER?.__v111Disconnected,lock:window.__V11_AUDIOFIX}));
+          if(!audioRuntime.ctx||audioRuntime.legacy===null||audioRuntime.legacy>.04||!audioRuntime.v11Disconnected||!audioRuntime.lock?.v11BusDisconnected)throw new Error('Old synthetic audio bus still connected '+JSON.stringify(audioRuntime));
+          if(errors.length)throw new Error(errors.join('\n'));
+          await page.screenshot({path:'street-v111.png',fullPage:true});
+          const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          await mobile.goto('http://127.0.0.1:4173/?ci=v111-mobile',{waitUntil:'networkidle'});
+          await mobile.waitForFunction(()=>window.__V111_PATCH?.version==='11.1',{timeout:50000});
+          await mobile.click('#newGameBtn');await mobile.waitForTimeout(1000);
+          if(await mobile.isVisible('#errorBox'))throw new Error('Mobile runtime error: '+await mobile.textContent('#errorBox'));
+          await mobile.screenshot({path:'mobile-v111.png',fullPage:true});
+          console.log('V11.1 test passed',{state,visual,audioRuntime});
+          await browser.close();
+          EOF
+          node v111-smoke.mjs
+      - name: Upload V11.1 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egypt-life-v11-1-visuals
+          path: |
+            menu-v111.png
+            street-v111.png
+            mobile-v111.png
+          if-no-files-found: ignore
