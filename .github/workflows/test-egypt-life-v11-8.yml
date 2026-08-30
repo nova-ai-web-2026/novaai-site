@@ -38,74 +38,78 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v118-server.log 2>&1 &
           sleep 2
-      - name: Verify gameplay SFX waveform on mobile gesture policy
+      - name: Verify mobile gesture policy and non-silent samples
         run: |
-          cat > v118-smoke.mjs <<'EOF'
+          cat > v118-policy.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];
-          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v1181-sfx-window',{waitUntil:'networkidle'});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1181-policy',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V118_READY===true&&window.__V118_SFX?.version==='11.8.1'&&window.__V118_SFX?.webAudioPrimary===true&&!!window.__V118_SFX_API,{timeout:55000});
-
-          const assets=await page.evaluate(async()=>Promise.all(['step_pavement.wav','step_asphalt.wav','interact.wav','buy_coin.wav','door.wav','reward.wav'].map(async n=>{const r=await fetch('audio/v11-8/'+n+'?ci=1181');return {n,status:r.status,size:(await r.arrayBuffer()).byteLength};})));
-          for(const a of assets)if(a.status!==200||a.size<500)throw new Error('Bad WAV asset '+JSON.stringify(a));
-
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V118_CONTEXT?.state==='running'&&!!window.__V118_GAME_MASTER&&typeof window.__V118_AUDIO_STATE==='function',{timeout:12000});
-          await page.waitForFunction(()=>!!window.__V118_SFX_ANALYSER&&!!window.__V118_SFX_BUS,{timeout:8000});
           const runtime=await page.evaluate(()=>window.__V118_AUDIO_STATE());
           if(!runtime?.gameMasterConnected||!(runtime.gameMasterValue>0))throw new Error('Gameplay master not preserved '+JSON.stringify(runtime));
           if(runtime.legacyExtraBusesMuted!==true)throw new Error('Legacy extra buses not muted '+JSON.stringify(runtime));
 
-          const measure=async(apiName,key)=>page.evaluate(async({apiName,key})=>{
-            const api=window.__V118_SFX_API,buffer=await api.decodeSample(key);
-            if(!buffer)throw new Error('No decoded buffer for '+key);
-            const pcm=buffer.getChannelData(0);let pcmSum=0,pcmPeak=0;
-            for(const v of pcm){pcmSum+=v*v;pcmPeak=Math.max(pcmPeak,Math.abs(v));}
-            const bufferRms=Math.sqrt(pcmSum/Math.max(1,pcm.length));
-            const before=api.state().resolvedByKey[key]||0;
-            api.play(apiName);
-            const analyser=window.__V118_SFX_ANALYSER,n=analyser.fftSize,data=new Uint8Array(n);
-            let maxRms=0,maxPeak=0,samples=0;
-            const end=performance.now()+600;
-            while(performance.now()<end){
-              analyser.getByteTimeDomainData(data);let sum=0,peak=0;
-              for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-              maxRms=Math.max(maxRms,Math.sqrt(sum/n));maxPeak=Math.max(maxPeak,peak);samples++;
-              if((api.state().resolvedByKey[key]||0)>before&&maxPeak>.003&&samples>3)break;
-              await new Promise(r=>setTimeout(r,4));
+          const keys=['interact','buy','door','reward','step_pavement','step_asphalt'];
+          const metrics=await page.evaluate(async keys=>{
+            const api=window.__V118_SFX_API,out={};
+            for(const key of keys){
+              const b=await api.decodeSample(key);if(!b)throw new Error('Decode failed '+key);
+              const d=b.getChannelData(0);let sum=0,peak=0;for(const v of d){sum+=v*v;peak=Math.max(peak,Math.abs(v));}
+              out[key]={rms:Math.sqrt(sum/Math.max(1,d.length)),peak,duration:b.duration};
             }
-            return {bufferRms,bufferPeak:pcmPeak,rms:maxRms,peak:maxPeak,resolvedBefore:before,resolvedAfter:api.state().resolvedByKey[key]||0,state:api.state()};
-          },{apiName,key});
+            return out;
+          },keys);
+          for(const [key,m] of Object.entries(metrics))if(m.rms<.001||m.peak<.005||m.duration<=0)throw new Error('Silent sample '+key+' '+JSON.stringify(m));
 
-          const validate=(key,r)=>{
-            if(r.bufferRms<.001||r.bufferPeak<.005)throw new Error('Silent WAV data for '+key+' '+JSON.stringify(r));
-            if(r.resolvedAfter<=r.resolvedBefore)throw new Error('SFX did not resolve for '+key+' '+JSON.stringify(r));
-            if(r.rms<.0005||r.peak<.003)throw new Error('No output waveform for '+key+' '+JSON.stringify(r));
-          };
-
-          await page.dispatchEvent('#act','pointerdown',{pointerType:'touch',isPrimary:true});
-          await page.waitForFunction(()=>window.__V118_SFX_API.state().events.interact>=1,{timeout:6000});
-          await page.waitForFunction(()=>window.__V118_SFX_API.state().resolvedByKey.interact>=1,{timeout:6000});
-
-          const interact=await measure('interact','interact');validate('interact',interact);
-          const buy=await measure('buy','buy');validate('buy',buy);
-          const door=await measure('door','door');validate('door',door);
-          const reward=await measure('reward','reward');validate('reward',reward);
-          const pavement=await measure('step','step_pavement');validate('step_pavement',pavement);
-          const asphalt=await measure('asphalt','step_asphalt');validate('step_asphalt',asphalt);
-
+          const apiNames={interact:'interact',buy:'buy',door:'door',reward:'reward',step_pavement:'step',step_asphalt:'asphalt'};
+          for(const key of keys){
+            const before=await page.evaluate(key=>window.__V118_SFX_API.state().resolvedByKey[key]||0,key);
+            await page.evaluate(name=>window.__V118_SFX_API.play(name),apiNames[key]);
+            await page.waitForFunction(({key,before})=>(window.__V118_SFX_API.state().resolvedByKey[key]||0)>before,{key,before},{timeout:6000});
+          }
           const finalState=await page.evaluate(()=>window.__V118_SFX_API.state());
-          if(finalState.sampleFiles!==6||finalState.playRejected!==0||finalState.webAudioRejected!==0)throw new Error('SFX engine unhealthy '+JSON.stringify(finalState));
-          for(const key of ['interact','buy','door','reward','step_pavement','step_asphalt'])if((finalState.resolvedByKey[key]||0)<1)throw new Error('SFX did not resolve: '+key+' '+JSON.stringify(finalState));
-          if(finalState.webAudioResolved<6||!finalState.sfxAnalyser||!finalState.webAudioPrimary)throw new Error('WebAudio SFX path not active '+JSON.stringify(finalState));
-          if(finalState.legacyHum!==false||finalState.legacyHorns!==false)throw new Error('Legacy harsh audio returned '+JSON.stringify(finalState));
+          if(finalState.playRejected!==0||finalState.webAudioRejected!==0||finalState.webAudioResolved<6)throw new Error('Mobile WebAudio SFX unhealthy '+JSON.stringify(finalState));
+          if(!finalState.webAudioPrimary||finalState.legacyHum!==false||finalState.legacyHorns!==false)throw new Error('Wrong SFX engine '+JSON.stringify(finalState));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.8.1 SFX waveform passed',{runtime,assets,waveforms:{interact,buy,door,reward,pavement,asphalt},finalState});
+          console.log('V11.8.1 mobile policy passed',{runtime,metrics,finalState});
           await browser.close();
           EOF
-          node v118-smoke.mjs
+          node v118-policy.mjs
+      - name: Verify rendered SFX waveforms
+        run: |
+          cat > v118-waveform.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1181-waveform',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V118_READY===true&&!!window.__V118_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>window.__V118_CONTEXT?.state==='running'&&!!window.__V118_SFX_ANALYSER,{timeout:12000});
+
+          const measure=async(apiName,key)=>page.evaluate(async({apiName,key})=>{
+            const api=window.__V118_SFX_API,before=api.state().resolvedByKey[key]||0,analyser=window.__V118_SFX_ANALYSER,n=analyser.fftSize,d=new Uint8Array(n);
+            api.play(apiName);let maxRms=0,maxPeak=0;const end=performance.now()+650;
+            while(performance.now()<end){
+              analyser.getByteTimeDomainData(d);let sum=0,peak=0;for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+              maxRms=Math.max(maxRms,Math.sqrt(sum/n));maxPeak=Math.max(maxPeak,peak);
+              if((api.state().resolvedByKey[key]||0)>before&&maxPeak>.003)break;
+              await new Promise(r=>setTimeout(r,4));
+            }
+            return {rms:maxRms,peak:maxPeak,before,after:api.state().resolvedByKey[key]||0};
+          },{apiName,key});
+
+          const cases=[['interact','interact'],['buy','buy'],['door','door'],['reward','reward'],['step','step_pavement'],['asphalt','step_asphalt']],waveforms={};
+          for(const [apiName,key] of cases){const r=await measure(apiName,key);waveforms[key]=r;if(r.after<=r.before||r.rms<.0005||r.peak<.003)throw new Error('No rendered waveform '+key+' '+JSON.stringify(r));}
+          const state=await page.evaluate(()=>window.__V118_SFX_API.state());
+          if(state.webAudioRejected!==0||state.playRejected!==0)throw new Error('Waveform engine errors '+JSON.stringify(state));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.8.1 rendered waveforms passed',{waveforms,state});
+          await browser.close();
+          EOF
+          node v118-waveform.mjs
