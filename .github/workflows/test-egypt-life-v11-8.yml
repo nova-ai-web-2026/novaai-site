@@ -41,20 +41,22 @@ jobs:
           await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.version==='11.8'&&!!window.__V118_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V117_CONTEXT?.state==='running'&&!!window.__V118_SFX_ANALYSER,{timeout:12000});
-          const peakFor=async(ms=180)=>await page.evaluate(async(ms)=>{
+          const peakDuring=async(kind,ms=300)=>await page.evaluate(async({kind,ms})=>{
             const a=window.__V118_SFX_ANALYSER,n=a.fftSize,data=new Uint8Array(n);let max=0;
+            setTimeout(()=>{
+              if(kind==='interact')document.getElementById('act')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',isPrimary:true}));
+              else if(kind==='buy'){const t=document.getElementById('toast');t.textContent='اشتريت ساندوتش فول';t.classList.add('show');}
+              else window.__V118_SFX_API.play(kind);
+            },12);
             const until=performance.now()+ms;
-            while(performance.now()<until){a.getByteTimeDomainData(data);for(const v of data)max=Math.max(max,Math.abs((v-128)/128));await new Promise(r=>setTimeout(r,8));}
+            while(performance.now()<until){a.getByteTimeDomainData(data);for(const v of data)max=Math.max(max,Math.abs((v-128)/128));await new Promise(r=>setTimeout(r,6));}
             return max;
-          },ms);
-          await page.dispatchEvent('#act','pointerdown',{pointerType:'touch',isPrimary:true});
-          const interactPeak=await peakFor(220);
+          },{kind,ms});
+          const interactPeak=await peakDuring('interact',320);
           await page.waitForFunction(()=>window.__V118_SFX?.events?.interact>=1);
-          await page.evaluate(()=>{const t=document.getElementById('toast');t.textContent='اشتريت ساندوتش فول';t.classList.add('show');});
-          const buyPeak=await peakFor(260);
+          const buyPeak=await peakDuring('buy',360);
           await page.waitForFunction(()=>window.__V118_SFX?.events?.buy>=1);
-          await page.evaluate(()=>window.__V118_SFX_API.play('door'));
-          const doorPeak=await peakFor(220);
+          const doorPeak=await peakDuring('door',320);
           const state=await page.evaluate(()=>window.__egyptDebug.v118SfxState());
           if(interactPeak<.01)throw new Error('Interaction SFX waveform too weak '+interactPeak);
           if(buyPeak<.01)throw new Error('Purchase SFX waveform too weak '+buyPeak);
