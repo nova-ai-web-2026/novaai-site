@@ -21,6 +21,7 @@ jobs:
           grep -Fq "event-sfx-on-shared-audiocontext" egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq "legacyHum:false" egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq "legacyHorns:false" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "game-v11-8-sfx.js?v=11.8" egypt-life-sim-v2/index.html
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -57,7 +58,7 @@ jobs:
           const buyPeak=await peakDuring('buy',360);
           await page.waitForFunction(()=>window.__V118_SFX?.events?.buy>=1);
           const doorPeak=await peakDuring('door',320);
-          const state=await page.evaluate(()=>window.__egyptDebug.v118SfxState());
+          const state=await page.evaluate(()=>window.__V118_SFX_API.state());
           if(interactPeak<.01)throw new Error('Interaction SFX waveform too weak '+interactPeak);
           if(buyPeak<.01)throw new Error('Purchase SFX waveform too weak '+buyPeak);
           if(doorPeak<.01)throw new Error('Door SFX waveform too weak '+doorPeak);
