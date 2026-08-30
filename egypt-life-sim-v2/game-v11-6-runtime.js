@@ -1,23 +1,33 @@
 (() => {
   'use strict';
 
+  const VERSION='11.8.1';
   const NativeAC=window.AudioContext||window.webkitAudioContext;
   let ctx=null,master=null,analyser=null,roadBed=null,timer=null,lastCam=null,stepDistance=0,starting=false,ready=false,queuedStart=null,menuObserver=null;
   let originalCreateGain=null,gameMaster=null,legacyBusCount=0;
 
+  const audioState=()=>({...window.__V118_AUDIO,version:VERSION,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,queuedStart});
+  const attachDebug=()=>{
+    window.__V118_AUDIO_STATE=audioState;
+    window.__egyptDebug=window.__egyptDebug||{};
+    window.__egyptDebug.v118AudioState=audioState;
+    window.__egyptDebug.v117AudioState=audioState;
+    window.__egyptDebug.v116AudioState=audioState;
+  };
+
   const stableMenu=()=>{
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
-    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.8')kicker.textContent='HAYAT MASR • V11.8';
-    const t='حياة مصر — مؤثرات لعب أوضح للخطوات والتفاعل والشراء والأبواب، مع صوت الشارع الهادئ.';
+    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.8.1')kicker.textContent='HAYAT MASR • V11.8.1';
+    const t='حياة مصر — مؤثرات لعب فعلية للخطوات والتفاعل والشراء والأبواب، مع مسار صوت موحد وثابت.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.8 — gameplay sound effects')foot.textContent='V11.8 — gameplay sound effects';
+    if(foot&&foot.textContent!=='V11.8.1 — gameplay SFX hotfix')foot.textContent='V11.8.1 — gameplay SFX hotfix';
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 
   function fail(msg,err){
     console.error(msg,err||'');
-    window.__V118_AUDIO={version:'11.8',started:false,error:String(err||msg)};
-    window.__V117_AUDIO=window.__V118_AUDIO;
+    window.__V118_AUDIO={version:VERSION,started:false,error:String(err||msg)};
+    window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;attachDebug();
   }
 
   function makeNoise(seconds=.5,brightness=.07){
@@ -37,17 +47,14 @@
 
   function installSharedContextConstructor(){
     if(!NativeAC)return false;
-    function SharedAudioContext(...args){
-      if(!ctx)createContext(args);
-      return ctx;
-    }
+    function SharedAudioContext(...args){if(!ctx)createContext(args);return ctx;}
     SharedAudioContext.prototype=NativeAC.prototype;
     try{
       window.AudioContext=SharedAudioContext;
       if(window.webkitAudioContext)window.webkitAudioContext=SharedAudioContext;
       window.__V11_AUDIO_WRAPPED=true;
       return true;
-    }catch(err){fail('V11.8 could not install shared AudioContext',err);return false;}
+    }catch(err){fail('V11.8.1 could not install shared AudioContext',err);return false;}
   }
 
   function createContext(args=[]){
@@ -60,14 +67,13 @@
       g.connect=(dest,...rest)=>{
         if(dest===ctx.destination&&g!==master){
           if(!gameMaster){
-            gameMaster=g;
-            g.__v118GameMaster=true;
+            gameMaster=g;g.__v118GameMaster=true;
             window.__V118_GAME_MASTER=g;window.__V117_GAME_MASTER=g;window.__V116_GAME_MASTER=g;
             try{g.gain.setTargetAtTime(.24,ctx.currentTime,.03);}catch(_){}
+            attachDebug();
             return master?connect(master,...rest):connect(dest,...rest);
           }
-          legacyBusCount++;
-          g.__v118LegacyExtraBus=true;
+          legacyBusCount++;g.__v118LegacyExtraBus=true;
           try{g.gain.setValueAtTime(0,ctx.currentTime);}catch(_){}
           return master?connect(master,...rest):connect(dest,...rest);
         }
@@ -75,6 +81,7 @@
       };
       return g;
     };
+    attachDebug();
     return ctx;
   }
 
@@ -85,19 +92,19 @@
     window.__V118_MASTER=master;window.__V118_ANALYSER=analyser;window.__V117_MASTER=master;window.__V117_ANALYSER=analyser;window.__V116_MASTER=master;window.__V116_ANALYSER=analyser;
 
     const src=ctx.createBufferSource(),lp=ctx.createBiquadFilter(),gain=originalCreateGain();
-    src.buffer=makeNoise(7,.035);src.loop=true;lp.type='lowpass';lp.frequency.value=330;gain.gain.value=.075;
+    src.buffer=makeNoise(7,.035);src.loop=true;lp.type='lowpass';lp.frequency.value=330;gain.gain.value=.065;
     src.connect(lp);lp.connect(gain);gain.connect(master);src.start();roadBed=gain;
 
     const air=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),airGain=originalCreateGain();
-    air.buffer=makeNoise(8,.055);air.loop=true;bp.type='bandpass';bp.frequency.value=760;bp.Q.value=.35;airGain.gain.value=.008;
+    air.buffer=makeNoise(8,.055);air.loop=true;bp.type='bandpass';bp.frequency.value=760;bp.Q.value=.35;airGain.gain.value=.007;
     air.connect(bp);bp.connect(airGain);airGain.connect(master);air.start();
 
     timer=setInterval(()=>{
       if(ctx?.state==='suspended')ctx.resume().catch(()=>{});
       const cam=window.__egyptDebug?.getCamera?.();if(!cam||!roadBed)return;
       const d=Math.min(...[-72,-24,24,72].map(r=>Math.min(Math.abs(cam.x-r),Math.abs(cam.z-r))));
-      roadBed.gain.setTargetAtTime(d<10?.095:.055,ctx.currentTime,.35);
-      if(lastCam){stepDistance+=Math.hypot(cam.x-lastCam.x,cam.z-lastCam.z);if(stepDistance>.78){foley(d>4.8&&d<8.1?700:420,.028,.06);stepDistance=0;}}
+      roadBed.gain.setTargetAtTime(d<10?.085:.048,ctx.currentTime,.35);
+      if(lastCam){stepDistance+=Math.hypot(cam.x-lastCam.x,cam.z-lastCam.z);if(stepDistance>.78){foley(d>4.8&&d<8.1?700:420,.022,.055);stepDistance=0;}}
       lastCam={x:cam.x,z:cam.z};
     },120);
   }
@@ -109,10 +116,10 @@
       createContext();buildMix();
       if(ctx.state!=='running')await ctx.resume();
       if(ctx.state!=='running')throw new Error('AudioContext stayed '+ctx.state);
-      if(cue){foley(365,.075,.09);setTimeout(()=>foley(650,.045,.06),105);}
-      window.__V118_AUDIO={version:'11.8',engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.72,gameMasterPreserved:true,gameMasterGain:gameMaster?.gain?.value??null,legacyExtraBusesMuted:true,legacyBusCount,hornEvents:false,oscillatorTones:false};
-      window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;
-    }catch(err){fail('V11.8 audio start failed',err);}finally{starting=false;}
+      if(cue){foley(365,.065,.085);setTimeout(()=>foley(650,.038,.055),100);}
+      window.__V118_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,legacyBusCount,hornEvents:false,oscillatorTones:false};
+      window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;attachDebug();
+    }catch(err){fail('V11.8.1 audio start failed',err);}finally{starting=false;}
   }
 
   function handleStartCapture(id,e){
@@ -139,22 +146,20 @@
 
   function markReady(){
     if(ready)return;ready=true;window.__V118_READY=true;window.__V117_READY=true;window.__V116_READY=true;
-    menuObserver?.disconnect();stableMenu();
+    menuObserver?.disconnect();stableMenu();attachDebug();
+    setTimeout(attachDebug,0);setTimeout(attachDebug,500);
     const status=document.getElementById('menuStatus');if(status)status.textContent='جاهز — ابدأ يوم جديد.';
-    window.__V118_STARTUP={version:'11.8',ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};
+    window.__V118_STARTUP={version:VERSION,ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};
     window.__V117_STARTUP=window.__V118_STARTUP;window.__V116_STARTUP=window.__V118_STARTUP;
     if(queuedStart){const id=queuedStart;queuedStart=null;setTimeout(()=>document.getElementById(id)?.click(),0);}
   }
 
   if(installSharedContextConstructor()){
-    window.__V118_AUDIO={version:'11.8',engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,hornEvents:false,oscillatorTones:false};
+    window.__V118_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,hornEvents:false,oscillatorTones:false};
     window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;
   }
-  installStartGate();
+  installStartGate();attachDebug();
   window.__V118_MARK_READY=markReady;window.__V117_MARK_READY=markReady;
   window.__V118_AUDIO_START=startAudio;window.__V117_AUDIO_START=startAudio;
-  window.__egyptDebug=window.__egyptDebug||{};
-  window.__egyptDebug.v118AudioState=()=>({...window.__V118_AUDIO,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,queuedStart});
-  window.__egyptDebug.v117AudioState=window.__egyptDebug.v118AudioState;window.__egyptDebug.v116AudioState=window.__egyptDebug.v118AudioState;
   window.addEventListener('beforeunload',()=>{if(timer)clearInterval(timer);menuObserver?.disconnect();},{once:true});
 })();
