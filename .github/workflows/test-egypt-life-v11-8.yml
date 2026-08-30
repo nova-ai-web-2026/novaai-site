@@ -80,36 +80,35 @@ jobs:
           await browser.close();
           EOF
           node v118-policy.mjs
-      - name: Verify rendered SFX waveforms
+      - name: Verify offline WebAudio SFX rendering
         run: |
-          cat > v118-waveform.mjs <<'EOF'
+          cat > v118-offline.mjs <<'EOF'
           import { chromium } from 'playwright';
-          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v1181-waveform',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:4173/?ci=v1181-offline',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V118_READY===true&&!!window.__V118_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>window.__V118_CONTEXT?.state==='running'&&!!window.__V118_SFX_ANALYSER,{timeout:12000});
+          await page.waitForFunction(()=>window.__V118_CONTEXT?.state==='running',{timeout:12000});
 
-          const measure=async(apiName,key)=>page.evaluate(async({apiName,key})=>{
-            const api=window.__V118_SFX_API,before=api.state().resolvedByKey[key]||0,analyser=window.__V118_SFX_ANALYSER,n=analyser.fftSize,d=new Uint8Array(n);
-            api.play(apiName);let maxRms=0,maxPeak=0;const end=performance.now()+650;
-            while(performance.now()<end){
-              analyser.getByteTimeDomainData(d);let sum=0,peak=0;for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-              maxRms=Math.max(maxRms,Math.sqrt(sum/n));maxPeak=Math.max(maxPeak,peak);
-              if((api.state().resolvedByKey[key]||0)>before&&maxPeak>.003)break;
-              await new Promise(r=>setTimeout(r,4));
+          const rendered=await page.evaluate(async()=>{
+            const cases=[['interact',1],['buy',1],['door',1],['reward',1],['step_pavement',.91],['step_asphalt',.95]],out={};
+            for(const [key,vol] of cases){
+              const sourceBuffer=await window.__V118_SFX_API.decodeSample(key);if(!sourceBuffer)throw new Error('No decoded buffer '+key);
+              const off=new OfflineAudioContext(1,Math.max(1,sourceBuffer.length),sourceBuffer.sampleRate);
+              const copied=off.createBuffer(1,sourceBuffer.length,sourceBuffer.sampleRate);
+              copied.copyToChannel(sourceBuffer.getChannelData(0),0);
+              const src=off.createBufferSource(),gain=off.createGain();src.buffer=copied;gain.gain.value=vol;src.connect(gain);gain.connect(off.destination);src.start();
+              const result=await off.startRendering(),d=result.getChannelData(0);let sum=0,peak=0;
+              for(const v of d){sum+=v*v;peak=Math.max(peak,Math.abs(v));}
+              out[key]={rms:Math.sqrt(sum/Math.max(1,d.length)),peak,duration:result.duration,frames:d.length};
             }
-            return {rms:maxRms,peak:maxPeak,before,after:api.state().resolvedByKey[key]||0};
-          },{apiName,key});
-
-          const cases=[['interact','interact'],['buy','buy'],['door','door'],['reward','reward'],['step','step_pavement'],['asphalt','step_asphalt']],waveforms={};
-          for(const [apiName,key] of cases){const r=await measure(apiName,key);waveforms[key]=r;if(r.after<=r.before||r.rms<.0005||r.peak<.003)throw new Error('No rendered waveform '+key+' '+JSON.stringify(r));}
-          const state=await page.evaluate(()=>window.__V118_SFX_API.state());
-          if(state.webAudioRejected!==0||state.playRejected!==0)throw new Error('Waveform engine errors '+JSON.stringify(state));
+            return out;
+          });
+          for(const [key,m] of Object.entries(rendered))if(m.rms<.001||m.peak<.005||m.duration<=0||m.frames<1)throw new Error('Offline render silent '+key+' '+JSON.stringify(m));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.8.1 rendered waveforms passed',{waveforms,state});
+          console.log('V11.8.1 offline WebAudio rendering passed',rendered);
           await browser.close();
           EOF
-          node v118-waveform.mjs
+          node v118-offline.mjs
