@@ -1,0 +1,64 @@
+name: Test Egyptian Life Simulator V11.7 SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-7.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v117-sfx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.7 SFX files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-7-sfx.js
+          test -s egypt-life-sim-v2/v11-7.html
+          node --check egypt-life-sim-v2/game-v11-7-sfx.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-7-sfx.js?v=11.7" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-audiofix.js?v=11.7" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "game-v8-layout.js?v=11.7" egypt-life-sim-v2/v11-7.html
+          grep -Fq "gameplay-foley-sfx" egypt-life-sim-v2/game-v11-7-sfx.js
+          grep -Fq "types:['step','runStep','interact','open','buy','ui','close','work']" egypt-life-sim-v2/game-v11-7-sfx.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v117-server.log 2>&1 &
+          sleep 2
+      - name: Verify gameplay SFX waveforms and counters
+        run: |
+          cat > v117-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/v11-7.html?ci=1',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V117_SFX?.version==='11.7'&&window.__V116_AUDIO?.version==='11.6',{timeout:50000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>window.__V116_CONTEXT?.state==='running'&&!!window.__V117_SFX_BUS&&!!window.__V117_SFX_ANALYSER,{timeout:12000});
+          const measure=async name=>{
+            await page.evaluate(n=>window.__egyptDebug.playV117Sfx(n),name);
+            await page.waitForTimeout(18);
+            return await page.evaluate(()=>{const a=window.__V117_SFX_ANALYSER,n=a.fftSize,d=new Uint8Array(n);a.getByteTimeDomainData(d);let sum=0,peak=0;for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}return {rms:Math.sqrt(sum/n),peak};});
+          };
+          const names=['step','runStep','interact','open','buy','ui','close','work'];
+          const waves={};for(const n of names)waves[n]=await measure(n);
+          const state=await page.evaluate(()=>window.__egyptDebug.v117SfxState());
+          for(const n of names){if((state.counts[n]||0)<1)throw new Error('SFX counter missing '+n+' '+JSON.stringify(state));if(waves[n].peak<.004)throw new Error('No measurable '+n+' SFX '+JSON.stringify(waves[n]));}
+          if(state.ctx!=='running'||state.bus<.8)throw new Error('SFX bus not live '+JSON.stringify(state));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.7 gameplay SFX passed',{state,waves});
+          await browser.close();
+          EOF
+          node v117-smoke.mjs
