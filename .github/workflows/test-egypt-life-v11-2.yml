@@ -1,0 +1,66 @@
+name: Test Egyptian Life Simulator V11.2 Audio
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v112-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.2 audio files
+        run: |
+          node --check egypt-life-sim-v2/game-v11-2-audio.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-2-audio.js?v=11.2" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "calm-cairo-foley-v3" egypt-life-sim-v2/game-v11-2-audio.js
+          grep -Fq "oscillatorTones:false" egypt-life-sim-v2/game-v11-2-audio.js
+          grep -Fq "hornEvents:false" egypt-life-sim-v2/game-v11-2-audio.js
+          grep -Fq "legacyCoreMuted:true" egypt-life-sim-v2/game-v11-audiofix.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v112-server.log 2>&1 &
+          sleep 2
+      - name: Verify calm audio takeover
+        run: |
+          cat > v112-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v112',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V112_AUDIO?.version==='11.2',{timeout:40000});
+          const declared=await page.evaluate(()=>window.__V112_AUDIO);
+          if(declared.engine!=='calm-cairo-foley-v3'||declared.oscillatorTones!==false||declared.hornEvents!==false||declared.sharpChimes!==false)throw new Error('V11.2 calm mix declaration invalid '+JSON.stringify(declared));
+          await page.click('#newGameBtn');
+          await page.waitForFunction(()=>!!window.__V112_MASTER,{timeout:12000});
+          await page.waitForTimeout(900);
+          const runtime=await page.evaluate(()=>({
+            master:window.__V112_MASTER?.gain?.value??null,
+            old:window.__V111_SUPERSEDED_MASTER?.gain?.value??null,
+            oldDisconnected:!!window.__V111_SUPERSEDED_MASTER?.__v112Superseded,
+            legacy:window.__V11_LEGACY_MASTER?.gain?.value??null,
+            state:window.__egyptDebug?.v112AudioState?.()
+          }));
+          if(runtime.master===null||runtime.master>.2)throw new Error('Calm master too loud '+JSON.stringify(runtime));
+          if(!runtime.oldDisconnected)throw new Error('V11.1 harsh master was not disconnected '+JSON.stringify(runtime));
+          if(runtime.legacy!==null&&runtime.legacy>.01)throw new Error('Legacy core still audible '+JSON.stringify(runtime));
+          if(!runtime.state?.started||runtime.state?.hornEvents!==false||runtime.state?.oscillatorTones!==false)throw new Error('V11.2 runtime state invalid '+JSON.stringify(runtime));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.2 calm audio passed',{declared,runtime});
+          await browser.close();
+          EOF
+          node v112-smoke.mjs

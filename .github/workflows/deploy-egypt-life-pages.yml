@@ -45,6 +45,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11.js
           test -s egypt-life-sim-v2/game-v11-1.js
           test -s egypt-life-sim-v2/game-v11-audiofix.js
+          test -s egypt-life-sim-v2/game-v11-2-audio.js
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
@@ -57,6 +58,7 @@ jobs:
           node --check egypt-life-sim-v2/game-v11.js
           node --check egypt-life-sim-v2/game-v11-1.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
+          node --check egypt-life-sim-v2/game-v11-2-audio.js
           grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=8' egypt-life-sim-v2/index.html
           grep -Fq 'game-v9.js?v=9' egypt-life-sim-v2/game-v8-layout.js
@@ -67,6 +69,7 @@ jobs:
           grep -Fq 'game-v11.js?v=11' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-1.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-audiofix.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'game-v11-2-audio.js?v=11.2' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'hip-knee-ankle-foot' egypt-life-sim-v2/game-v9.js
           grep -Fq 'naturalAnkleRange:true' egypt-life-sim-v2/game-v9-gaitfix.js
           grep -Fq 'capsule-human' egypt-life-sim-v2/game-v9-character-polish.js
@@ -76,9 +79,12 @@ jobs:
           grep -Fq 'rtl-shaped-signage' egypt-life-sim-v2/game-v11.js
           grep -Fq 'spatialZones:true' egypt-life-sim-v2/game-v11.js
           grep -Fq 'mirroredBackfacesFixed' egypt-life-sim-v2/game-v11-1.js
-          grep -Fq 'layered-procedural-cairo-v2' egypt-life-sim-v2/game-v11-1.js
           grep -Fq 'legacyLocked:true' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'v11BusDisconnected:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'legacyCoreMuted:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'calm-cairo-foley-v3' egypt-life-sim-v2/game-v11-2-audio.js
+          grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v11-2-audio.js
+          grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v11-2-audio.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
