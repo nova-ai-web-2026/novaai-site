@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.4 Audio Output
+name: Test Egyptian Life Simulator V11.5 Audio Output
 
 on:
   pull_request:
@@ -10,18 +10,19 @@ permissions:
   contents: read
 
 jobs:
-  v114-audio-output:
+  v115-audio-output:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.4 files
+      - name: Validate V11.5 files
         run: |
           test -s egypt-life-sim-v2/game-v11-4-audio.js
           node --check egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq "game-v11-4-audio.js?v=11.4" egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "dedicated-audio-context" egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq "outputProbe:true" egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq "game-v11-4-audio.js?v=11.5" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "isolated-native-audiocontext" egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq "v115SoundTest" egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq "touchstart" egypt-life-sim-v2/game-v11-4-audio.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -29,32 +30,33 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start game server
         run: |
-          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v114-server.log 2>&1 &
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v115-server.log 2>&1 &
           sleep 2
-      - name: Verify actual audio waveform
+      - name: Verify isolated audio waveform
         run: |
-          cat > v114-smoke.mjs <<'EOF'
+          cat > v115-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
-          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v114',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V114_AUDIO?.version==='11.4',{timeout:45000});
-          await page.click('#newGameBtn');
-          await page.waitForFunction(()=>window.__V114_CONTEXT?.state==='running'&&!!window.__V114_ANALYSER,{timeout:12000});
-          await page.waitForTimeout(600);
+          await page.goto('http://127.0.0.1:4173/?ci=v115',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V115_AUDIO?.version==='11.5'&&!!document.getElementById('v115SoundTest'),{timeout:50000});
+          await page.dispatchEvent('#v115SoundTest','pointerdown',{pointerType:'touch',isPrimary:true});
+          await page.waitForFunction(()=>window.__V115_CONTEXT?.state==='running'&&!!window.__V115_ANALYSER&&window.__V115_AUDIO?.started===true,{timeout:12000});
+          await page.waitForTimeout(300);
           const state=await page.evaluate(()=>{
-            const a=window.__V114_ANALYSER,n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);
+            const a=window.__V115_ANALYSER,n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);
             let sum=0,peak=0;for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-            return {rms:Math.sqrt(sum/n),peak,ctx:window.__V114_CONTEXT.state,master:window.__V114_MASTER?.gain?.value??null,declared:window.__V114_AUDIO};
+            return {rms:Math.sqrt(sum/n),peak,ctx:window.__V115_CONTEXT.state,master:window.__V115_MASTER?.gain?.value??null,declared:window.__V115_AUDIO,label:document.getElementById('v115SoundTest')?.textContent};
           });
-          if(state.ctx!=='running')throw new Error('Dedicated context not running '+JSON.stringify(state));
-          if(state.master===null||state.master<.55)throw new Error('V11.4 master unexpectedly low '+JSON.stringify(state));
-          if(state.rms<.002||state.peak<.005)throw new Error('No measurable audio waveform '+JSON.stringify(state));
+          if(state.ctx!=='running')throw new Error('Isolated context not running '+JSON.stringify(state));
+          if(state.master===null||state.master<.7)throw new Error('V11.5 master unexpectedly low '+JSON.stringify(state));
+          if(state.rms<.003||state.peak<.008)throw new Error('No measurable audio waveform '+JSON.stringify(state));
+          if(!state.label?.includes('شغال'))throw new Error('Sound-test UI did not confirm '+JSON.stringify(state));
           if(state.declared.hornEvents!==false||state.declared.oscillatorTones!==false)throw new Error('Harsh audio regression '+JSON.stringify(state));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime error: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.4 real audio output passed',state);
+          console.log('V11.5 isolated real audio output passed',state);
           await browser.close();
           EOF
-          node v114-smoke.mjs
+          node v115-smoke.mjs

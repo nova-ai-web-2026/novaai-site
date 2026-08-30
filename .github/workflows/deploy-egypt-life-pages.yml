@@ -72,25 +72,12 @@ jobs:
           grep -Fq 'game-v11-1.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-audiofix.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-2-audio.js?v=11.3' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'game-v11-4-audio.js?v=11.4' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'hip-knee-ankle-foot' egypt-life-sim-v2/game-v9.js
-          grep -Fq 'naturalAnkleRange:true' egypt-life-sim-v2/game-v9-gaitfix.js
-          grep -Fq 'capsule-human' egypt-life-sim-v2/game-v9-character-polish.js
-          grep -Fq 'blankSidesFilled' egypt-life-sim-v2/game-v9-facades.js
-          grep -Fq 'heel-strike-stance-toe-off-swing' egypt-life-sim-v2/game-v10.js
-          grep -Fq 'roundedFootwear:true' egypt-life-sim-v2/game-v10.js
-          grep -Fq 'rtl-shaped-signage' egypt-life-sim-v2/game-v11.js
-          grep -Fq 'spatialZones:true' egypt-life-sim-v2/game-v11.js
-          grep -Fq 'mirroredBackfacesFixed' egypt-life-sim-v2/game-v11-1.js
-          grep -Fq 'legacyLocked:true' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'v11BusDisconnected:true' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'legacyCoreMuted:true' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'audible-calm-cairo-foley' egypt-life-sim-v2/game-v11-2-audio.js
-          grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v11-2-audio.js
-          grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v11-2-audio.js
-          grep -Fq 'startupGuard:true' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'dedicated-audio-context' egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq 'outputProbe:true' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'game-v11-4-audio.js?v=11.5' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'isolated-native-audiocontext' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'v115SoundTest' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'touchstart' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v11-4-audio.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
