@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.6 Startup + Audio
+name: Test Egyptian Life Simulator V11.6 Early Start + Audio
 
 on:
   pull_request:
@@ -10,19 +10,21 @@ permissions:
   contents: read
 
 jobs:
-  v116-startup-audio:
+  v116-early-start-audio:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate audio files
+      - name: Validate V11.6 startup/audio files
         run: |
-          test -s egypt-life-sim-v2/game-v11-4-audio.js
-          node --check egypt-life-sim-v2/game-v11-4-audio.js
+          node --check egypt-life-sim-v2/game-v8-layout.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "game-v11-4-audio.js?v=11.5" egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "isolated-native-audiocontext" egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq "v115SoundTest" egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq "early-native-audiocontext" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "audioArmedBeforePatches:true" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "game-v11-audiofix.js?v=11.6" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "delegatedToV116:true" egypt-life-sim-v2/game-v11-audiofix.js
+          if grep -Fq "game-v11-4-audio.js" egypt-life-sim-v2/game-v11-audiofix.js; then echo 'late V11.5 loader still present'; exit 1; fi
+          if grep -Fq "game-v11-2-audio.js" egypt-life-sim-v2/game-v11-audiofix.js; then echo 'late V11.2 loader still present'; exit 1; fi
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -32,83 +34,62 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v116-server.log 2>&1 &
           sleep 2
-      - name: Reproduce full mobile startup flow
+      - name: Verify real early-tap flow
         run: |
           cat > v116-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
           const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];
-          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v116',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V115_AUDIO?.version==='11.5'&&!!document.getElementById('v115SoundTest'),{timeout:50000});
-          await page.screenshot({path:'menu-before.png',fullPage:true});
-          const menuBefore=await page.evaluate(()=>({
-            menuDisplay:getComputedStyle(document.getElementById('menu')).display,
-            menuVisibility:getComputedStyle(document.getElementById('menu')).visibility,
-            menuOpacity:getComputedStyle(document.getElementById('menu')).opacity,
-            hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
-            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
-            errorText:document.getElementById('errorBox')?.textContent||'',
-            bodyClass:document.body.className
-          }));
-          await page.dispatchEvent('#v115SoundTest','pointerdown',{pointerType:'touch',isPrimary:true});
-          await page.waitForFunction(()=>window.__V115_CONTEXT?.state==='running'&&!!window.__V115_ANALYSER&&window.__V115_AUDIO?.started===true,{timeout:12000});
-          await page.waitForTimeout(350);
-          await page.screenshot({path:'menu-after-audio.png',fullPage:true});
-          const audioBeforeStart=await page.evaluate(()=>{
-            const a=window.__V115_ANALYSER,n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);
-            let sum=0,peak=0;for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-            return {rms:Math.sqrt(sum/n),peak,ctx:window.__V115_CONTEXT.state,master:window.__V115_MASTER?.gain?.value??null,label:document.getElementById('v115SoundTest')?.textContent};
-          });
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          const delayPatterns=['game-v9.js','game-v9-gaitfix.js','game-v9-character-polish.js','game-v10.js','game-v11.js','game-v11-1.js'];
+          for(const file of delayPatterns)await page.route('**/'+file+'*',async route=>{await new Promise(r=>setTimeout(r,500));await route.continue();});
+          await page.goto('http://127.0.0.1:4173/?ci=v116-early',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V116_AUDIO?.version==='11.6'&&window.__V116_AUDIO?.armed===true,{timeout:12000});
+          await page.screenshot({path:'menu-early.png',fullPage:true});
+
+          // Tap Start immediately while later patches are intentionally still loading.
           await page.click('#newGameBtn');
-          await page.waitForTimeout(2800);
+          await page.waitForFunction(()=>window.__V116_CONTEXT?.state==='running'&&window.__V116_AUDIO?.started===true,{timeout:7000});
+          await page.waitForTimeout(250);
+          const blocked=await page.evaluate(()=>({ready:window.__V116_READY,menu:getComputedStyle(document.getElementById('menu')).display,bodyClass:document.body.className,status:document.getElementById('menuStatus')?.textContent||'',ctx:window.__V116_CONTEXT?.state||null}));
+          if(blocked.ready!==false)throw new Error('Test did not hit the early-start gate '+JSON.stringify(blocked));
+          if(blocked.menu==='none')throw new Error('Early tap entered the game before patches were ready '+JSON.stringify(blocked));
+          if(blocked.ctx!=='running')throw new Error('Audio did not unlock on the first early tap '+JSON.stringify(blocked));
+          await page.screenshot({path:'menu-blocked-while-loading.png',fullPage:true});
+
+          await page.waitForFunction(()=>window.__V116_READY===true&&window.__V116_STARTUP?.ready===true,{timeout:50000});
+          const noLateAudio=await page.evaluate(()=>({v112:!!document.querySelector('script[data-egypt-v112-audio]'),v115:!!document.querySelector('script[data-egypt-v114-audio]'),kicker:document.querySelector('.kicker')?.textContent,foot:document.querySelector('.menuFoot')?.textContent}));
+          if(noLateAudio.v112||noLateAudio.v115)throw new Error('Late audio scripts were still injected '+JSON.stringify(noLateAudio));
+          await page.screenshot({path:'menu-ready.png',fullPage:true});
+
+          // Second tap starts only after the world is stable.
+          await page.click('#newGameBtn');
+          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none',{timeout:8000});
+          await page.waitForTimeout(2400);
           await page.screenshot({path:'game-after-start.png',fullPage:true});
-          const afterStart=await page.evaluate(()=>{
-            const box=document.getElementById('errorBox');
-            const menu=document.getElementById('menu');
-            const a=window.__V115_ANALYSER;
-            let rms=null,peak=null;
-            if(a){const n=a.fftSize,data=new Uint8Array(n);a.getByteTimeDomainData(data);let sum=0,p=0;for(const v of data){const x=(v-128)/128;sum+=x*x;p=Math.max(p,Math.abs(x));}rms=Math.sqrt(sum/n);peak=p;}
-            return {
-              errorVisible:box?getComputedStyle(box).display!=='none':false,
-              errorText:box?.textContent||'',
-              menuDisplay:menu?getComputedStyle(menu).display:null,
-              menuVisibility:menu?getComputedStyle(menu).visibility:null,
-              menuOpacity:menu?getComputedStyle(menu).opacity:null,
-              hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
-              bodyClass:document.body.className,
-              ctx:window.__V115_CONTEXT?.state||null,
-              rms,peak,
-              audio:window.__V115_AUDIO||null,
-              startup:window.__V113_STARTUP||null,
-              audiofix:window.__V11_AUDIOFIX||null
-            };
+          const after=await page.evaluate(()=>{
+            const a=window.__V116_ANALYSER,n=a?.fftSize||0,data=n?new Uint8Array(n):null;let rms=null,peak=null;
+            if(a&&data){a.getByteTimeDomainData(data);let sum=0,p=0;for(const v of data){const x=(v-128)/128;sum+=x*x;p=Math.max(p,Math.abs(x));}rms=Math.sqrt(sum/n);peak=p;}
+            const box=document.getElementById('errorBox');return {ctx:window.__V116_CONTEXT?.state||null,rms,peak,audio:window.__V116_AUDIO||null,ready:window.__V116_READY,errorVisible:box?getComputedStyle(box).display!=='none':false,errorText:box?.textContent||'',hud:getComputedStyle(document.getElementById('hud')).visibility,bodyClass:document.body.className};
           });
-          const diag={menuBefore,audioBeforeStart,afterStart,errors};
-          fs.writeFileSync('v116-diagnostic.json',JSON.stringify(diag,null,2));
-          console.log('V11.6 diagnostic',diag);
-          if(menuBefore.menuVisibility!=='visible'||menuBefore.hudVisibility!=='hidden')throw new Error('Startup menu guard invalid '+JSON.stringify(menuBefore));
-          if(menuBefore.errorVisible)throw new Error('Error already visible on start screen '+JSON.stringify(menuBefore));
-          if(audioBeforeStart.ctx!=='running'||audioBeforeStart.rms<.003||audioBeforeStart.peak<.008)throw new Error('Audio test has no measurable signal '+JSON.stringify(audioBeforeStart));
-          if(afterStart.errorVisible)throw new Error('Runtime error after starting game: '+afterStart.errorText);
-          if(afterStart.menuDisplay!=='none')throw new Error('Menu did not close cleanly '+JSON.stringify(afterStart));
-          if(afterStart.hudVisibility==='hidden')throw new Error('HUD remained hidden after start '+JSON.stringify(afterStart));
-          if(afterStart.ctx!=='running'||afterStart.rms===null||afterStart.rms<.002)throw new Error('Audio disappeared after game start '+JSON.stringify(afterStart));
+          const diag={blocked,noLateAudio,after,errors};fs.writeFileSync('v116-diagnostic.json',JSON.stringify(diag,null,2));console.log('V11.6 early-start diagnostic',diag);
+          if(after.errorVisible)throw new Error('Runtime error after stable start: '+after.errorText);
+          if(after.ctx!=='running'||after.rms===null||after.rms<.002||after.peak<.005)throw new Error('No measurable V11.6 audio after game start '+JSON.stringify(after));
+          if(after.hud==='hidden'||after.bodyClass.includes('v116-menu-open'))throw new Error('Startup guard did not release '+JSON.stringify(after));
           if(errors.length)throw new Error(errors.join('\n'));
           await browser.close();
           EOF
           node v116-smoke.mjs
-      - name: Upload diagnostic screenshots
+      - name: Upload V11.6 diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v116-mobile-diagnostic
+          name: v116-early-start-diagnostic
           path: |
-            menu-before.png
-            menu-after-audio.png
+            menu-early.png
+            menu-blocked-while-loading.png
+            menu-ready.png
             game-after-start.png
             v116-diagnostic.json
           if-no-files-found: warn
