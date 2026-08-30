@@ -15,12 +15,7 @@ jobs:
       - name: Validate V11.8 sample SFX files
         run: |
           test -s egypt-life-sim-v2/game-v11-8-sfx.js
-          test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
-          test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
-          test -s egypt-life-sim-v2/audio/v11-8/interact.wav
-          test -s egypt-life-sim-v2/audio/v11-8/buy_coin.wav
-          test -s egypt-life-sim-v2/audio/v11-8/door.wav
-          test -s egypt-life-sim-v2/audio/v11-8/reward.wav
+          for f in step_pavement.wav step_asphalt.wav interact.wav buy_coin.wav door.wav reward.wav; do test -s "egypt-life-sim-v2/audio/v11-8/$f"; done
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "game-v11-8-sfx.js?v=11.8" egypt-life-sim-v2/index.html
@@ -45,45 +40,35 @@ jobs:
           const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v118-samples',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.engine==='sampled-media-sfx'&&!!window.__V118_SFX_API,{timeout:55000});
-          const assets=await page.evaluate(async()=>{
-            const paths=['step_pavement.wav','step_asphalt.wav','interact.wav','buy_coin.wav','door.wav','reward.wav'];
-            return Promise.all(paths.map(async n=>{const r=await fetch('audio/v11-8/'+n+'?ci=1');return {n,status:r.status,size:(await r.arrayBuffer()).byteLength};}));
-          });
+          const assets=await page.evaluate(async()=>Promise.all(['step_pavement.wav','step_asphalt.wav','interact.wav','buy_coin.wav','door.wav','reward.wav'].map(async n=>{const r=await fetch('audio/v11-8/'+n+'?ci=1');return {n,status:r.status,size:(await r.arrayBuffer()).byteLength};})));
           for(const a of assets)if(a.status!==200||a.size<500)throw new Error('Bad WAV asset '+JSON.stringify(a));
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V118_SFX_API.state().unlockAttempted===true,{timeout:12000});
-          await page.waitForTimeout(120);
-          const before=await page.evaluate(()=>window.__V118_SFX_API.state());
-          if(!before.mediaUnlocked)throw new Error('Media samples did not unlock '+JSON.stringify(before));
-          const sampleProgress=async(kind,eventName)=>{
-            await page.evaluate(({kind})=>window.__V118_SFX_API.play(kind),{kind});
-            await page.waitForFunction(({eventName})=>window.__V118_SFX_API.state().events[eventName]>=1,{eventName});
-            await page.waitForTimeout(45);
-            return page.evaluate(({kind})=>{
-              const s=window.__V118_SFX_API.state();
-              const key=s.lastPlayed?.key;
-              const all=Object.entries(window.__V118_MEDIA_POOLS).flatMap(([k,p])=>p.map(a=>({k,currentTime:a.currentTime,paused:a.paused,readyState:a.readyState,ended:a.ended})));
-              return {state:s,key,active:all.filter(x=>x.currentTime>0||!x.paused),all};
-            },{kind});
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().mediaUnlocked===true,{timeout:5000});
+          const checkSample=async(apiName,key,eventName)=>{
+            const before=await page.evaluate(({key})=>({resolved:window.__V118_SFX_API.state().resolvedByKey[key]||0,event:window.__V118_SFX_API.state().events[eventName]||0}),{key,eventName});
+            await page.evaluate(({apiName})=>window.__V118_SFX_API.play(apiName),{apiName});
+            await page.waitForFunction(({key,beforeResolved})=>(window.__V118_SFX_API.state().resolvedByKey[key]||0)>beforeResolved,{key,beforeResolved:before.resolved},{timeout:5000});
+            await page.waitForTimeout(35);
+            return page.evaluate(({key})=>({state:window.__V118_SFX_API.state(),pool:window.__V118_MEDIA_POOLS[key].map(a=>({t:a.currentTime,p:a.paused,r:a.readyState,e:a.ended}))}),{key});
           };
           await page.dispatchEvent('#act','pointerdown',{pointerType:'touch',isPrimary:true});
           await page.waitForFunction(()=>window.__V118_SFX_API.state().events.interact>=1);
-          await page.waitForTimeout(45);
-          const interact=await page.evaluate(()=>({state:window.__V118_SFX_API.state(),pool:window.__V118_MEDIA_POOLS.interact.map(a=>({t:a.currentTime,p:a.paused,r:a.readyState}))}));
-          if(interact.state.lastPlayed?.key!=='interact'||interact.state.playCalls<1||interact.state.playResolved<1)throw new Error('Interact WAV did not play '+JSON.stringify(interact));
-          if(!interact.pool.some(a=>a.t>0||!a.p))throw new Error('Interact media did not advance '+JSON.stringify(interact));
-          const buy=await sampleProgress('buy','buy');
-          if(buy.state.lastPlayed?.key!=='buy'||buy.state.playResolved<2)throw new Error('Buy WAV did not play '+JSON.stringify(buy));
-          const door=await sampleProgress('door','door');
-          if(door.state.lastPlayed?.key!=='door'||door.state.playResolved<3)throw new Error('Door WAV did not play '+JSON.stringify(door));
-          const reward=await sampleProgress('reward','reward');
-          if(reward.state.lastPlayed?.key!=='reward'||reward.state.playResolved<4)throw new Error('Reward WAV did not play '+JSON.stringify(reward));
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().resolvedByKey.interact>=1);
+          const interact=await page.evaluate(()=>({state:window.__V118_SFX_API.state(),pool:window.__V118_MEDIA_POOLS.interact.map(a=>({t:a.currentTime,p:a.paused,r:a.readyState,e:a.ended}))}));
+          if(!interact.pool.some(a=>a.t>0||!a.p||a.e))throw new Error('Interact WAV media never advanced '+JSON.stringify(interact));
+          const buy=await checkSample('buy','buy','buy');
+          const door=await checkSample('door','door','door');
+          const reward=await checkSample('reward','reward','reward');
+          for(const [name,result] of Object.entries({buy,door,reward}))if(!result.pool.some(a=>a.t>0||!a.p||a.e))throw new Error(name+' WAV media never advanced '+JSON.stringify(result));
           const finalState=await page.evaluate(()=>window.__V118_SFX_API.state());
-          if(finalState.sampleFiles!==6||!finalState.footsteps||!finalState.purchase||!finalState.doors||!finalState.rewards)throw new Error('SFX features missing '+JSON.stringify(finalState));
+          if(finalState.sampleFiles!==6||finalState.playRejected!==0||finalState.unlockFailures!==0)throw new Error('Sample engine unhealthy '+JSON.stringify(finalState));
+          if((finalState.resolvedByKey.interact||0)<1||(finalState.resolvedByKey.buy||0)<1||(finalState.resolvedByKey.door||0)<1||(finalState.resolvedByKey.reward||0)<1)throw new Error('Not all SFX resolved '+JSON.stringify(finalState));
+          if(!finalState.footsteps||!finalState.purchase||!finalState.doors||!finalState.rewards)throw new Error('SFX features missing '+JSON.stringify(finalState));
           if(finalState.legacyHum!==false||finalState.legacyHorns!==false)throw new Error('Legacy harsh audio returned '+JSON.stringify(finalState));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.8 WAV SFX passed',{assets,interact:interact.state,buy:buy.state,door:door.state,reward:reward.state,finalState});
+          console.log('V11.8 WAV SFX passed',{assets,finalState});
           await browser.close();
           EOF
           node v118-smoke.mjs
