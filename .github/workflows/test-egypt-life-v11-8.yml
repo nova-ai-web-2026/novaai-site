@@ -1,0 +1,69 @@
+name: Test Egyptian Life Simulator V11.8 SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-8.yml'
+  workflow_dispatch:
+
+jobs:
+  v118-sfx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.8 SFX files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-8-sfx.js
+          node --check egypt-life-sim-v2/game-v11-8-sfx.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-8-sfx.js?v=11.8" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "event-sfx-on-shared-audiocontext" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "legacyHum:false" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "legacyHorns:false" egypt-life-sim-v2/game-v11-8-sfx.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v118-server.log 2>&1 &
+          sleep 2
+      - name: Verify real event sound effects
+        run: |
+          cat > v118-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v118',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.version==='11.8'&&!!window.__V118_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V117_CONTEXT?.state==='running'&&!!window.__V118_SFX_ANALYSER,{timeout:12000});
+          const peakFor=async(ms=180)=>await page.evaluate(async(ms)=>{
+            const a=window.__V118_SFX_ANALYSER,n=a.fftSize,data=new Uint8Array(n);let max=0;
+            const until=performance.now()+ms;
+            while(performance.now()<until){a.getByteTimeDomainData(data);for(const v of data)max=Math.max(max,Math.abs((v-128)/128));await new Promise(r=>setTimeout(r,8));}
+            return max;
+          },ms);
+          await page.dispatchEvent('#act','pointerdown',{pointerType:'touch',isPrimary:true});
+          const interactPeak=await peakFor(220);
+          await page.waitForFunction(()=>window.__V118_SFX?.events?.interact>=1);
+          await page.evaluate(()=>{const t=document.getElementById('toast');t.textContent='اشتريت ساندوتش فول';t.classList.add('show');});
+          const buyPeak=await peakFor(260);
+          await page.waitForFunction(()=>window.__V118_SFX?.events?.buy>=1);
+          await page.evaluate(()=>window.__V118_SFX_API.play('door'));
+          const doorPeak=await peakFor(220);
+          const state=await page.evaluate(()=>window.__egyptDebug.v118SfxState());
+          if(interactPeak<.01)throw new Error('Interaction SFX waveform too weak '+interactPeak);
+          if(buyPeak<.01)throw new Error('Purchase SFX waveform too weak '+buyPeak);
+          if(doorPeak<.01)throw new Error('Door SFX waveform too weak '+doorPeak);
+          if(!state.footsteps||!state.interaction||!state.purchase||!state.doors||!state.rewards)throw new Error('SFX feature missing '+JSON.stringify(state));
+          if(state.legacyHum!==false||state.legacyHorns!==false)throw new Error('Legacy harsh audio returned '+JSON.stringify(state));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.8 event SFX passed',{interactPeak,buyPeak,doorPeak,state});
+          await browser.close();
+          EOF
+          node v118-smoke.mjs
