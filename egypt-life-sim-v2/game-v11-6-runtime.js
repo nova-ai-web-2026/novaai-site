@@ -1,22 +1,33 @@
 (() => {
   'use strict';
 
+  const VERSION='11.8.1';
   const NativeAC=window.AudioContext||window.webkitAudioContext;
   let ctx=null,master=null,analyser=null,roadBed=null,timer=null,lastCam=null,stepDistance=0,starting=false,ready=false,queuedStart=null,menuObserver=null;
-  let originalCreateGain=null,gameMaster=null;
+  let originalCreateGain=null,gameMaster=null,legacyBusCount=0;
+
+  const audioState=()=>({...window.__V118_AUDIO,version:VERSION,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,queuedStart});
+  const attachDebug=()=>{
+    window.__V118_AUDIO_STATE=audioState;
+    window.__egyptDebug=window.__egyptDebug||{};
+    window.__egyptDebug.v118AudioState=audioState;
+    window.__egyptDebug.v117AudioState=audioState;
+    window.__egyptDebug.v116AudioState=audioState;
+  };
 
   const stableMenu=()=>{
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
-    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.7')kicker.textContent='HAYAT MASR • V11.7';
-    const t='حياة مصر — بنجهز الشارع والصوت بالكامل قبل الدخول علشان البداية تبقى ثابتة من أول ضغطة.';
+    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.8.1')kicker.textContent='HAYAT MASR • V11.8.1';
+    const t='حياة مصر — مؤثرات لعب فعلية للخطوات والتفاعل والشراء والأبواب، مع مسار صوت موحد وثابت.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.7 — early audio + stable queued start')foot.textContent='V11.7 — early audio + stable queued start';
+    if(foot&&foot.textContent!=='V11.8.1 — gameplay SFX hotfix')foot.textContent='V11.8.1 — gameplay SFX hotfix';
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 
   function fail(msg,err){
     console.error(msg,err||'');
-    window.__V117_AUDIO={version:'11.7',started:false,error:String(err||msg)};
+    window.__V118_AUDIO={version:VERSION,started:false,error:String(err||msg)};
+    window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;attachDebug();
   }
 
   function makeNoise(seconds=.5,brightness=.07){
@@ -27,7 +38,7 @@
   }
 
   function foley(center=470,vol=.065,dur=.08){
-    if(!ctx||!master)return;
+    if(!ctx||!master||!originalCreateGain)return;
     const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=originalCreateGain(),now=ctx.currentTime;
     src.buffer=makeNoise(.13,.14);filter.type='bandpass';filter.frequency.value=center;filter.Q.value=.7;
     gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(vol,now+.008);gain.gain.exponentialRampToValueAtTime(.0001,now+dur);
@@ -36,60 +47,64 @@
 
   function installSharedContextConstructor(){
     if(!NativeAC)return false;
-    function SharedAudioContext(...args){
-      if(!ctx)createContext(args);
-      return ctx;
-    }
+    function SharedAudioContext(...args){if(!ctx)createContext(args);return ctx;}
     SharedAudioContext.prototype=NativeAC.prototype;
     try{
       window.AudioContext=SharedAudioContext;
       if(window.webkitAudioContext)window.webkitAudioContext=SharedAudioContext;
       window.__V11_AUDIO_WRAPPED=true;
       return true;
-    }catch(err){fail('V11.7 could not install shared AudioContext',err);return false;}
+    }catch(err){fail('V11.8.1 could not install shared AudioContext',err);return false;}
   }
 
   function createContext(args=[]){
     if(ctx)return ctx;
     ctx=new NativeAC(...(args.length?args:[{latencyHint:'interactive'}]));
-    window.__V117_CONTEXT=ctx;window.__V116_CONTEXT=ctx;window.__V11_AUDIO_CONTEXT=ctx;
+    window.__V118_CONTEXT=ctx;window.__V117_CONTEXT=ctx;window.__V116_CONTEXT=ctx;window.__V11_AUDIO_CONTEXT=ctx;
     originalCreateGain=ctx.createGain.bind(ctx);
     ctx.createGain=()=>{
       const g=originalCreateGain(),connect=g.connect.bind(g);
       g.connect=(dest,...rest)=>{
-        const out=connect(dest,...rest);
         if(dest===ctx.destination&&g!==master){
-          if(!gameMaster){gameMaster=g;window.__V117_GAME_MASTER=g;window.__V116_GAME_MASTER=g;}
-          g.__v117LegacyBus=true;
-          setTimeout(()=>{try{g.gain.setTargetAtTime(0,ctx.currentTime,.01);}catch(_){}try{g.disconnect();}catch(_){}},0);
+          if(!gameMaster){
+            gameMaster=g;g.__v118GameMaster=true;
+            window.__V118_GAME_MASTER=g;window.__V117_GAME_MASTER=g;window.__V116_GAME_MASTER=g;
+            try{g.gain.setTargetAtTime(.24,ctx.currentTime,.03);}catch(_){}
+            attachDebug();
+            return master?connect(master,...rest):connect(dest,...rest);
+          }
+          legacyBusCount++;g.__v118LegacyExtraBus=true;
+          try{g.gain.setValueAtTime(0,ctx.currentTime);}catch(_){}
+          return master?connect(master,...rest):connect(dest,...rest);
         }
-        return out;
+        return connect(dest,...rest);
       };
       return g;
     };
+    attachDebug();
     return ctx;
   }
 
   function buildMix(){
     if(master)return;
-    master=originalCreateGain();master.gain.value=.74;
+    master=originalCreateGain();master.gain.value=.72;
     analyser=ctx.createAnalyser();analyser.fftSize=512;master.connect(analyser);analyser.connect(ctx.destination);
-    window.__V117_MASTER=master;window.__V117_ANALYSER=analyser;window.__V116_MASTER=master;window.__V116_ANALYSER=analyser;
+    window.__V118_MASTER=master;window.__V118_ANALYSER=analyser;window.__V117_MASTER=master;window.__V117_ANALYSER=analyser;window.__V116_MASTER=master;window.__V116_ANALYSER=analyser;
 
     const src=ctx.createBufferSource(),lp=ctx.createBiquadFilter(),gain=originalCreateGain();
-    src.buffer=makeNoise(7,.035);src.loop=true;lp.type='lowpass';lp.frequency.value=330;gain.gain.value=.12;
+    src.buffer=makeNoise(7,.035);src.loop=true;lp.type='lowpass';lp.frequency.value=330;gain.gain.value=.065;
     src.connect(lp);lp.connect(gain);gain.connect(master);src.start();roadBed=gain;
 
     const air=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),airGain=originalCreateGain();
-    air.buffer=makeNoise(8,.055);air.loop=true;bp.type='bandpass';bp.frequency.value=760;bp.Q.value=.35;airGain.gain.value=.012;
+    air.buffer=makeNoise(8,.055);air.loop=true;bp.type='bandpass';bp.frequency.value=760;bp.Q.value=.35;airGain.gain.value=.007;
     air.connect(bp);bp.connect(airGain);airGain.connect(master);air.start();
 
     timer=setInterval(()=>{
       if(ctx?.state==='suspended')ctx.resume().catch(()=>{});
       const cam=window.__egyptDebug?.getCamera?.();if(!cam||!roadBed)return;
       const d=Math.min(...[-72,-24,24,72].map(r=>Math.min(Math.abs(cam.x-r),Math.abs(cam.z-r))));
-      roadBed.gain.setTargetAtTime(d<10?.155:.09,ctx.currentTime,.35);
-      if(lastCam){stepDistance+=Math.hypot(cam.x-lastCam.x,cam.z-lastCam.z);if(stepDistance>.78){foley(d>4.8&&d<8.1?700:420,.052,.065);stepDistance=0;}}
+      roadBed.gain.setTargetAtTime(d<10?.085:.048,ctx.currentTime,.35);
+      if(lastCam){stepDistance+=Math.hypot(cam.x-lastCam.x,cam.z-lastCam.z);if(stepDistance>.78){foley(d>4.8&&d<8.1?700:420,.022,.055);stepDistance=0;}}
       lastCam={x:cam.x,z:cam.z};
     },120);
   }
@@ -101,10 +116,10 @@
       createContext();buildMix();
       if(ctx.state!=='running')await ctx.resume();
       if(ctx.state!=='running')throw new Error('AudioContext stayed '+ctx.state);
-      if(cue){foley(365,.12,.10);setTimeout(()=>foley(650,.07,.065),110);}
-      window.__V117_AUDIO={version:'11.7',engine:'early-shared-native-audiocontext',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.74,legacyBusesAutoDisconnected:true,hornEvents:false,oscillatorTones:false};
-      window.__V116_AUDIO=window.__V117_AUDIO;
-    }catch(err){fail('V11.7 audio start failed',err);}finally{starting=false;}
+      if(cue){foley(365,.065,.085);setTimeout(()=>foley(650,.038,.055),100);}
+      window.__V118_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,legacyBusCount,hornEvents:false,oscillatorTones:false};
+      window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;attachDebug();
+    }catch(err){fail('V11.8.1 audio start failed',err);}finally{starting=false;}
   }
 
   function handleStartCapture(id,e){
@@ -115,7 +130,7 @@
   }
 
   function installStartGate(){
-    window.__V117_READY=false;document.body.classList.remove('game-started');stableMenu();
+    window.__V118_READY=false;window.__V117_READY=false;document.body.classList.remove('game-started');stableMenu();
     for(const id of ['newGameBtn','continueBtn']){
       const el=document.getElementById(id);if(!el)continue;
       el.addEventListener('pointerdown',()=>startAudio(false),{capture:true});
@@ -123,30 +138,28 @@
       el.addEventListener('click',e=>handleStartCapture(id,e),{capture:true});
     }
     const toggle=document.getElementById('soundToggle');
-    if(toggle)new MutationObserver(()=>{if(!master||!ctx)return;const muted=toggle.textContent.includes('مكتوم');master.gain.setTargetAtTime(muted?0:.74,ctx.currentTime,.05);}).observe(toggle,{childList:true,subtree:true,characterData:true});
+    if(toggle)new MutationObserver(()=>{if(!master||!ctx)return;const muted=toggle.textContent.includes('مكتوم');master.gain.setTargetAtTime(muted?0:.72,ctx.currentTime,.05);}).observe(toggle,{childList:true,subtree:true,characterData:true});
     const menu=document.getElementById('menu');
     if(menu)menuObserver=new MutationObserver(()=>{if(!ready)stableMenu();});
     menuObserver?.observe(menu,{childList:true,subtree:true,characterData:true});
   }
 
   function markReady(){
-    if(ready)return;ready=true;window.__V117_READY=true;window.__V116_READY=true;
-    menuObserver?.disconnect();stableMenu();
+    if(ready)return;ready=true;window.__V118_READY=true;window.__V117_READY=true;window.__V116_READY=true;
+    menuObserver?.disconnect();stableMenu();attachDebug();
+    setTimeout(attachDebug,0);setTimeout(attachDebug,500);
     const status=document.getElementById('menuStatus');if(status)status.textContent='جاهز — ابدأ يوم جديد.';
-    window.__V117_STARTUP={version:'11.7',ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};
-    window.__V116_STARTUP=window.__V117_STARTUP;
+    window.__V118_STARTUP={version:VERSION,ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};
+    window.__V117_STARTUP=window.__V118_STARTUP;window.__V116_STARTUP=window.__V118_STARTUP;
     if(queuedStart){const id=queuedStart;queuedStart=null;setTimeout(()=>document.getElementById(id)?.click(),0);}
   }
 
   if(installSharedContextConstructor()){
-    window.__V117_AUDIO={version:'11.7',engine:'early-shared-native-audiocontext',armedBeforeCore:true,started:false,contextState:null,masterGain:.74,legacyBusesAutoDisconnected:true,hornEvents:false,oscillatorTones:false};
-    window.__V116_AUDIO=window.__V117_AUDIO;
+    window.__V118_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,hornEvents:false,oscillatorTones:false};
+    window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;
   }
-  installStartGate();
-  window.__V117_MARK_READY=markReady;
-  window.__V117_AUDIO_START=startAudio;
-  window.__egyptDebug=window.__egyptDebug||{};
-  window.__egyptDebug.v117AudioState=()=>({...window.__V117_AUDIO,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,ready,queuedStart});
-  window.__egyptDebug.v116AudioState=window.__egyptDebug.v117AudioState;
+  installStartGate();attachDebug();
+  window.__V118_MARK_READY=markReady;window.__V117_MARK_READY=markReady;
+  window.__V118_AUDIO_START=startAudio;window.__V117_AUDIO_START=startAudio;
   window.addEventListener('beforeunload',()=>{if(timer)clearInterval(timer);menuObserver?.disconnect();},{once:true});
 })();
