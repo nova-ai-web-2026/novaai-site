@@ -3,6 +3,68 @@
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const fail=(msg,err)=>{console.error(msg,err||'');const e=document.getElementById('errorBox');if(e){e.style.display='block';e.textContent=msg+(err?.message?': '+err.message:'');}};
 
+  // V11.6: capture the real browser AudioContext before later polish scripts can
+  // wrap it, and arm audio before the player can press Start. Also keep the HUD
+  // hidden and block game entry until the full patch chain is ready.
+  const NativeAudioContext=window.AudioContext||window.webkitAudioContext;
+  let v116Ctx=null,v116Master=null,v116Analyser=null,v116Road=null,v116Timer=null,v116Starting=false,v116Last=null,v116Step=0;
+  function v116Noise(seconds=.5){
+    const b=v116Ctx.createBuffer(1,Math.max(1,Math.floor(v116Ctx.sampleRate*seconds)),v116Ctx.sampleRate),d=b.getChannelData(0);let brown=0;
+    for(let i=0;i<d.length;i++){const w=Math.random()*2-1;brown=brown*.991+w*.009;d[i]=brown*.82+w*.07;}return b;
+  }
+  function v116Foley(freq=480,vol=.07,dur=.075){
+    if(!v116Ctx||!v116Master)return;const s=v116Ctx.createBufferSource(),f=v116Ctx.createBiquadFilter(),g=v116Ctx.createGain(),t=v116Ctx.currentTime;
+    s.buffer=v116Noise(.11);f.type='bandpass';f.frequency.value=freq;f.Q.value=.72;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f);f.connect(g);g.connect(v116Master);s.start(t);s.stop(t+dur+.03);
+  }
+  function silenceOldAudio(){
+    for(const key of ['__V11_LEGACY_MASTER','__V11_OWN_MASTER','__V111_SUPERSEDED_MASTER','__V112_MASTER']){
+      const g=window[key];if(!g||g===v116Master||g.__v116Muted)continue;try{g.gain?.setTargetAtTime?.(0,g.context?.currentTime||v116Ctx?.currentTime||0,.01);}catch(_){}try{g.disconnect();g.__v116Muted=true;}catch(_){}
+    }
+  }
+  async function startV116Audio(){
+    if(v116Starting)return;v116Starting=true;
+    try{
+      if(!NativeAudioContext)throw new Error('Web Audio unavailable');
+      if(!v116Ctx){
+        v116Ctx=new NativeAudioContext({latencyHint:'interactive'});v116Master=v116Ctx.createGain();v116Master.gain.value=.72;v116Analyser=v116Ctx.createAnalyser();v116Analyser.fftSize=512;v116Master.connect(v116Analyser);v116Analyser.connect(v116Ctx.destination);
+        const road=v116Ctx.createBufferSource(),lp=v116Ctx.createBiquadFilter(),rg=v116Ctx.createGain();road.buffer=v116Noise(7);road.loop=true;lp.type='lowpass';lp.frequency.value=330;rg.gain.value=.13;road.connect(lp);lp.connect(rg);rg.connect(v116Master);road.start();v116Road=rg;
+        const air=v116Ctx.createBufferSource(),bp=v116Ctx.createBiquadFilter(),ag=v116Ctx.createGain();air.buffer=v116Noise(8);air.loop=true;bp.type='bandpass';bp.frequency.value=780;bp.Q.value=.38;ag.gain.value=.013;air.connect(bp);bp.connect(ag);ag.connect(v116Master);air.start();
+        window.__V116_CONTEXT=v116Ctx;window.__V116_MASTER=v116Master;window.__V116_ANALYSER=v116Analyser;
+        v116Timer=setInterval(()=>{
+          silenceOldAudio();if(v116Ctx?.state==='suspended')v116Ctx.resume().catch(()=>{});
+          const cam=window.__egyptDebug?.getCamera?.();if(!cam||!v116Road)return;const d=Math.min(...[-72,-24,24,72].map(r=>Math.min(Math.abs(cam.x-r),Math.abs(cam.z-r))));v116Road.gain.setTargetAtTime(d<10?.16:.095,v116Ctx.currentTime,.4);
+          if(v116Last){v116Step+=Math.hypot(cam.x-v116Last.x,cam.z-v116Last.z);if(v116Step>.78){v116Foley(d>4.8&&d<8.1?700:420,.052,.065);v116Step=0;}}v116Last={x:cam.x,z:cam.z};
+        },80);
+      }
+      if(v116Ctx.state!=='running')await v116Ctx.resume();
+      v116Foley(360,.13,.1);setTimeout(()=>v116Foley(650,.075,.065),115);silenceOldAudio();
+      window.__V116_AUDIO={version:'11.6',engine:'early-native-audiocontext',armed:true,started:true,contextState:v116Ctx.state,masterGain:.72,lateGestureRequired:false,hornEvents:false,oscillatorTones:false};
+    }catch(err){console.error('V11.6 early audio failed',err);window.__V116_AUDIO={version:'11.6',engine:'early-native-audiocontext',armed:true,started:false,error:String(err)};}
+    finally{v116Starting=false;}
+  }
+  function installV116StartGate(){
+    if(document.getElementById('v116-startup-style'))return;
+    const style=document.createElement('style');style.id='v116-startup-style';style.textContent='body.v116-menu-open #hud{visibility:hidden!important}body.v116-menu-open #menu{opacity:1!important;visibility:visible!important;transition:none!important}body.v116-menu-open #newGameBtn,body.v116-menu-open #continueBtn{transition:none!important}';document.head.appendChild(style);document.body.classList.add('v116-menu-open');
+    window.__V116_READY=false;window.__V116_AUDIO={version:'11.6',engine:'early-native-audiocontext',armed:true,started:false,contextState:null,masterGain:.72,lateGestureRequired:false,hornEvents:false,oscillatorTones:false};
+    const status=document.getElementById('menuStatus');if(status)status.textContent='جاري تجهيز اللعبة…';
+    for(const id of ['newGameBtn','continueBtn']){
+      const el=document.getElementById(id);if(!el)continue;
+      el.addEventListener('pointerdown',()=>startV116Audio(),{capture:true});
+      el.addEventListener('touchstart',()=>startV116Audio(),{capture:true,passive:true});
+      el.addEventListener('click',()=>startV116Audio(),{capture:true});
+      el.addEventListener('click',e=>{if(window.__V116_READY)return;e.preventDefault();e.stopImmediatePropagation();if(status)status.textContent='ثانية واحدة… بنجهز الشارع والصوت.';},{capture:true});
+      el.addEventListener('click',()=>{if(window.__V116_READY)document.body.classList.remove('v116-menu-open');},{capture:true});
+    }
+    const toggle=document.getElementById('soundToggle');toggle?.addEventListener('click',()=>setTimeout(()=>{if(!v116Master||!v116Ctx)return;const muted=toggle.textContent.includes('مكتوم');v116Master.gain.setTargetAtTime(muted?0:.72,v116Ctx.currentTime,.05);},0));
+    window.__V116_AUDIO_START=startV116Audio;
+  }
+  function markV116Ready(){
+    window.__V116_READY=true;const status=document.getElementById('menuStatus');if(status&&/جاري تجهيز|ثانية واحدة/.test(status.textContent))status.textContent='جاهز — ابدأ يوم جديد.';
+    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V11.6';const foot=document.querySelector('.menuFoot');if(foot)foot.textContent='V11.6 — stable startup + early native audio';
+    window.__V116_STARTUP={version:'11.6',earlyGate:true,ready:true,hudHiddenUntilStart:true,audioArmedBeforePatches:true};
+  }
+  installV116StartGate();
+
   async function waitForV8(){
     for(let i=0;i<180;i++){
       const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
@@ -31,8 +93,8 @@
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
   function loadV11AudioFix(){
-    if(document.querySelector('script[data-egypt-v11-audiofix]'))return;
-    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.1';s.dataset.egyptV11Audiofix='true';s.async=false;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v11-audiofix]')){markV116Ready();return;}
+    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.6';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markV116Ready;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
   }
   function loadV111(){
     if(document.querySelector('script[data-egypt-v111]')){if(window.__V111_PATCH?.version==='11.1')loadV11AudioFix();return;}
