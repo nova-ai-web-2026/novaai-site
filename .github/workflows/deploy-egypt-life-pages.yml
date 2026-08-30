@@ -45,8 +45,6 @@ jobs:
           test -s egypt-life-sim-v2/game-v11.js
           test -s egypt-life-sim-v2/game-v11-1.js
           test -s egypt-life-sim-v2/game-v11-audiofix.js
-          test -s egypt-life-sim-v2/game-v11-2-audio.js
-          test -s egypt-life-sim-v2/game-v11-4-audio.js
           node --check egypt-life-sim-v2/game.js
           node --check egypt-life-sim-v2/game-v6.js
           node --check egypt-life-sim-v2/game-v7.js
@@ -59,10 +57,8 @@ jobs:
           node --check egypt-life-sim-v2/game-v11.js
           node --check egypt-life-sim-v2/game-v11-1.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
-          node --check egypt-life-sim-v2/game-v11-2-audio.js
-          node --check egypt-life-sim-v2/game-v11-4-audio.js
           grep -Fq 'game-v7.js?v=8' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v8-layout.js?v=8' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v8-layout.js?v=11.6' egypt-life-sim-v2/index.html
           grep -Fq 'game-v9.js?v=9' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v9-gaitfix.js?v=9' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v9-character-polish.js?v=9' egypt-life-sim-v2/game-v8-layout.js
@@ -70,14 +66,16 @@ jobs:
           grep -Fq 'game-v10.js?v=10' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11.js?v=11' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-1.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq 'game-v11-audiofix.js?v=11.1' egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq 'game-v11-2-audio.js?v=11.3' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'game-v11-4-audio.js?v=11.5' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'isolated-native-audiocontext' egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq 'v115SoundTest' egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq 'touchstart' egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v11-4-audio.js
-          grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v11-4-audio.js
+          grep -Fq 'game-v11-audiofix.js?v=11.6' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'early-native-audiocontext' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'audioArmedBeforePatches:true' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'lateGestureRequired:false' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'delegatedToV116:true' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'lateAudioLayers:false' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'oscillatorTones:false' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq 'hornEvents:false' egypt-life-sim-v2/game-v8-layout.js
+          if grep -Fq 'game-v11-2-audio.js' egypt-life-sim-v2/game-v11-audiofix.js; then echo 'late V11.2 audio loader present'; exit 1; fi
+          if grep -Fq 'game-v11-4-audio.js' egypt-life-sim-v2/game-v11-audiofix.js; then echo 'late V11.5 audio loader present'; exit 1; fi
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
