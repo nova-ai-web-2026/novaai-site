@@ -30,10 +30,10 @@
   }
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
-  function markReady(){(window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
+  function markReady(){(window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
   function loadV11AudioFix(){
-    if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v118EventSfx)markReady();return;}
-    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.8.1';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v119QualitySfx)markReady();return;}
+    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.9';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
   }
   function loadV111(){
     if(document.querySelector('script[data-egypt-v111]')){if(window.__V111_PATCH?.version==='11.1')loadV11AudioFix();return;}
