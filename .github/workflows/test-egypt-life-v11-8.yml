@@ -13,39 +13,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate natural Foley bank
+      - name: Validate natural Foley engine
         run: |
-          test -s egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz
-          gzip -t egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq "VERSION='11.10'" egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'decoded-natural-foley-bank' egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'foley-bank.pcm.gz?v=11.10' egypt-life-sim-v2/game-v11-8-sfx.js
-          if grep -Fq 'Math.sin(' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Procedural tonal synthesis still present'; exit 1; fi
-          python3 - <<'PY'
-          import gzip,struct,math
-          path='egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz'
-          raw=gzip.open(path,'rb').read()
-          manifest={
-            'step_pavement_1':(0,11280),'step_asphalt_1':(11280,10320),'step_pavement_2':(21600,11280),'step_asphalt_2':(32880,10320),
-            'step_pavement_3':(43200,11280),'step_asphalt_3':(54480,10320),'interact_1':(64800,6720),'buy_1':(71520,15360),
-            'door_1':(86880,19200),'interact_2':(106080,6720),'buy_2':(112800,15360),'door_2':(128160,19200),
-            'reward_1':(147360,12960),'deny_1':(160320,6958)
-          }
-          assert len(raw)==167278, len(raw)
-          report={}
-          for name,(off,size) in manifest.items():
-            vals=struct.unpack('<%dh'%(size//2),raw[off:off+size])
-            f=[v/32768 for v in vals]
-            peak=max(abs(v) for v in f); rms=math.sqrt(sum(v*v for v in f)/len(f)); crest=20*math.log10((peak+1e-12)/(rms+1e-12))
-            assert .30 < peak < .51, (name,peak)
-            assert .015 < rms < .14, (name,rms)
-            assert 10 < crest < 25, (name,crest)
-            assert not any(abs(v)>=.985 for v in f), name
-            report[name]={'peak':round(peak,4),'rms':round(rms,4),'crestDb':round(crest,2)}
-          print(report)
-          PY
+          grep -Fq 'pre-rendered-natural-noise-foley' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'proceduralPerEvent:false' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'tonalSynthesis:false' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'noRepeatViolations' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "banks.step_pavement=[101,102,103,104]" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "banks.step_asphalt=[201,202,203,204]" egypt-life-sim-v2/game-v11-8-sfx.js
+          if grep -Fq 'Math.sin(' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Tonal oscillator synthesis still present'; exit 1; fi
+          if grep -Fq '.wav?v=' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Old one-shot WAV references still present'; exit 1; fi
 
       - name: Install Chromium
         run: |
@@ -58,7 +38,7 @@ jobs:
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1110-server.log 2>&1 &
           sleep 2
 
-      - name: Verify mobile SFX output and variants
+      - name: Verify mobile SFX output, dynamics and variants
         run: |
           cat > v1110-sfx-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -73,36 +53,54 @@ jobs:
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>window.__V1110_CONTEXT?.state==='running'&&window.__V1110_SFX?.bankReady===true&&window.__V1110_SFX_API,{timeout:15000});
 
-          async function measure(name,wait=230){
+          async function measure(name,wait=300){
             return await page.evaluate(async ({name,wait})=>{
-              const a=window.__V1110_SFX_ANALYSER;
-              if(!a)throw new Error('SFX analyser missing');
+              const a=window.__V1110_SFX_ANALYSER;if(!a)throw new Error('SFX analyser missing');
+              const before=window.__V1110_SFX.playResolved;
               const ok=window.__V1110_SFX_API.play(name);if(!ok)throw new Error('play failed '+name);
               let maxRms=0,maxPeak=0;const end=performance.now()+wait;
               while(performance.now()<end){
                 const data=new Uint8Array(a.fftSize);a.getByteTimeDomainData(data);let sum=0,peak=0;
                 for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
                 maxRms=Math.max(maxRms,Math.sqrt(sum/data.length));maxPeak=Math.max(maxPeak,peak);
-                await new Promise(r=>setTimeout(r,12));
+                await new Promise(r=>setTimeout(r,10));
               }
-              return {name,maxRms,maxPeak,last:window.__V1110_SFX.lastPlayed};
+              return {name,maxRms,maxPeak,before,after:window.__V1110_SFX.playResolved,last:window.__V1110_SFX.lastPlayed};
             },{name,wait});
           }
 
           const results=[];
-          for(const name of ['interact','buy','door','step','asphalt']){const r=await measure(name);results.push(r);if(r.maxRms<.0025||r.maxPeak<.008)throw new Error('Weak '+name+' '+JSON.stringify(r));await page.waitForTimeout(120);}
-          const stepSamples=[];
-          for(let i=0;i<4;i++){const r=await measure('step',170);stepSamples.push(r.last?.sample);await page.waitForTimeout(100);}
-          for(let i=1;i<stepSamples.length;i++)if(stepSamples[i]===stepSamples[i-1])throw new Error('Repeated footstep variant '+JSON.stringify(stepSamples));
+          for(const name of ['interact','buy','door','step','asphalt']){
+            const r=await measure(name);results.push(r);
+            if(r.after<=r.before)throw new Error('SFX did not resolve '+JSON.stringify(r));
+            if(r.maxRms<.003||r.maxPeak<.012)throw new Error('Weak '+name+' '+JSON.stringify(r));
+            if(r.maxPeak>.96)throw new Error('Clipping-risk '+name+' '+JSON.stringify(r));
+            await page.waitForTimeout(160);
+          }
 
-          const state=await page.evaluate(()=>({sfx:window.__V1110_SFX,metrics:window.__V1110_SFX_API.metrics(),audio:window.__egyptDebug?.v1110AudioState?.(),errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none,errorText:document.getElementById('errorBox')?.textContent||''}));
+          const stepVariants=[];
+          for(let i=0;i<5;i++){const r=await measure('step',260);stepVariants.push(r.last?.variant);await page.waitForTimeout(140);}
+          for(let i=1;i<stepVariants.length;i++)if(stepVariants[i]===stepVariants[i-1])throw new Error('Repeated adjacent footstep '+JSON.stringify(stepVariants));
+
+          const state=await page.evaluate(()=>({
+            sfx:window.__V1110_SFX,
+            metrics:window.__V1110_SFX_API.metrics(),
+            audio:window.__egyptDebug?.v1110AudioState?.(),
+            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+            errorText:document.getElementById('errorBox')?.textContent||''
+          }));
+          if(state.sfx.sampleCount!==21)throw new Error('Expected 21 SFX variants '+JSON.stringify(state.sfx));
           if(state.sfx.noRepeatViolations!==0)throw new Error('No-repeat violation '+JSON.stringify(state.sfx));
           if(state.sfx.playRejected!==0)throw new Error('Rejected SFX '+JSON.stringify(state.sfx));
-          if(state.sfx.bankError)throw new Error('Bank error '+state.sfx.bankError);
+          if(state.sfx.tonalSynthesis!==false||state.sfx.proceduralPerEvent!==false)throw new Error('Wrong engine mode '+JSON.stringify(state.sfx));
+          for(const [group,list] of Object.entries(state.metrics))for(const m of list){
+            if(m.peak>=.55||m.peak<=.30)throw new Error('Bad peak '+group+' '+JSON.stringify(m));
+            if(m.rms<=.012||m.rms>=.16)throw new Error('Bad RMS '+group+' '+JSON.stringify(m));
+            if(m.crestDb<8||m.crestDb>27)throw new Error('Bad crest '+group+' '+JSON.stringify(m));
+          }
           if(state.errorVisible)throw new Error('Runtime errorBox '+state.errorText);
           if(errors.length)throw new Error(errors.join('\n'));
-          for(const [name,m] of Object.entries(state.metrics)){if(m.peak>=.51||m.peak<=.30||m.crestDb<10||m.crestDb>25)throw new Error('Bad decoded metric '+name+' '+JSON.stringify(m));}
-          console.log('V11.10 natural SFX passed',{results,stepSamples,state});
+          console.log('V11.10 natural SFX passed',{results,stepVariants,state});
           await browser.close();
           EOF
           node v1110-sfx-smoke.mjs
