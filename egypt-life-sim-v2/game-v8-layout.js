@@ -30,10 +30,10 @@
   }
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
-  function markReady(){(window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
+  function markReady(){(window.__V1110_MARK_READY||window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
   function loadV11AudioFix(){
-    if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v119QualitySfx)markReady();return;}
-    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.9';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v1110NaturalSfx)markReady();return;}
+    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.10';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
   }
   function loadV111(){
     if(document.querySelector('script[data-egypt-v111]')){if(window.__V111_PATCH?.version==='11.1')loadV11AudioFix();return;}
@@ -58,7 +58,7 @@
   }
   function loadV9GaitFix(){
     if(document.querySelector('script[data-egypt-v9-gaitfix]')){if(window.__V9_GAITFIX?.naturalAnkleRange)loadV9CharacterPolish();return;}
-    const s=document.createElement('script');s.src='game-v9-gaitfix.js?v=9';s.dataset.egyptV9Gaitfix='true';s.async=false;s.onload=loadV9CharacterPolish;s.onerror=()=>fail('V9 gait fix script failed to load');document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v9-gaitfix.js?v=9';s.dataset.egyptV9Gaitfix='true';s.async=false;s.onload=loadV9CharacterPolish;s.onerror=()=>fail('V9 gait fix failed to load');document.body.appendChild(s);
   }
   function loadV9(){
     if(document.querySelector('script[data-egypt-v9]')){if(window.__V9_PATCH?.version===9)loadV9GaitFix();return;}
