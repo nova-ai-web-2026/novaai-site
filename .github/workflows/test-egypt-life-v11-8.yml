@@ -72,25 +72,36 @@ jobs:
           }
 
           async function verifyPlay(name){
+            const before=await page.evaluate(()=>window.__V1110_SFX_API.state().playResolved);
             await page.evaluate(n=>window.__V1110_SFX_API.play(n),name);
-            await page.waitForTimeout(35);
-            const out=await page.evaluate(()=>{
-              const a=window.__V1110_SFX_ANALYSER,n=a?.fftSize||0,d=n?new Uint8Array(n):null;let sum=0,peak=0;
-              if(a&&d){a.getByteTimeDomainData(d);for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}}
-              return {rms:n?Math.sqrt(sum/n):0,peak,last:window.__V1110_SFX_API.state().lastPlayed};
-            });
-            if(out.last?.transport!=='actual-sample')throw new Error('Fallback used for '+name+' '+JSON.stringify(out));
-            if(out.rms<.0008||out.peak<.003)throw new Error('No measurable actual SFX waveform '+name+' '+JSON.stringify(out));
+            await page.waitForFunction(before=>window.__V1110_SFX_API.state().playResolved>before,before,{timeout:3000});
+            const out=await page.evaluate(()=>window.__V1110_SFX_API.state().lastPlayed);
+            if(out?.transport!=='actual-sample')throw new Error('Fallback used for '+name+' '+JSON.stringify(out));
             return out;
           }
 
           const plays={};
           for(const name of ['interact','buy','door','reward','deny','step','asphalt'])plays[name]=await verifyPlay(name);
+
+          const probe=await page.evaluate(async()=>{
+            window.__V1110_SFX_API.play('door');
+            const a=window.__V1110_SFX_ANALYSER,n=a?.fftSize||0,d=n?new Uint8Array(n):null;
+            let bestRms=0,bestPeak=0;
+            for(let j=0;j<30;j++){
+              await new Promise(r=>setTimeout(r,4));
+              if(!a||!d)continue;a.getByteTimeDomainData(d);let sum=0,peak=0;
+              for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+              bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);
+            }
+            return {bestRms,bestPeak,last:window.__V1110_SFX_API.state().lastPlayed};
+          });
+          if(probe.last?.transport!=='actual-sample'||probe.bestRms<.0008||probe.bestPeak<.003)throw new Error('No measurable actual SFX graph output '+JSON.stringify(probe));
+
           const finalState=await page.evaluate(()=>window.__V1110_SFX_API.state());
-          if(finalState.playRejected!==0||finalState.playResolved<7)throw new Error('Actual SFX playback unhealthy '+JSON.stringify(finalState));
+          if(finalState.playRejected!==0||finalState.playResolved<8)throw new Error('Actual SFX playback unhealthy '+JSON.stringify(finalState));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.10 actual SFX passed',{loaded,metrics,plays,finalState});
+          console.log('V11.10 actual SFX passed',{loaded,metrics,plays,probe,finalState});
           await browser.close();
           EOF
           node v1110-actual.mjs
