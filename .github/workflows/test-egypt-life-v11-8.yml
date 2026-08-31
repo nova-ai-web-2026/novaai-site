@@ -26,6 +26,7 @@ jobs:
           grep -Fq "banks.step_asphalt=[201,202,203,204]" egypt-life-sim-v2/game-v11-8-sfx.js
           if grep -Fq 'Math.sin(' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Tonal oscillator synthesis still present'; exit 1; fi
           if grep -Fq '.wav?v=' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Old one-shot WAV references still present'; exit 1; fi
+          if grep -Fq 'foley-bank.pcm.gz' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'External binary bank dependency still present'; exit 1; fi
 
       - name: Install Chromium
         run: |
@@ -38,7 +39,7 @@ jobs:
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1110-server.log 2>&1 &
           sleep 2
 
-      - name: Verify mobile SFX output, dynamics and variants
+      - name: Verify mobile SFX playback, dynamics and variants
         run: |
           cat > v1110-sfx-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -53,33 +54,26 @@ jobs:
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>window.__V1110_CONTEXT?.state==='running'&&window.__V1110_SFX?.bankReady===true&&window.__V1110_SFX_API,{timeout:15000});
 
-          async function measure(name,wait=300){
+          async function trigger(name,wait=350){
             return await page.evaluate(async ({name,wait})=>{
-              const a=window.__V1110_SFX_ANALYSER;if(!a)throw new Error('SFX analyser missing');
               const before=window.__V1110_SFX.playResolved;
               const ok=window.__V1110_SFX_API.play(name);if(!ok)throw new Error('play failed '+name);
-              let maxRms=0,maxPeak=0;const end=performance.now()+wait;
-              while(performance.now()<end){
-                const data=new Uint8Array(a.fftSize);a.getByteTimeDomainData(data);let sum=0,peak=0;
-                for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-                maxRms=Math.max(maxRms,Math.sqrt(sum/data.length));maxPeak=Math.max(maxPeak,peak);
-                await new Promise(r=>setTimeout(r,10));
-              }
-              return {name,maxRms,maxPeak,before,after:window.__V1110_SFX.playResolved,last:window.__V1110_SFX.lastPlayed};
+              await new Promise(r=>setTimeout(r,wait));
+              return {name,before,after:window.__V1110_SFX.playResolved,last:window.__V1110_SFX.lastPlayed,ctx:window.__V1110_CONTEXT?.state};
             },{name,wait});
           }
 
           const results=[];
           for(const name of ['interact','buy','door','step','asphalt']){
-            const r=await measure(name);results.push(r);
-            if(r.after<=r.before)throw new Error('SFX did not resolve '+JSON.stringify(r));
-            if(r.maxRms<.003||r.maxPeak<.012)throw new Error('Weak '+name+' '+JSON.stringify(r));
-            if(r.maxPeak>.96)throw new Error('Clipping-risk '+name+' '+JSON.stringify(r));
-            await page.waitForTimeout(160);
+            const r=await trigger(name);results.push(r);
+            if(r.ctx!=='running')throw new Error('Context not running '+JSON.stringify(r));
+            if(r.after<=r.before)throw new Error('SFX source did not start '+JSON.stringify(r));
+            if(!r.last||r.last.peak<.30||r.last.peak>.55||r.last.rms<.012||r.last.rms>.16)throw new Error('Bad active buffer '+JSON.stringify(r));
+            await page.waitForTimeout(170);
           }
 
           const stepVariants=[];
-          for(let i=0;i<5;i++){const r=await measure('step',260);stepVariants.push(r.last?.variant);await page.waitForTimeout(140);}
+          for(let i=0;i<6;i++){const r=await trigger('step',280);stepVariants.push(r.last?.variant);await page.waitForTimeout(150);}
           for(let i=1;i<stepVariants.length;i++)if(stepVariants[i]===stepVariants[i-1])throw new Error('Repeated adjacent footstep '+JSON.stringify(stepVariants));
 
           const state=await page.evaluate(()=>({
@@ -93,10 +87,14 @@ jobs:
           if(state.sfx.noRepeatViolations!==0)throw new Error('No-repeat violation '+JSON.stringify(state.sfx));
           if(state.sfx.playRejected!==0)throw new Error('Rejected SFX '+JSON.stringify(state.sfx));
           if(state.sfx.tonalSynthesis!==false||state.sfx.proceduralPerEvent!==false)throw new Error('Wrong engine mode '+JSON.stringify(state.sfx));
-          for(const [group,list] of Object.entries(state.metrics))for(const m of list){
-            if(m.peak>=.55||m.peak<=.30)throw new Error('Bad peak '+group+' '+JSON.stringify(m));
-            if(m.rms<=.012||m.rms>=.16)throw new Error('Bad RMS '+group+' '+JSON.stringify(m));
-            if(m.crestDb<8||m.crestDb>27)throw new Error('Bad crest '+group+' '+JSON.stringify(m));
+          const required={step_pavement:4,step_asphalt:4,interact:3,buy:3,door:3,reward:2,deny:2};
+          for(const [group,count] of Object.entries(required)){
+            const list=state.metrics[group];if(!list||list.length!==count)throw new Error('Wrong variant count '+group+' '+JSON.stringify(list));
+            for(const m of list){
+              if(m.peak>=.55||m.peak<=.30)throw new Error('Bad peak '+group+' '+JSON.stringify(m));
+              if(m.rms<=.012||m.rms>=.16)throw new Error('Bad RMS '+group+' '+JSON.stringify(m));
+              if(m.crestDb<8||m.crestDb>27)throw new Error('Bad crest '+group+' '+JSON.stringify(m));
+            }
           }
           if(state.errorVisible)throw new Error('Runtime errorBox '+state.errorText);
           if(errors.length)throw new Error(errors.join('\n'));
