@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.9 SFX Quality
+name: Test Egyptian Life Simulator V11.10 Actual SFX
 
 on:
   pull_request:
@@ -8,28 +8,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  v119-sfx-quality:
+  v1110-actual-sfx:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.9 quality SFX files
+      - name: Validate V11.10 actual SFX files
         run: |
-          test -s egypt-life-sim-v2/game-v11-8-sfx.js
+          test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          test -s egypt-life-sim-v2/AUDIO-CREDITS.md
+          node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
-          node --check egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq "game-v11-6-runtime.js?v=11.9" egypt-life-sim-v2/index.html
-          grep -Fq "game-v11-8-sfx.js?v=11.9" egypt-life-sim-v2/index.html
-          grep -Fq "game-v8-layout.js?v=11.9" egypt-life-sim-v2/index.html
-          grep -Fq "game-v11-audiofix.js?v=11.9" egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq "quality-foley-buffer-bank" egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq "legacyGameSfx:false" egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq "webAudioOnly:true" egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq "proceduralBeeps:false" egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq "gameMasterMuted:true" egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq "proceduralGameplayFoley:false" egypt-life-sim-v2/game-v11-6-runtime.js
-          if grep -Fq '.wav?v=' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Old one-shot WAV SFX still referenced'; exit 1; fi
+          grep -Fq "game-v11-6-runtime.js?v=11.10" egypt-life-sim-v2/index.html
+          grep -Fq "game-v11-8-sfx.js?v=11.10" egypt-life-sim-v2/index.html
+          grep -Fq "game-v11-10-actual-sfx.js?v=11.10" egypt-life-sim-v2/index.html
+          grep -Fq "game-v8-layout.js?v=11.10" egypt-life-sim-v2/index.html
+          grep -Fq "actual-cc0-sampled-sfx" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "remoteSamplePrimary:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "proceduralFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "45df48c4d45f8716216b1a9e22df0b69cd9f5932" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "release:'11.10'" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "CC0 1.0" egypt-life-sim-v2/AUDIO-CREDITS.md
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -37,55 +38,70 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start game server
         run: |
-          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v119-server.log 2>&1 &
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1110-server.log 2>&1 &
           sleep 2
-      - name: Verify mobile V11.9 SFX bank and legacy mute
+      - name: Verify actual samples on mobile WebAudio
         run: |
-          cat > v119-quality.mjs <<'EOF'
+          cat > v1110-actual.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v119-quality',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V119_READY===true&&window.__V119_SFX?.version==='11.9'&&!!window.__V119_SFX_API,{timeout:55000});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1110-actual',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V119_READY===true&&window.__V1110_SFX?.version==='11.10'&&!!window.__V1110_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V119_CONTEXT?.state==='running',{timeout:12000});
-          await page.evaluate(()=>window.__V119_SFX_API.unlock());
-          await page.waitForFunction(()=>window.__V119_SFX_API.state().bankReady===true&&window.__V119_SFX_API.state().qualityBus===true,{timeout:5000});
+          await page.evaluate(()=>window.__V1110_SFX_API.unlock());
+          await page.waitForFunction(()=>{
+            const s=window.__V1110_SFX_API?.state?.();
+            return s?.bankReady===true&&s.sampleLoaded+s.sampleFailed===s.sampleTotal;
+          },{timeout:25000});
 
-          const runtime=await page.evaluate(()=>window.__V119_AUDIO_STATE());
-          if(!runtime?.gameMasterConnected)throw new Error('Legacy gameplay master was not captured '+JSON.stringify(runtime));
-          if(Math.abs(runtime.gameMasterValue||0)>.002)throw new Error('Legacy gameplay SFX not muted '+JSON.stringify(runtime));
-          if(runtime.proceduralGameplayFoley!==false)throw new Error('Old procedural gameplay Foley still enabled '+JSON.stringify(runtime));
+          const loaded=await page.evaluate(()=>window.__V1110_SFX_API.state());
+          if(loaded.sampleTotal!==17||loaded.sampleLoaded!==17||loaded.sampleFailed!==0)throw new Error('Actual sample preload incomplete '+JSON.stringify(loaded));
+          if(loaded.actualSamples!==true||loaded.remoteSamplePrimary!==true||loaded.proceduralFallback!==true)throw new Error('Wrong V11.10 engine '+JSON.stringify(loaded));
+          if(loaded.proceduralBusMuted!==true)throw new Error('Procedural V11.9 bus not muted '+JSON.stringify(loaded));
 
-          const metrics=await page.evaluate(()=>window.__V119_SFX_API.bankMetrics());
-          for(const key of ['step_pavement','step_asphalt'])if((metrics[key]?.length||0)<3)throw new Error('Not enough footstep variation '+key+' '+JSON.stringify(metrics[key]));
-          for(const key of ['interact','buy','door','reward','deny'])if((metrics[key]?.length||0)<2)throw new Error('Not enough SFX variation '+key+' '+JSON.stringify(metrics[key]));
-          for(const [key,list] of Object.entries(metrics))for(const m of list)if(m.rms<.015||m.peak<.12||m.duration<.07)throw new Error('Weak generated Foley '+key+' '+JSON.stringify(m));
+          const metrics=await page.evaluate(()=>window.__V1110_SFX_API.bufferMetrics());
+          const expected={step_pavement:4,step_asphalt:4,interact:2,buy:2,door:2,reward:2,deny:1};
+          for(const [key,count] of Object.entries(expected)){
+            if((metrics[key]?.length||0)!==count)throw new Error('Wrong actual sample count '+key+' '+JSON.stringify(metrics[key]));
+            for(const m of metrics[key])if(m.duration<=0||m.rms<.001||m.peak<.005)throw new Error('Silent/invalid actual sample '+key+' '+JSON.stringify(m));
+          }
 
-          const differences=await page.evaluate(()=>{
-            const api=window.__V119_SFX_API;
-            const banks=['step_pavement','step_asphalt','interact','buy','door','reward','deny'];
-            const out={};
-            // bankMetrics confirms counts; trigger repeated plays to confirm the no-immediate-repeat selector rotates variants.
-            for(const key of banks){
-              const names={step_pavement:'step',step_asphalt:'asphalt',interact:'interact',buy:'buy',door:'door',reward:'reward',deny:'deny'};
-              api.play(names[key]);const a=api.state().lastPlayed?.variant;
-              api.play(names[key]);const b=api.state().lastPlayed?.variant;
-              out[key]={a,b};
-            }
+          async function verifyPlay(name){
+            const before=await page.evaluate(()=>window.__V1110_SFX_API.state().playResolved);
+            await page.evaluate(n=>window.__V1110_SFX_API.play(n),name);
+            await page.waitForFunction(before=>window.__V1110_SFX_API.state().playResolved>before,before,{timeout:3000});
+            const out=await page.evaluate(()=>window.__V1110_SFX_API.state().lastPlayed);
+            if(out?.transport!=='actual-sample')throw new Error('Fallback used for '+name+' '+JSON.stringify(out));
             return out;
-          });
-          for(const [key,v] of Object.entries(differences))if(v.a===v.b)throw new Error('Immediate SFX repeat '+key+' '+JSON.stringify(v));
+          }
 
-          const before=await page.evaluate(()=>window.__V119_SFX_API.state().playResolved);
-          for(const name of ['interact','buy','door','reward','deny','step','asphalt'])await page.evaluate(n=>window.__V119_SFX_API.play(n),name);
-          await page.waitForFunction(before=>window.__V119_SFX_API.state().playResolved>=before+7,before,{timeout:6000});
-          const finalState=await page.evaluate(()=>window.__V119_SFX_API.state());
-          if(finalState.playRejected!==0||finalState.webAudioOnly!==true||finalState.htmlFallback!==false||finalState.proceduralBeeps!==false)throw new Error('V11.9 SFX engine unhealthy '+JSON.stringify(finalState));
+          const plays={};
+          for(const name of ['interact','buy','door','reward','deny','step','asphalt'])plays[name]=await verifyPlay(name);
+
+          const probe=await page.evaluate(async()=>{
+            window.__V1110_SFX_API.play('door');
+            const a=window.__V1110_SFX_ANALYSER,n=a?.fftSize||0,d=n?new Uint8Array(n):null;
+            let bestRms=0,bestPeak=0;
+            for(let j=0;j<30;j++){
+              await new Promise(r=>setTimeout(r,4));
+              if(!a||!d)continue;a.getByteTimeDomainData(d);let sum=0,peak=0;
+              for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+              bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);
+            }
+            return {bestRms,bestPeak,last:window.__V1110_SFX_API.state().lastPlayed};
+          });
+          if(probe.last?.transport!=='actual-sample'||probe.bestRms<.0008||probe.bestPeak<.003)throw new Error('No measurable actual SFX graph output '+JSON.stringify(probe));
+
+          const finalState=await page.evaluate(()=>window.__V1110_SFX_API.state());
+          if(finalState.playRejected!==0||finalState.playResolved<8)throw new Error('Actual SFX playback unhealthy '+JSON.stringify(finalState));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.9 quality SFX passed',{runtime,metrics,differences,finalState});
+          console.log('V11.10 actual SFX passed',{loaded,metrics,plays,probe,finalState});
           await browser.close();
           EOF
-          node v119-quality.mjs
+          node v1110-actual.mjs

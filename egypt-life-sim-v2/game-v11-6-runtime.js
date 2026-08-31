@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION='11.9';
+  const VERSION='11.10';
   const NativeAC=window.AudioContext||window.webkitAudioContext;
   let ctx=null,master=null,analyser=null,roadBed=null,timer=null,starting=false,ready=false,queuedStart=null,menuObserver=null;
   let originalCreateGain=null,gameMaster=null,legacyBusCount=0;
@@ -15,10 +15,10 @@
 
   const stableMenu=()=>{
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
-    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.9')kicker.textContent='HAYAT MASR • V11.9';
-    const t='حياة مصر — مؤثرات Foley أنعم ومتنوعة للخطوات والتفاعل والشراء والأبواب، من غير أصوات اللعبة القديمة.';
+    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.10')kicker.textContent='HAYAT MASR • V11.10';
+    const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.9 — quality Foley SFX')foot.textContent='V11.9 — quality Foley SFX';
+    if(foot&&foot.textContent!=='V11.10 — actual CC0 sampled SFX')foot.textContent='V11.10 — actual CC0 sampled SFX';
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 
@@ -38,7 +38,7 @@
     function SharedAudioContext(...args){if(!ctx)createContext(args);return ctx;}
     SharedAudioContext.prototype=NativeAC.prototype;
     try{window.AudioContext=SharedAudioContext;if(window.webkitAudioContext)window.webkitAudioContext=SharedAudioContext;window.__V11_AUDIO_WRAPPED=true;return true;}
-    catch(err){fail('V11.9 could not install shared AudioContext',err);return false;}
+    catch(err){fail('V11.10 could not install shared AudioContext',err);return false;}
   }
 
   function createContext(args=[]){
@@ -83,9 +83,9 @@
     if(starting)return;starting=true;
     try{
       if(!NativeAC)throw new Error('Web Audio unavailable');createContext();buildMix();if(ctx.state!=='running')await ctx.resume();if(ctx.state!=='running')throw new Error('AudioContext stayed '+ctx.state);
-      window.__V119_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-quality-sfx',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.72,gameMasterMuted:true,legacyExtraBusesMuted:true,legacyBusCount,proceduralGameplayFoley:false,hornEvents:false,oscillatorTones:false};
+      window.__V119_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-actual-sfx',armedBeforeCore:true,started:true,contextState:ctx.state,masterGain:.72,gameMasterMuted:true,legacyExtraBusesMuted:true,legacyBusCount,proceduralGameplayFoley:false,hornEvents:false,oscillatorTones:false};
       window.__V118_AUDIO=window.__V119_AUDIO;window.__V117_AUDIO=window.__V119_AUDIO;window.__V116_AUDIO=window.__V119_AUDIO;attachDebug();
-    }catch(err){fail('V11.9 audio start failed',err);}finally{starting=false;}
+    }catch(err){fail('V11.10 audio start failed',err);}finally{starting=false;}
   }
 
   function handleStartCapture(id,e){startAudio();if(ready){document.body.classList.add('game-started');return;}queuedStart=id;e.preventDefault();e.stopImmediatePropagation();const status=document.getElementById('menuStatus');if(status)status.textContent='ثانية واحدة… بنجهز الشارع والصوت.';}
@@ -105,7 +105,7 @@
   }
 
   if(installSharedContextConstructor()){
-    window.__V119_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-quality-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterMuted:true,legacyExtraBusesMuted:true,proceduralGameplayFoley:false,hornEvents:false,oscillatorTones:false};
+    window.__V119_AUDIO={version:VERSION,engine:'shared-native-audiocontext-plus-actual-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterMuted:true,legacyExtraBusesMuted:true,proceduralGameplayFoley:false,hornEvents:false,oscillatorTones:false};
     window.__V118_AUDIO=window.__V119_AUDIO;window.__V117_AUDIO=window.__V119_AUDIO;window.__V116_AUDIO=window.__V119_AUDIO;
   }
   installStartGate();attachDebug();window.__V119_MARK_READY=markReady;window.__V118_MARK_READY=markReady;window.__V117_MARK_READY=markReady;window.__V119_AUDIO_START=startAudio;window.__V118_AUDIO_START=startAudio;window.__V117_AUDIO_START=startAudio;
