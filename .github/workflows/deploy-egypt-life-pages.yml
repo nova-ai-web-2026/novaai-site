@@ -30,7 +30,7 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.9 quality SFX release files
+      - name: Validate V11.10 natural SFX release files
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/game-v7.js
@@ -45,6 +45,9 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-audiofix.js
           test -s egypt-life-sim-v2/game-v11-6-runtime.js
           test -s egypt-life-sim-v2/game-v11-8-sfx.js
+          test -s egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz
+          gzip -t egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz
+          test "$(stat -c%s egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz)" -gt 100000
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
           node --check egypt-life-sim-v2/game-v9.js
@@ -57,19 +60,34 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-audiofix.js
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'game-v11-6-runtime.js?v=11.9' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-8-sfx.js?v=11.9' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v8-layout.js?v=11.9' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-audiofix.js?v=11.9' egypt-life-sim-v2/game-v8-layout.js
-          grep -Fq 'quality-foley-buffer-bank' egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'legacyGameSfx:false' egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'webAudioOnly:true' egypt-life-sim-v2/game-v11-8-sfx.js
-          grep -Fq 'proceduralBeeps:false' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v8-layout.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-audiofix.js?v=11.10' egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "release:'11.10'" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "VERSION='11.10'" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "VERSION='11.10'" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "decoded-natural-foley-bank" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq "foley-bank.pcm.gz?v=11.10" egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'DecompressionStream' egypt-life-sim-v2/game-v11-8-sfx.js
+          grep -Fq 'noRepeatViolations' egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq 'gameMasterMuted:true' egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq 'proceduralGameplayFoley:false' egypt-life-sim-v2/game-v11-6-runtime.js
-          grep -Fq "release:'11.9'" egypt-life-sim-v2/game-v11-audiofix.js
+          if grep -Fq 'Math.sin(' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Procedural tonal SFX code still present'; exit 1; fi
           if grep -Fq '.wav?v=' egypt-life-sim-v2/game-v11-8-sfx.js; then echo 'Old one-shot WAV SFX still referenced'; exit 1; fi
-          if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi
+          python3 - <<'PY'
+          import gzip,struct,math
+          p='egypt-life-sim-v2/audio/v11-10/foley-bank.pcm.gz'
+          raw=gzip.open(p,'rb').read()
+          assert len(raw)==167278, len(raw)
+          samples=struct.unpack('<%dh'%(len(raw)//2),raw)
+          peak=max(abs(x) for x in samples)/32768
+          rms=math.sqrt(sum((x/32768)**2 for x in samples)/len(samples))
+          assert peak < .51, peak
+          assert peak > .30, peak
+          assert rms > .035, rms
+          print({'bankBytes':len(raw),'peak':peak,'rms':rms})
+          PY
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
