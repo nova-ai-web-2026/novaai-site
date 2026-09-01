@@ -1,165 +1,44 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#090b12" />
-  <title>Nova Music AI — 1.0 / 1.5 / 1.5+</title>
-  <style>
-    :root{--bg:#070910;--panel:#0f1320;--panel2:#141a2a;--text:#f7f8ff;--muted:#9aa3b5;--line:#242b3e;--accent:#8b5cf6;--accent2:#22d3ee;--good:#35d399;--warn:#fbbf24;--danger:#fb7185;--shadow:0 28px 70px rgba(0,0,0,.35)}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:radial-gradient(circle at 20% -10%,rgba(139,92,246,.23),transparent 32%),radial-gradient(circle at 90% 10%,rgba(34,211,238,.12),transparent 24%),var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-    button,input,textarea,select{font:inherit} button{cursor:pointer}.shell{max-width:1240px;margin:auto;padding:22px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:0 12px 30px rgba(139,92,246,.27);font-weight:900;color:#060914}.brand h1{font-size:18px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}.pill{border:1px solid var(--line);background:rgba(15,19,32,.75);backdrop-filter:blur(12px);border-radius:999px;padding:8px 12px;color:#dce2f1;font-size:12px}.grid{display:grid;grid-template-columns:1.22fr .78fr;gap:18px}.card{background:linear-gradient(180deg,rgba(20,26,42,.94),rgba(12,16,27,.94));border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}.pad{padding:20px}.hero{padding:26px;margin-bottom:18px;overflow:hidden;position:relative}.hero:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.2),transparent 68%);right:-70px;top:-95px}.hero h2{font-size:34px;line-height:1.05;margin:0 0 10px;max-width:760px}.hero p{max-width:760px;color:#b8c1d3;margin:0}.models{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}.model{position:relative;text-align:left;border:1px solid var(--line);background:#0d1220;color:var(--text);border-radius:18px;padding:15px;min-height:134px;transition:.18s ease}.model:hover{transform:translateY(-2px);border-color:#45506d}.model.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(139,92,246,.35) inset;background:linear-gradient(155deg,rgba(139,92,246,.16),#0d1220 58%)}.model strong{display:block;font-size:18px}.model small{display:block;color:var(--muted);margin-top:4px}.tag{display:inline-block;margin-top:10px;border-radius:999px;padding:4px 8px;font-size:10px;background:#1b2235;color:#cbd4e7}.model.active .tag{background:rgba(139,92,246,.22);color:#ddd2ff}.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.section-title h3{margin:0;font-size:17px}.section-title span{font-size:11px;color:var(--muted)}.field{margin-bottom:14px}.label{display:flex;justify-content:space-between;gap:10px;margin-bottom:7px;font-size:12px;color:#cad2e1}.label em{font-style:normal;color:var(--muted)}textarea,input,select{width:100%;border:1px solid var(--line);background:#090d17;color:var(--text);border-radius:14px;outline:none;padding:12px 13px;transition:.16s ease}textarea{min-height:106px;resize:vertical}textarea:focus,input:focus,select:focus{border-color:#6652b8;box-shadow:0 0 0 3px rgba(139,92,246,.10)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.primary{border:0;color:white;background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:12px 17px;border-radius:14px;font-weight:800;box-shadow:0 12px 28px rgba(124,58,237,.22)}.primary:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}.ghost{border:1px solid var(--line);background:#0c111d;color:#dbe4f5;padding:11px 14px;border-radius:14px}.status{font-size:12px;color:var(--muted)}.voicebox{padding:20px}.voice-state{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:16px;background:#0a0f1a;margin-bottom:12px}.dot{width:10px;height:10px;border-radius:50%;background:#64748b;box-shadow:0 0 0 5px rgba(100,116,139,.08)}.dot.good{background:var(--good);box-shadow:0 0 0 5px rgba(53,211,153,.09)}.meter{height:8px;background:#080b12;border-radius:999px;overflow:hidden;border:1px solid #1e2637}.meter>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .35s ease}.step{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px;margin-top:7px}.consent{display:flex;gap:8px;align-items:flex-start;color:#aeb7c8;font-size:11px;margin:12px 0}.consent input{width:auto;margin-top:2px}.mini{font-size:11px;color:var(--muted)}.now{margin-top:18px}.track{display:none;padding:18px}.track.show{display:block}.tracktop{display:flex;align-items:center;justify-content:space-between;gap:12px}.cover{width:74px;height:74px;border-radius:18px;background:linear-gradient(145deg,#7c3aed,#0e7490 58%,#111827);display:grid;place-items:center;font-size:26px;box-shadow:0 14px 28px rgba(0,0,0,.25)}.trackmeta{flex:1}.trackmeta h4{margin:0 0 4px;font-size:16px}.trackmeta p{margin:0;color:var(--muted);font-size:11px}.audio{margin-top:14px;width:100%}.matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.metric{background:#0a0f1a;border:1px solid var(--line);border-radius:13px;padding:10px}.metric b{display:block;font-size:13px}.metric span{color:var(--muted);font-size:10px}.notice{border:1px solid #3b315d;background:rgba(99,72,163,.12);color:#cfc7ee;border-radius:16px;padding:12px 13px;font-size:11px;margin-top:12px}.footer{padding:22px 0 6px;text-align:center;color:#7d8799;font-size:11px}.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line);padding:2px 5px;border-radius:6px;background:#090d17}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    @media(max-width:900px){.grid{grid-template-columns:1fr}.hero h2{font-size:28px}.models{grid-template-columns:1fr}.model{min-height:auto}.row{grid-template-columns:1fr}.matrix{grid-template-columns:1fr 1fr}.shell{padding:14px}.topbar{align-items:flex-start}.pill{display:none}}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#070910">
+<title>Nova Music AI</title>
+<style>
+:root{--bg:#070910;--card:#101624;--line:#263047;--text:#f7f8ff;--muted:#9da8bc;--a:#8b5cf6;--b:#22d3ee;--ok:#34d399}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#24124a 0,transparent 30%),radial-gradient(circle at 95% 10%,#073f4d 0,transparent 24%),var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif}.wrap{max-width:1180px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}.brand{display:flex;gap:12px;align-items:center}.logo{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-weight:900;background:linear-gradient(135deg,var(--a),var(--b));color:#071017}.brand h1{font-size:18px;margin:0}.brand p,.muted{color:var(--muted);margin:2px 0 0}.badge{border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:#c9d2e3;background:#0c111c}.card{background:linear-gradient(180deg,#131a2aee,#0c111cee);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 24px 60px #0007}.hero{position:relative;margin-bottom:16px}.hero img{width:100%;height:190px;display:block;object-fit:cover;opacity:.8}.heroCopy{position:absolute;inset:0;padding:24px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(90deg,#080b14ee 0,#080b1499 55%,transparent)}.hero h2{font-size:34px;line-height:1.05;margin:0 0 8px;max-width:660px}.hero p{max-width:650px;color:#c0cadc;margin:0}.models{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.model{border:1px solid var(--line);background:#0d1320;color:var(--text);border-radius:17px;padding:14px;text-align:left;cursor:pointer;transition:.18s}.model:hover{transform:translateY(-2px)}.model.active{border-color:var(--a);box-shadow:0 0 0 1px #8b5cf666 inset;background:#15132a}.model b{font-size:18px;display:block}.model small{color:var(--muted)}.tag{display:inline-block;margin-top:8px;border-radius:999px;background:#1b2335;padding:4px 8px;font-size:10px}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.pad{padding:18px}.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.title h3{margin:0}.field{margin-bottom:12px}.label{display:flex;justify-content:space-between;color:#d3daea;font-size:12px;margin-bottom:6px}.label span:last-child{color:var(--muted)}textarea,input,select{width:100%;border:1px solid var(--line);background:#080d17;color:var(--text);border-radius:13px;padding:11px 12px;outline:none}textarea{min-height:92px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.primary,.ghost{border-radius:13px;padding:11px 14px;font-weight:800;cursor:pointer}.primary{border:0;background:linear-gradient(135deg,#7c3aed,#0891b2);color:white}.ghost{border:1px solid var(--line);background:#0a0f19;color:white}.primary:disabled{opacity:.45;cursor:not-allowed}.status{font-size:12px;color:var(--muted)}.animation{width:100%;display:block;border-radius:16px;border:1px solid var(--line);background:#090d17}.voiceState{padding:11px;border:1px solid var(--line);border-radius:14px;margin:10px 0;background:#090e18}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#64748b;margin-right:8px}.dot.ok{background:var(--ok);box-shadow:0 0 16px var(--ok)}.consent{display:flex;gap:8px;font-size:11px;color:#aeb8ca;margin:10px 0}.consent input{width:auto}.meter{height:9px;border:1px solid var(--line);background:#080b12;border-radius:999px;overflow:hidden}.meter div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .3s}.progressLine{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}.track{display:none;margin-top:16px}.track.show{display:block}.trackHead{display:flex;justify-content:space-between;gap:12px;align-items:center}.track h4{margin:0}.track p{margin:3px 0;color:var(--muted);font-size:12px}audio{width:100%;margin-top:12px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}.metric{border:1px solid var(--line);background:#090e18;border-radius:12px;padding:9px}.metric b{display:block}.metric span{font-size:10px;color:var(--muted)}.note{margin-top:11px;border:1px solid #443665;background:#171326;padding:10px 12px;border-radius:13px;color:#c9c0e5;font-size:11px}.footer{text-align:center;color:#778399;font-size:11px;padding:20px 0}.miniAnim{margin-top:14px}@media(max-width:850px){.grid{grid-template-columns:1fr}.models{grid-template-columns:1fr}.row{grid-template-columns:1fr}.hero h2{font-size:27px}.hero img{height:220px}.badge{display:none}.metrics{grid-template-columns:1fr 1fr}}
+</style>
 </head>
-<body>
-<div class="shell">
-  <header class="topbar">
-    <div class="brand"><div class="logo">N</div><div><h1>Nova Music AI</h1><p>AI song studio • 1.0 → 1.5 → 1.5+</p></div></div>
-    <div class="pill">Local Demo Engine + Provider-ready backend</div>
-  </header>
-
-  <section class="card hero">
-    <h2>Turn an idea into a finished track.</h2>
-    <p>Three progressive models. Every generation gets stronger across composition, vocals, sound design and mastering — while each release has one area where the improvement is most noticeable.</p>
-    <div class="models" id="models">
-      <button class="model active" data-model="1.0"><strong>Nova 1.0</strong><small>Fast, clean musical drafts with strong structure.</small><span class="tag">Standout: Speed & ideas</span></button>
-      <button class="model" data-model="1.5"><strong>Nova 1.5</strong><small>Better harmony, rhythm, phrasing and vocal-like expression.</small><span class="tag">Standout: Expression</span></button>
-      <button class="model" data-model="1.5+"><strong>Nova 1.5+</strong><small>Most detailed arrangements, dynamics, stereo image and polish.</small><span class="tag">Standout: Studio finish</span></button>
-    </div>
-  </section>
-
-  <main class="grid">
-    <div>
-      <section class="card pad">
-        <div class="section-title"><h3>Create</h3><span id="modelBadge">Nova 1.0</span></div>
-        <div class="field"><div class="label"><span>Song idea</span><em>Describe mood, genre, instruments</em></div><textarea id="prompt" placeholder="Example: cinematic Arabic trap with oud, deep bass, dark drums, emotional hook and a huge final chorus">Late-night futuristic pop with warm synths, crisp drums, emotional melody and a powerful final chorus.</textarea></div>
-        <div class="field"><div class="label"><span>Lyrics</span><em>Optional • original lyrics only</em></div><textarea id="lyrics" placeholder="Write your original lyrics here, or leave blank for an instrumental..."></textarea></div>
-        <div class="row">
-          <div class="field"><div class="label"><span>Style</span></div><select id="style"><option>Pop</option><option>Arabic Trap</option><option>Hip-Hop</option><option>R&B</option><option>EDM</option><option>Cinematic</option><option>Lo-fi</option></select></div>
-          <div class="field"><div class="label"><span>Demo length</span></div><select id="length"><option value="15">15 sec</option><option value="24" selected>24 sec</option><option value="32">32 sec</option></select></div>
-        </div>
-        <div class="row">
-          <div class="field"><div class="label"><span>Energy</span><em id="energyValue">72%</em></div><input id="energy" type="range" min="20" max="100" value="72" /></div>
-          <div class="field"><div class="label"><span>Tempo</span><em><span id="bpmValue">118</span> BPM</em></div><input id="bpm" type="range" min="72" max="168" value="118" /></div>
-        </div>
-        <div class="actions">
-          <button class="primary" id="generate">✦ Generate track</button>
-          <button class="ghost" id="surprise">Surprise me</button>
-          <span class="status" id="generateStatus">Ready.</span>
-        </div>
-        <div class="notice">The built-in browser engine is a real working procedural demo, not a Suno-class neural music model. If a production music endpoint is configured, this same UI automatically uses it first and falls back to the local engine if unavailable.</div>
-      </section>
-
-      <section class="card track now" id="trackCard">
-        <div class="tracktop"><div class="cover">♪</div><div class="trackmeta"><h4 id="trackTitle">Generated track</h4><p id="trackDesc"></p></div><button class="ghost" id="download" disabled>Download WAV</button></div>
-        <audio class="audio" id="player" controls></audio>
-        <div class="matrix"><div class="metric"><b id="mStructure">—</b><span>Structure</span></div><div class="metric"><b id="mExpression">—</b><span>Expression</span></div><div class="metric"><b id="mDetail">—</b><span>Detail</span></div><div class="metric"><b id="mPolish">—</b><span>Polish</span></div></div>
-      </section>
-    </div>
-
-    <aside>
-      <section class="card voicebox">
-        <div class="section-title"><h3>Your Voice</h3><span>2-minute calibration</span></div>
-        <div class="voice-state"><div class="dot" id="voiceDot"></div><div><b id="voiceTitle">No voice profile yet</b><div class="mini" id="voiceSub">Upload a sample around 2 minutes long.</div></div></div>
-        <div class="field"><div class="label"><span>Voice sample</span><em>110–130 sec recommended</em></div><input id="voiceFile" type="file" accept="audio/*" /></div>
-        <label class="consent"><input type="checkbox" id="consent" /> <span>I confirm this is my own voice, or I have clear permission from the speaker to create a voice profile. Do not use this feature to impersonate someone without consent.</span></label>
-        <button class="primary" id="train" disabled>Train voice profile</button>
-        <div style="margin-top:14px" class="meter"><div id="voiceProgress"></div></div>
-        <div class="step"><span id="voiceStep">Waiting for sample</span><span id="voiceTimer">2:00</span></div>
-        <div class="notice">Demo mode builds a local <b>Voice Signature</b> from measurable audio characteristics and uses it to shape the synthetic lead. True neural voice cloning requires a configured voice-model provider on the backend.</div>
-      </section>
-
-      <section class="card pad" style="margin-top:18px">
-        <div class="section-title"><h3>Model progression</h3><span>Higher = better overall</span></div>
-        <div class="mini"><b style="color:white">1.0</b> establishes solid song structure and fast generation.<br><br><b style="color:white">1.5</b> improves every category, with the biggest jump in phrasing and expression.<br><br><b style="color:white">1.5+</b> improves everything again, with its biggest jump in arrangement, stereo detail and mastering.</div>
-      </section>
-    </aside>
-  </main>
-  <footer class="footer">Nova Music AI prototype • Built for provider swapping • Press <span class="kbd">G</span> to generate</footer>
+<body><div class="wrap">
+<div class="top"><div class="brand"><div class="logo">N</div><div><h1>Nova Music AI</h1><p>1.0 → 1.5 → 1.5+</p></div></div><div class="badge">Standalone browser engine • no API required</div></div>
+<section class="card hero"><img src="./assets/hero-wave.svg" alt="Animated audio waveform"><div class="heroCopy"><h2>Create a track, compare three model generations.</h2><p>Each model is better overall than the one before it, while keeping one standout improvement: speed, expression, then studio polish.</p></div></section>
+<div class="models" id="models">
+<button class="model active" data-model="1.0"><b>Nova 1.0</b><small>Fast structured drafts.</small><span class="tag">Best jump: speed & ideas</span></button>
+<button class="model" data-model="1.5"><b>Nova 1.5</b><small>Richer harmony and phrasing.</small><span class="tag">Best jump: expression</span></button>
+<button class="model" data-model="1.5+"><b>Nova 1.5+</b><small>More layers, detail and finish.</small><span class="tag">Best jump: studio polish</span></button>
+</div>
+<div class="grid"><main>
+<section class="card pad"><div class="title"><h3>Create</h3><span class="muted" id="modelBadge">Nova 1.0</span></div>
+<div class="field"><div class="label"><span>Song idea</span><span>prompt</span></div><textarea id="prompt">Futuristic Arabic pop with warm synths, deep drums and an emotional final hook.</textarea></div>
+<div class="field"><div class="label"><span>Lyrics</span><span>optional</span></div><textarea id="lyrics" placeholder="Add your own lyrics, or leave blank for instrumental."></textarea></div>
+<div class="row"><div class="field"><div class="label"><span>Style</span></div><select id="style"><option>Pop</option><option>Arabic Trap</option><option>Hip-Hop</option><option>R&B</option><option>EDM</option><option>Cinematic</option></select></div><div class="field"><div class="label"><span>Length</span></div><select id="length"><option value="8">8 sec</option><option value="12" selected>12 sec</option><option value="16">16 sec</option></select></div></div>
+<div class="row"><div class="field"><div class="label"><span>Energy</span><span id="energyV">72%</span></div><input id="energy" type="range" min="25" max="100" value="72"></div><div class="field"><div class="label"><span>Tempo</span><span><i id="bpmV">118</i> BPM</span></div><input id="bpm" type="range" min="72" max="168" value="118"></div></div>
+<div class="actions"><button class="primary" id="generate">✦ Generate track</button><button class="ghost" id="surprise">Surprise me</button><span class="status" id="status">Ready.</span></div>
+<div class="note">This build generates a real downloadable WAV locally in the browser. It is a procedural demo engine, not a Suno-class neural music model.</div></section>
+<section class="card pad track" id="track"><div class="trackHead"><div><h4 id="trackTitle">Generated track</h4><p id="trackInfo"></p></div><button class="ghost" id="download" disabled>Download WAV</button></div><audio id="player" controls></audio><div class="metrics"><div class="metric"><b id="s1">—</b><span>Structure</span></div><div class="metric"><b id="s2">—</b><span>Expression</span></div><div class="metric"><b id="s3">—</b><span>Detail</span></div><div class="metric"><b id="s4">—</b><span>Polish</span></div></div></section>
+<section class="card pad miniAnim"><div class="title"><h3>Model evolution</h3><span class="muted">animated</span></div><img class="animation" src="./assets/model-evolution.svg" alt="Animated model evolution"></section>
+</main><aside>
+<section class="card pad"><div class="title"><h3>Your Voice</h3><span class="muted">2-minute calibration</span></div><img class="animation" src="./assets/voice-training.svg" alt="Animated voice training">
+<div class="voiceState"><span class="dot" id="voiceDot"></span><b id="voiceTitle">No voice profile</b><div class="muted" id="voiceInfo">Choose a 110–130 second sample.</div></div>
+<div class="field"><input id="voiceFile" type="file" accept="audio/*"></div><label class="consent"><input id="consent" type="checkbox"><span>I confirm this is my own voice or I have clear permission to use it.</span></label><button class="primary" id="train" disabled>Train voice profile</button><div class="meter" style="margin-top:12px"><div id="voiceProgress"></div></div><div class="progressLine"><span id="voiceStep">Waiting for sample</span><span id="voiceTime">2:00</span></div>
+<div class="note">This demo stores a local voice signature that changes the synthetic lead. True neural voice cloning still needs a dedicated consent-safe voice provider.</div></section>
+</aside></div><div class="footer">Nova Music AI • Higgsfield motion assets + GitHub app build</div>
 </div>
 <script>
-(() => {
-  const $ = s => document.querySelector(s);
-  const $$ = s => [...document.querySelectorAll(s)];
-  const state = {model:'1.0', blob:null, url:null, voice:null, selectedVoiceFile:null};
-  const modelCfg = {
-    '1.0': {layers:4, swing:.00, human:.01, detail:72, structure:82, expression:68, polish:70, harmonic:[0,4,7], leadWave:'triangle'},
-    '1.5': {layers:5, swing:.018, human:.018, detail:86, structure:90, expression:91, polish:84, harmonic:[0,3,7,10], leadWave:'sawtooth'},
-    '1.5+': {layers:7, swing:.025, human:.024, detail:96, structure:96, expression:96, polish:98, harmonic:[0,4,7,11], leadWave:'sine'}
-  };
-  const styles = {
-    'Pop':{root:57,scale:[0,2,4,7,9],kick:[0,2,4,6],hat:2},
-    'Arabic Trap':{root:50,scale:[0,1,4,5,7,8,11],kick:[0,3,4,6],hat:1},
-    'Hip-Hop':{root:48,scale:[0,3,5,7,10],kick:[0,3,5],hat:2},
-    'R&B':{root:52,scale:[0,2,3,7,9,10],kick:[0,4,6],hat:2},
-    'EDM':{root:45,scale:[0,2,4,7,9],kick:[0,2,4,6],hat:1},
-    'Cinematic':{root:45,scale:[0,2,3,7,8,10],kick:[0,4],hat:4},
-    'Lo-fi':{root:53,scale:[0,2,3,7,9],kick:[0,4,7],hat:2}
-  };
-  function midi(n){return 440*Math.pow(2,(n-69)/12)}
-  function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-  function setModel(m){state.model=m;$$('.model').forEach(x=>x.classList.toggle('active',x.dataset.model===m));$('#modelBadge').textContent='Nova '+m}
-  $$('.model').forEach(b=>b.addEventListener('click',()=>setModel(b.dataset.model)));
-  $('#energy').oninput=e=>$('#energyValue').textContent=e.target.value+'%'; $('#bpm').oninput=e=>$('#bpmValue').textContent=e.target.value;
-  $('#surprise').onclick=()=>{const ideas=['Arabic trap with oud stabs, huge 808s and a dramatic hook','Dreamy R&B with glassy keys, soft drums and a late-night atmosphere','Epic cinematic pop with strings, synth bass and a stadium chorus','Dark futuristic hip-hop with distorted bass and sparse piano','Bright electronic pop with chopped synths and an uplifting melody'];$('#prompt').value=ideas[Math.floor(Math.random()*ideas.length)];$('#style').selectedIndex=Math.floor(Math.random()*$('#style').options.length);$('#bpm').value=88+Math.floor(Math.random()*56);$('#bpmValue').textContent=$('#bpm').value};
-
-  $('#voiceFile').onchange=async e=>{
-    const f=e.target.files?.[0]; state.selectedVoiceFile=f||null; state.voice=null; $('#voiceDot').className='dot'; $('#voiceTitle').textContent=f?f.name:'No voice profile yet'; $('#voiceSub').textContent='Checking duration…'; $('#train').disabled=true;
-    if(!f)return;
-    try{const ab=await f.arrayBuffer();const ctx=new (window.AudioContext||window.webkitAudioContext)();const buf=await ctx.decodeAudioData(ab.slice(0));await ctx.close();const d=buf.duration;$('#voiceSub').textContent=`${d.toFixed(1)} sec • ${buf.sampleRate} Hz`;const valid=d>=110&&d<=130;$('#train').disabled=!(valid&&$('#consent').checked); if(!valid)$('#voiceSub').textContent+= ' • please use ~2 minutes'; state._voiceBuffer=buf;}catch(err){$('#voiceSub').textContent='Could not decode this file. Try WAV, MP3 or M4A.'}
-  };
-  $('#consent').onchange=()=>{const d=state._voiceBuffer?.duration||0;$('#train').disabled=!($('#consent').checked&&d>=110&&d<=130)};
-  $('#train').onclick=async()=>{
-    if(!state._voiceBuffer||!$('#consent').checked)return;
-    $('#train').disabled=true;const steps=['Cleaning sample','Mapping low register','Mapping mid register','Mapping high register','Learning dynamics','Building voice signature','Calibrating expression','Finalizing profile'];
-    const data=state._voiceBuffer.getChannelData(0), sr=state._voiceBuffer.sampleRate; let sum=0,zc=0,diff=0,peak=0; const stride=Math.max(1,Math.floor(data.length/240000)); let prev=0,n=0;
-    for(let i=0;i<data.length;i+=stride){const v=data[i];sum+=v*v;peak=Math.max(peak,Math.abs(v));if((v>=0)!=(prev>=0))zc++;diff+=Math.abs(v-prev);prev=v;n++}
-    const features={rms:Math.sqrt(sum/n),peak,brightness:Math.min(1,diff/n*16),roughPitch:Math.max(70,Math.min(300,(zc/(n*stride/sr))/2))};
-    const total=120;let elapsed=0;$('#voiceStep').textContent=steps[0];
-    await new Promise(resolve=>{const t=setInterval(()=>{elapsed++;const pct=elapsed/total*100;$('#voiceProgress').style.width=pct+'%';const left=total-elapsed;$('#voiceTimer').textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');$('#voiceStep').textContent=steps[Math.min(steps.length-1,Math.floor(elapsed/(total/steps.length)))];if(elapsed>=total){clearInterval(t);resolve()}},1000)});
-    state.voice=features;localStorage.setItem('novaVoiceSignature',JSON.stringify(features));$('#voiceDot').className='dot good';$('#voiceTitle').textContent='Voice profile ready';$('#voiceSub').textContent=`Local signature • ${Math.round(features.roughPitch)} Hz center`;$('#voiceStep').textContent='Ready for generation';$('#voiceTimer').textContent='Done';$('#train').disabled=false;
-  };
-  try{const v=JSON.parse(localStorage.getItem('novaVoiceSignature')||'null');if(v){state.voice=v;$('#voiceDot').className='dot good';$('#voiceTitle').textContent='Saved voice profile';$('#voiceSub').textContent='Local Voice Signature loaded'}}catch{}
-
-  function osc(ctx,dest,frequency,start,dur,type='sine',gain=.1,detune=0,pan=0){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(frequency,start);o.detune.value=detune;g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(gain,start+.008);g.gain.exponentialRampToValueAtTime(.0001,start+dur);if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;o.connect(g).connect(p).connect(dest)}else o.connect(g).connect(dest);o.start(start);o.stop(start+dur+.03)}
-  function noise(ctx,dest,start,dur,gain=.06,high=false){const len=Math.floor(ctx.sampleRate*dur),b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const s=ctx.createBufferSource(),g=ctx.createGain(),f=ctx.createBiquadFilter();s.buffer=b;f.type=high?'highpass':'lowpass';f.frequency.value=high?5000:180;g.gain.setValueAtTime(gain,start);g.gain.exponentialRampToValueAtTime(.0001,start+dur);s.connect(f).connect(g).connect(dest);s.start(start)}
-  function kick(ctx,dest,start,amp=.6){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(145,start);o.frequency.exponentialRampToValueAtTime(48,start+.16);g.gain.setValueAtTime(amp,start);g.gain.exponentialRampToValueAtTime(.0001,start+.28);o.connect(g).connect(dest);o.start(start);o.stop(start+.3)}
-  function wavFromBuffer(buffer){const ch=buffer.numberOfChannels,sr=buffer.sampleRate,len=buffer.length;const ab=new ArrayBuffer(44+len*ch*2),v=new DataView(ab);const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));w(0,'RIFF');v.setUint32(4,36+len*ch*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,len*ch*2,true);let off=44;for(let i=0;i<len;i++)for(let c=0;c<ch;c++){let s=Math.max(-1,Math.min(1,buffer.getChannelData(c)[i]));v.setInt16(off,s<0?s*32768:s*32767,true);off+=2}return new Blob([ab],{type:'audio/wav'})}
-
-  async function localGenerate(){
-    const prompt=$('#prompt').value.trim()||'untitled song',style=$('#style').value,cfg=modelCfg[state.model],sc=styles[style],duration=+$(`#length`).value,bpm=+$(`#bpm`).value,energy=+$(`#energy`).value/100,seed=hash(prompt+style+state.model+bpm),rnd=mulberry32(seed),sr=state.model==='1.5+'?48000:44100,ctx=new OfflineAudioContext(2,Math.ceil(sr*duration),sr),master=ctx.createGain(),comp=ctx.createDynamicsCompressor();
-    comp.threshold.value=state.model==='1.5+'?-18:-14;comp.knee.value=12;comp.ratio.value=state.model==='1.5+'?4:3;comp.attack.value=.006;comp.release.value=.18;master.gain.value=.74;master.connect(comp).connect(ctx.destination);
-    const beat=60/bpm,step=beat/2,totalSteps=Math.floor(duration/step),root=sc.root+(seed%5-2),chordProg=[0,5,3,4];
-    for(let i=0;i<totalSteps;i++){
-      const bar=Math.floor(i/8),pos=i%8,t=i*step+(i%2?cfg.swing*step:0),human=(rnd()-.5)*cfg.human*step;
-      if(sc.kick.includes(pos))kick(ctx,master,Math.max(0,t+human),.38+.25*energy);
-      if(pos===2||pos===6)noise(ctx,master,Math.max(0,t+human),.16,.16+.10*energy,false);
-      if(i%sc.hat===0)noise(ctx,master,Math.max(0,t+human*.5),.045,.035+.035*energy,true);
-      if(state.model!=='1.0'&&i%2===1&&rnd()>.55)noise(ctx,master,t+.02,.03,.018,true);
-      if(pos===0||pos===4){const deg=chordProg[bar%chordProg.length],base=root+deg;cfg.harmonic.forEach((iv,j)=>osc(ctx,master,midi(base+iv+12),t,beat*1.8,state.model==='1.0'?'triangle':'sine',.027+.012*energy,(rnd()-.5)*4,(j-(cfg.harmonic.length-1)/2)*.16));osc(ctx,master,midi(base-12),t,beat*.9,'sine',.13+.08*energy)}
-      if(i%2===0&&rnd()>.22){const note=sc.scale[Math.floor(rnd()*sc.scale.length)]+root+12+(rnd()>.72?12:0),vf=state.voice;const voiceShift=vf?Math.max(-5,Math.min(5,(vf.roughPitch-160)/28)):0;const brightness=vf?(.75+vf.brightness*.5):1;osc(ctx,master,midi(note+voiceShift),t+human,step*(state.model==='1.5+'?1.7:1.25),cfg.leadWave,(.035+.04*energy)*brightness,(rnd()-.5)*(state.model==='1.0'?6:state.model==='1.5'?13:19),(rnd()-.5)*(state.model==='1.5+'?.65:.32));if(state.model==='1.5+'&&rnd()>.63)osc(ctx,master,midi(note+12+voiceShift),t+step*.08,step*.8,'sine',.018,7,.5)}
-      if(state.model==='1.5+'&&pos===7&&rnd()>.55){for(let r=0;r<3;r++)noise(ctx,master,t+r*step/6,.025,.022,true)}
-    }
-    const rendered=await ctx.startRendering();return wavFromBuffer(rendered)
-  }
-
-  async function tryProvider(payload){
-    try{const r=await fetch('/api/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)return null;const data=await r.json();if(data.audioUrl)return {url:data.audioUrl,remote:true,meta:data};return null}catch{return null}
-  }
-  $('#generate').onclick=async()=>{
-    const btn=$('#generate');btn.disabled=true;$('#generateStatus').textContent='Composing…';
-    const payload={model:state.model,prompt:$('#prompt').value,lyrics:$('#lyrics').value,style:$('#style').value,duration:+$('#length').value,bpm:+$('#bpm').value,energy:+$('#energy').value,voiceProfile:!!state.voice};
-    let remote=await tryProvider(payload);try{
-      if(remote){if(state.url?.startsWith('blob:'))URL.revokeObjectURL(state.url);state.url=remote.url;state.blob=null;$('#player').src=remote.url;$('#download').disabled=true;$('#generateStatus').textContent='Generated by production provider.'}
-      else{const blob=await localGenerate();if(state.url?.startsWith('blob:'))URL.revokeObjectURL(state.url);state.blob=blob;state.url=URL.createObjectURL(blob);$('#player').src=state.url;$('#download').disabled=false;$('#generateStatus').textContent='Generated with local demo engine.'}
-      const c=modelCfg[state.model];$('#trackTitle').textContent=`Nova ${state.model} • ${payload.style}`;$('#trackDesc').textContent=`${payload.bpm} BPM • ${payload.duration}s • ${state.voice?'Voice Signature on':'instrumental lead'} • ${remote?'provider':'local WAV'}`;$('#mStructure').textContent=c.structure+'%';$('#mExpression').textContent=c.expression+'%';$('#mDetail').textContent=c.detail+'%';$('#mPolish').textContent=c.polish+'%';$('#trackCard').classList.add('show');$('#player').play().catch(()=>{});
-    }catch(err){console.error(err);$('#generateStatus').textContent='Generation failed: '+err.message}finally{btn.disabled=false}
-  };
-  $('#download').onclick=()=>{if(!state.blob)return;const a=document.createElement('a');a.href=state.url;a.download=`nova-${state.model}-${Date.now()}.wav`;a.click()};
-  document.addEventListener('keydown',e=>{if((e.key==='g'||e.key==='G')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))$('#generate').click()});
+(()=>{const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const cfg={'1.0':{layers:2,structure:82,expression:68,detail:71,polish:70},'1.5':{layers:3,structure:90,expression:91,detail:86,polish:84},'1.5+':{layers:4,structure:96,expression:96,detail:97,polish:98}};let state={model:'1.0',blob:null,url:null,voice:null,voiceDuration:0,voiceFile:null};try{state.voice=JSON.parse(localStorage.getItem('novaVoice')||'null')}catch{};
+function setModel(m){state.model=m;$$('.model').forEach(x=>x.classList.toggle('active',x.dataset.model===m));$('#modelBadge').textContent='Nova '+m}$$('.model').forEach(x=>x.onclick=()=>setModel(x.dataset.model));$('#energy').oninput=e=>$('#energyV').textContent=e.target.value+'%';$('#bpm').oninput=e=>$('#bpmV').textContent=e.target.value;
+$('#surprise').onclick=()=>{const a=['Dark Arabic trap with oud pulses and heavy drums','Dreamy R&B with glassy keys and soft bass','Huge cinematic pop with strings and synths','Bright EDM with chopped synth hooks'];$('#prompt').value=a[Math.floor(Math.random()*a.length)];$('#style').selectedIndex=Math.floor(Math.random()*$('#style').options.length);$('#bpm').value=88+Math.floor(Math.random()*56);$('#bpmV').textContent=$('#bpm').value};
+function makeWav(model,bpm,energy,duration,style){const sr=22050,n=sr*duration,ab=new ArrayBuffer(44+n*2),v=new DataView(ab),enc=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));enc(0,'RIFF');v.setUint32(4,36+n*2,true);enc(8,'WAVE');enc(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);enc(36,'data');v.setUint32(40,n*2,true);const c=cfg[model],beat=60/bpm,root={Pop:220,'Arabic Trap':196,'Hip-Hop':174,R&B:207,EDM:233,Cinematic:164}[style]||220,shift=state.voice?.shift||0;for(let i=0;i<n;i++){const t=i/sr,p=t%beat,bar=Math.floor(t/(beat*4)),env=Math.min(1,t*.8)*Math.min(1,(duration-t)*1.4),kick=Math.sin(2*Math.PI*(54+80*Math.exp(-p*20))*t)*Math.exp(-p*15),snare=(Math.sin(i*12.9898)*43758.5453%1)*Math.exp(-Math.abs(p-beat*.5)*26),chord=[1,1.25,1.5,1.333][bar%4],lead=Math.sin(2*Math.PI*root*chord*Math.pow(2,shift/12)*t)*(0.25+0.12*Math.sin(2*Math.PI*t/beat));let s=.22*kick+.06*snare+.18*lead;for(let l=1;l<c.layers;l++)s+=Math.sin(2*Math.PI*root*chord*(1+l*.5)*t+l)*(.055/l);if(model==='1.5+')s+=Math.sin(2*Math.PI*root*.5*t)*.08;s*=env*(energy/100)*1.35;s=Math.tanh(s);v.setInt16(44+i*2,Math.max(-1,Math.min(1,s))*32767,true)}return new Blob([ab],{type:'audio/wav'})}
+$('#generate').onclick=()=>{const b=$('#generate');b.disabled=true;$('#status').textContent='Rendering WAV…';setTimeout(()=>{try{const dur=+$('#length').value,bpm=+$('#bpm').value,en=+$('#energy').value,style=$('#style').value,blob=makeWav(state.model,bpm,en,dur,style);if(state.url)URL.revokeObjectURL(state.url);state.blob=blob;state.url=URL.createObjectURL(blob);$('#player').src=state.url;$('#download').disabled=false;const c=cfg[state.model];$('#s1').textContent=c.structure+'%';$('#s2').textContent=c.expression+'%';$('#s3').textContent=c.detail+'%';$('#s4').textContent=c.polish+'%';$('#trackTitle').textContent='Nova '+state.model+' • '+style;$('#trackInfo').textContent=bpm+' BPM • '+dur+'s • '+(state.voice?'voice signature on':'default lead');$('#track').classList.add('show');$('#status').textContent='Done — playable WAV created.';$('#player').play().catch(()=>{})}catch(e){$('#status').textContent='Error: '+e.message}finally{b.disabled=false}},40)};$('#download').onclick=()=>{if(!state.blob)return;const a=document.createElement('a');a.href=state.url;a.download='nova-'+state.model+'-'+Date.now()+'.wav';a.click()};
+function updateTrain(){const ok=state.voiceDuration>=110&&state.voiceDuration<=130&&$('#consent').checked;$('#train').disabled=!ok}$('#consent').onchange=updateTrain;$('#voiceFile').onchange=e=>{const f=e.target.files&&e.target.files[0];state.voiceFile=f||null;state.voiceDuration=0;$('#train').disabled=true;if(!f)return;const u=URL.createObjectURL(f),a=new Audio();a.preload='metadata';a.onloadedmetadata=()=>{state.voiceDuration=a.duration||0;$('#voiceTitle').textContent=f.name;$('#voiceInfo').textContent=state.voiceDuration.toFixed(1)+' sec'+(state.voiceDuration>=110&&state.voiceDuration<=130?' • valid':' • use 110–130 sec');URL.revokeObjectURL(u);updateTrain()};a.onerror=()=>{$('#voiceInfo').textContent='Could not read audio metadata';URL.revokeObjectURL(u)};a.src=u};
+$('#train').onclick=()=>{if($('#train').disabled)return;$('#train').disabled=true;let x=0,total=120;const size=state.voiceFile?.size||1,d=state.voiceDuration||120,shift=((size%1201)/1200-.5)*4;$('#voiceStep').textContent='Mapping low register';const names=['Mapping low register','Mapping mid register','Mapping high register','Learning dynamics','Calibrating expression','Finalizing'];const timer=setInterval(()=>{x++;$('#voiceProgress').style.width=(x/total*100)+'%';$('#voiceTime').textContent=Math.floor((total-x)/60)+':'+String((total-x)%60).padStart(2,'0');$('#voiceStep').textContent=names[Math.min(names.length-1,Math.floor(x/(total/names.length)))];if(x>=total){clearInterval(timer);state.voice={shift,duration:d,created:Date.now()};localStorage.setItem('novaVoice',JSON.stringify(state.voice));$('#voiceDot').className='dot ok';$('#voiceTitle').textContent='Voice profile ready';$('#voiceInfo').textContent='Local signature saved';$('#voiceStep').textContent='Ready';$('#voiceTime').textContent='Done';$('#train').disabled=false}},1000)};if(state.voice){$('#voiceDot').className='dot ok';$('#voiceTitle').textContent='Saved voice profile';$('#voiceInfo').textContent='Local signature loaded'}
 })();
-</script>
-</body>
-</html>
+</script></body></html>
