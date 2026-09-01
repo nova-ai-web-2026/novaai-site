@@ -18,7 +18,7 @@
       <button><span class="ico">⌁</span><span>Models</span></button>
     </nav>
     <div class="sideCard"><b>Studio engine</b><p>Layered browser synthesis with arrangement, stereo movement and mastering.</p><div class="sideProgress"><i></i></div></div>
-    <div class="sideFooter">Nova Studio V2 · local rendering</div>
+    <div class="sideFooter">Nova Studio V3 · style-aware local rendering</div>
   </aside>
 
   <main class="main">
@@ -28,7 +28,7 @@
       <section>
         <div class="card hero">
           <img src="./assets/hf-hero-v2.svg" alt="Animated audio spectrum">
-          <div class="heroCopy"><div class="eyebrow">Nova Studio V2</div><h3>From an idea to a fuller arrangement.</h3><p>Choose a model, shape the song and render a stereo WAV with drums, bass, chords, lead, sections and mastering directly in your browser.</p><div class="heroBadges"><span class="tinyBadge">Stereo WAV</span><span class="tinyBadge">Genre-aware patterns</span><span class="tinyBadge">Prompt-seeded melody</span><span class="tinyBadge">Voice Signature</span></div></div>
+          <div class="heroCopy"><div class="eyebrow">Nova Studio V3</div><h3>From an idea to a style-matched arrangement.</h3><p>Write the style you actually want. Nova reads genre, mood and instrument words, then shapes drums, bass, harmony, lead timbre, sections and mastering around them.</p><div class="heroBadges"><span class="tinyBadge">Stereo WAV</span><span class="tinyBadge">Style-aware engine</span><span class="tinyBadge">Prompt + instrument parsing</span><span class="tinyBadge">Voice Signature</span></div></div>
         </div>
 
         <div class="models">
@@ -42,7 +42,7 @@
           <div class="field"><div class="label"><span>Song idea</span><em>mood · instruments · energy · structure</em></div><textarea id="prompt">Nocturnal Arabic pop with warm synth chords, deep bass, crisp drums and a dramatic final hook.</textarea></div>
           <div class="field"><div class="label"><span>Original lyrics</span><em>optional</em></div><textarea id="lyrics" placeholder="Add your own lyrics, or leave blank for an instrumental..."></textarea></div>
           <div class="grid2">
-            <div class="field"><div class="label"><span>Style</span></div><select id="style"><option>Pop</option><option>Arabic Trap</option><option>Hip-Hop</option><option>R&amp;B</option><option>EDM</option><option>Cinematic</option></select></div>
+            <div class="field"><div class="label"><span>Style</span><em>type anything</em></div><input id="style" list="stylePresets" value="Pop" placeholder="e.g. sad piano ballad, Arabic trap with oud and 808"><datalist id="stylePresets"><option value="Pop"><option value="Arabic trap with oud and 808"><option value="Hip-Hop boom bap"><option value="R&B neo soul"><option value="festival EDM supersaw"><option value="Cinematic orchestral"><option value="Lo-fi chillhop"><option value="sad piano ballad"><option value="Rock guitar"><option value="UK drill bell and 808"><option value="Afrobeat guitar"></datalist></div>
             <div class="field"><div class="label"><span>Length</span></div><select id="length"><option value="12">12 sec</option><option value="20" selected>20 sec</option><option value="30">30 sec</option></select></div>
           </div>
           <div class="rangeRow">
@@ -53,10 +53,10 @@
         </section>
 
         <section class="card pad renderPanel" id="render">
-          <div class="sectionHead"><h3>Render</h3><span>local stereo engine</span></div>
-          <div class="trackTop"><div class="cover">♫</div><div class="trackMeta"><h4 id="trackTitle">Generating track</h4><p id="trackInfo">Arrangement will appear here.</p></div><div class="trackTools"><button class="secondary" id="download" disabled>Download WAV</button></div></div>
+          <div class="sectionHead"><h3>Render</h3><span>style-aware stereo engine</span></div>
+          <div class="trackTop"><div class="cover">♫</div><div class="trackMeta"><h4 id="trackTitle">Generating track</h4><p id="trackInfo">Detected style and arrangement will appear here.</p></div><div class="trackTools"><button class="secondary" id="download" disabled>Download WAV</button></div></div>
           <div class="progressShell"><i id="renderProgress"></i></div>
-          <div class="renderStages"><span>Composition</span><span>Rhythm</span><span>Harmony</span><span>Detail</span><span>Master</span></div>
+          <div class="renderStages"><span>Style read</span><span>Rhythm</span><span>Harmony</span><span>Detail</span><span>Master</span></div>
           <div class="audioWrap"><audio id="player" controls></audio></div>
           <div class="metrics"><div class="metric"><b id="m1">—</b><span>Structure</span></div><div class="metric"><b id="m2">—</b><span>Expression</span></div><div class="metric"><b id="m3">—</b><span>Detail</span></div><div class="metric"><b id="m4">—</b><span>Stereo</span></div><div class="metric"><b id="m5">—</b><span>Polish</span></div></div>
         </section>
@@ -93,6 +93,6 @@
   </main>
 </div>
 <div class="toast" id="toast"></div>
-<script src="./v2.js"></script>
+<script src="./v3.js"></script>
 </body>
 </html>
