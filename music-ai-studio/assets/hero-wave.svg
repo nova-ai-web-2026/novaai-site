@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" preserveAspectRatio="none">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="1200" height="260" fill="#080b14"/>
+<g opacity=".18" stroke="#8b5cf6"><path d="M0 52H1200M0 104H1200M0 156H1200M0 208H1200"/></g>
+<path id="w1" d="M0 130 C80 70 120 190 200 130 S320 70 400 130 S520 190 600 130 S720 70 800 130 S920 190 1000 130 S1120 70 1200 130" fill="none" stroke="url(#g)" stroke-width="5" filter="url(#glow)">
+<animate attributeName="d" dur="3.2s" repeatCount="indefinite" values="M0 130 C80 70 120 190 200 130 S320 70 400 130 S520 190 600 130 S720 70 800 130 S920 190 1000 130 S1120 70 1200 130;M0 130 C80 200 120 60 200 130 S320 200 400 130 S520 60 600 130 S720 200 800 130 S920 60 1000 130 S1120 200 1200 130;M0 130 C80 70 120 190 200 130 S320 70 400 130 S520 190 600 130 S720 70 800 130 S920 190 1000 130 S1120 70 1200 130"/>
+</path>
+<path d="M0 130 C80 90 120 170 200 130 S320 90 400 130 S520 170 600 130 S720 90 800 130 S920 170 1000 130 S1120 90 1200 130" fill="none" stroke="#22d3ee" stroke-width="2" opacity=".5"><animateTransform attributeName="transform" type="translate" values="0 0;40 0;0 0" dur="2.4s" repeatCount="indefinite"/></path>
+</svg>
