@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+<rect width="900" height="260" fill="#080d14"/>
+<g font-family="Arial,sans-serif" font-weight="700" text-anchor="middle">
+  <g transform="translate(150 130)"><circle r="48" fill="#111827" stroke="#6d4bd8" stroke-width="2"/><circle r="48" fill="none" stroke="#7c3aed" stroke-width="2" opacity=".35"><animate attributeName="r" values="48;60;48" dur="3.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".4;0;.4" dur="3.4s" repeatCount="indefinite"/></circle><text y="7" fill="#fff" font-size="26">1.0</text></g>
+  <g transform="translate(450 130)"><circle r="58" fill="#111827" stroke="#8b5cf6" stroke-width="3"/><circle r="58" fill="none" stroke="#8b5cf6" stroke-width="2" opacity=".4"><animate attributeName="r" values="58;72;58" dur="2.8s" repeatCount="indefinite"/><animate attributeName="opacity" values=".45;0;.45" dur="2.8s" repeatCount="indefinite"/></circle><text y="7" fill="#fff" font-size="26">1.5</text></g>
+  <g transform="translate(750 130)"><circle r="68" fill="#101a23" stroke="#22d3ee" stroke-width="4"/><circle r="68" fill="none" stroke="#22d3ee" stroke-width="2" opacity=".45"><animate attributeName="r" values="68;86;68" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".5;0;.5" dur="2.2s" repeatCount="indefinite"/></circle><text y="7" fill="#fff" font-size="26">1.5+</text></g>
+</g>
+<path d="M210 130H382M518 130H672" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-dasharray="10 12"><animate attributeName="stroke-dashoffset" values="0;-44" dur="1.4s" repeatCount="indefinite"/></path>
+</svg>
