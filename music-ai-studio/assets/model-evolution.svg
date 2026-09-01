@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 240">
+<rect width="900" height="240" rx="28" fill="#0a0f1a"/>
+<g font-family="Arial, sans-serif" font-weight="700" text-anchor="middle">
+<g transform="translate(150 120)"><circle r="55" fill="#171b2b" stroke="#7c3aed" stroke-width="3"><animate attributeName="r" values="52;60;52" dur="2.8s" repeatCount="indefinite"/></circle><text y="7" fill="white" font-size="28">1.0</text></g>
+<g transform="translate(450 120)"><circle r="63" fill="#131c2b" stroke="#8b5cf6" stroke-width="4"><animate attributeName="r" values="60;69;60" dur="2.4s" repeatCount="indefinite"/></circle><text y="7" fill="white" font-size="28">1.5</text></g>
+<g transform="translate(750 120)"><circle r="72" fill="#10212a" stroke="#22d3ee" stroke-width="5"><animate attributeName="r" values="68;78;68" dur="2s" repeatCount="indefinite"/></circle><text y="7" fill="white" font-size="28">1.5+</text></g>
+</g>
+<path d="M215 120H370M530 120H670" stroke="#3b4664" stroke-width="4" stroke-linecap="round" stroke-dasharray="12 12"><animate attributeName="stroke-dashoffset" values="0;-48" dur="1.4s" repeatCount="indefinite"/></path>
+</svg>
