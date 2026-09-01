@@ -17,53 +17,53 @@
       <button><span class="ico">◉</span><span>Voice</span></button>
       <button><span class="ico">⌁</span><span>Models</span></button>
     </nav>
-    <div class="sideCard"><b>Strict Style engine</b><p>Each supported genre now uses a different rhythm, harmony, bass and arrangement path. A neural provider is preferred automatically when configured.</p><div class="sideProgress"><i></i></div></div>
-    <div class="sideFooter">Nova Studio V4 · strict genre arranger</div>
+    <div class="sideCard"><b>Neural Style engine</b><p>Free-form Style generation now requires a real neural music provider. The old procedural fallback is disabled for Generate so Nova does not pretend a wrong genre matches your request.</p><div class="sideProgress"><i></i></div></div>
+    <div class="sideFooter">Nova Studio V5 · neural style mode</div>
   </aside>
 
   <main class="main">
-    <header class="topbar"><div><div class="eyebrow">Music workspace</div><h2>Create</h2></div><div class="right"><div class="statusPill"><span class="dot on"></span>Engine ready</div></div></header>
+    <header class="topbar"><div><div class="eyebrow">Music workspace</div><h2>Create</h2></div><div class="right"><div class="statusPill"><span class="dot on"></span>Neural-ready UI</div></div></header>
 
     <div class="workspace">
       <section>
         <div class="card hero">
           <img src="./assets/hf-hero-v2.svg" alt="Animated audio spectrum">
-          <div class="heroCopy"><div class="eyebrow">Nova Studio V4</div><h3>Style changes the composition path, not just the sound.</h3><p>Supported genres use different drum grids, bass movement, scales, chord voicings, melodic behavior and section rules. If a real music-generation backend is configured, Nova uses that first.</p><div class="heroBadges"><span class="tinyBadge">Strict genre arranger</span><span class="tinyBadge">Provider-first</span><span class="tinyBadge">Genre-specific rhythm</span><span class="tinyBadge">Voice Signature</span></div></div>
+          <div class="heroCopy"><div class="eyebrow">Nova Studio V5</div><h3>Style is sent to a real text-to-music backend.</h3><p>Generate no longer silently substitutes the local synth when you type a free-form Style. A configured Stable Audio backend receives Style as the highest-priority instruction.</p><div class="heroBadges"><span class="tinyBadge">Neural music</span><span class="tinyBadge">Style-first prompt</span><span class="tinyBadge">No fake fallback</span><span class="tinyBadge">Provider secured server-side</span></div></div>
         </div>
 
         <div class="models">
-          <button class="model active" data-model="1.0"><div class="modelTop"><strong>Nova 1.0</strong><span class="score">Baseline</span></div><p>Solid structure and fast musical drafts.</p><span class="modelTag">Best jump: speed + ideas</span></button>
-          <button class="model" data-model="1.5"><div class="modelTop"><strong>Nova 1.5</strong><span class="score">Enhanced</span></div><p>Richer phrasing, harmony and musical motion.</p><span class="modelTag">Best jump: expression</span></button>
-          <button class="model" data-model="1.5+"><div class="modelTop"><strong>Nova 1.5+</strong><span class="score">Studio</span></div><p>More detail, stereo width, fills and polish.</p><span class="modelTag">Best jump: finish</span></button>
+          <button class="model active" data-model="1.0"><div class="modelTop"><strong>Nova 1.0</strong><span class="score">Baseline</span></div><p>Fast neural draft when provider is connected.</p><span class="modelTag">4 generation steps</span></button>
+          <button class="model" data-model="1.5"><div class="modelTop"><strong>Nova 1.5</strong><span class="score">Enhanced</span></div><p>Higher-detail neural generation.</p><span class="modelTag">6 generation steps</span></button>
+          <button class="model" data-model="1.5+"><div class="modelTop"><strong>Nova 1.5+</strong><span class="score">Studio</span></div><p>Highest provider quality and prompt adherence.</p><span class="modelTag">8 generation steps</span></button>
         </div>
 
         <section class="card pad">
           <div class="sectionHead"><h3>Song setup</h3><span id="modelBadge">Nova 1.0</span></div>
           <div class="field"><div class="label"><span>Song idea</span><em>mood · instruments · structure</em></div><textarea id="prompt">Nocturnal Arabic pop with warm synth chords, deep bass, crisp drums and a dramatic final hook.</textarea></div>
-          <div class="field"><div class="label"><span>Original lyrics</span><em>used by neural provider when available</em></div><textarea id="lyrics" placeholder="Add your own lyrics, or leave blank for an instrumental..."></textarea></div>
+          <div class="field"><div class="label"><span>Original lyrics</span><em>optional</em></div><textarea id="lyrics" placeholder="Add your own lyrics, or leave blank for an instrumental..."></textarea></div>
           <div class="grid2">
-            <div class="field"><div class="label"><span>Style</span><em>style has priority</em></div><input id="style" list="stylePresets" value="Pop" placeholder="e.g. Arabic trap with oud, UK drill bell and 808"><datalist id="stylePresets"><option value="Pop"><option value="Arabic trap with oud, Hijaz melody and sliding 808"><option value="Mahraganat with mizmar and heavy bass"><option value="Hip-Hop boom bap"><option value="R&B neo soul"><option value="festival EDM supersaw, huge drop"><option value="Cinematic orchestral"><option value="Lo-fi chillhop mellow piano"><option value="sad intimate piano ballad, no drums"><option value="Rock guitar"><option value="UK drill bell melody, sliding 808"><option value="Afrobeat guitar"><option value="Reggaeton dembow"><option value="Amapiano log drum"></datalist></div>
+            <div class="field"><div class="label"><span>Style</span><em>highest priority</em></div><input id="style" list="stylePresets" value="Pop" placeholder="e.g. Arabic trap with oud, UK drill bell and 808"><datalist id="stylePresets"><option value="Pop"><option value="Arabic trap with oud, Hijaz melody and sliding 808"><option value="Mahraganat with mizmar and heavy bass"><option value="Hip-Hop boom bap"><option value="R&B neo soul"><option value="festival EDM supersaw, huge drop"><option value="Cinematic orchestral"><option value="Lo-fi chillhop mellow piano"><option value="sad intimate piano ballad, no drums"><option value="Rock guitar"><option value="UK drill bell melody, sliding 808"><option value="Afrobeat guitar"><option value="Reggaeton dembow"><option value="Amapiano log drum"></datalist></div>
             <div class="field"><div class="label"><span>Length</span></div><select id="length"><option value="12">12 sec</option><option value="20" selected>20 sec</option><option value="30">30 sec</option></select></div>
           </div>
           <div class="rangeRow">
             <div class="rangeField"><div class="label"><span>Energy</span><em id="energyV">76%</em></div><input id="energy" type="range" min="30" max="100" value="76"></div>
             <div class="rangeField"><div class="label"><span>Tempo</span><em><span id="bpmV">118</span> BPM</em></div><input id="bpm" type="range" min="70" max="160" value="118"></div>
           </div>
-          <div class="actions"><button class="primary" id="generate">✦ Generate track</button><button class="secondary" id="surprise">Surprise me</button><button class="iconBtn" id="copyPrompt" title="Copy prompt">⧉</button><span class="inlineStatus" id="status">Ready.</span></div>
+          <div class="actions"><button class="primary" id="generate">✦ Generate neural track</button><button class="secondary" id="surprise">Surprise me</button><button class="iconBtn" id="copyPrompt" title="Copy prompt">⧉</button><span class="inlineStatus" id="status">Ready.</span></div>
         </section>
 
         <section class="card pad renderPanel" id="render">
-          <div class="sectionHead"><h3>Render</h3><span>provider-first · strict local fallback</span></div>
-          <div class="trackTop"><div class="cover">♫</div><div class="trackMeta"><h4 id="trackTitle">Generating track</h4><p id="trackInfo">Detected style and engine path will appear here.</p></div><div class="trackTools"><button class="secondary" id="download" disabled>Download WAV</button></div></div>
+          <div class="sectionHead"><h3>Render</h3><span>neural provider only for Generate</span></div>
+          <div class="trackTop"><div class="cover">♫</div><div class="trackMeta"><h4 id="trackTitle">Neural track</h4><p id="trackInfo">Style is sent directly to the music provider.</p></div><div class="trackTools"><button class="secondary" id="download" disabled>Download</button></div></div>
           <div class="progressShell"><i id="renderProgress"></i></div>
-          <div class="renderStages"><span>Style lock</span><span>Rhythm</span><span>Harmony</span><span>Detail</span><span>Master</span></div>
+          <div class="renderStages"><span>Style</span><span>Compose</span><span>Generate</span><span>Detail</span><span>Master</span></div>
           <div class="audioWrap"><audio id="player" controls></audio></div>
           <div class="metrics"><div class="metric"><b id="m1">—</b><span>Structure</span></div><div class="metric"><b id="m2">—</b><span>Expression</span></div><div class="metric"><b id="m3">—</b><span>Detail</span></div><div class="metric"><b id="m4">—</b><span>Stereo</span></div><div class="metric"><b id="m5">—</b><span>Polish</span></div></div>
         </section>
       </section>
 
       <aside class="rightcol">
-        <section class="card motionCard"><img src="./assets/hf-models-v2.svg" alt="Animated model progression"><span class="motionLabel">Higgsfield site motion · models</span></section>
+        <section class="card motionCard"><img src="./assets/hf-models-v2.svg" alt="Animated model progression"><span class="motionLabel">Site motion · models</span></section>
 
         <section class="card pad">
           <div class="sectionHead"><h3>Your Voice</h3><span>2-minute calibration</span></div>
@@ -75,7 +75,7 @@
           <label class="consent"><input id="consent" type="checkbox"><span>I confirm this is my own voice, or I have clear permission from the speaker to create this profile.</span></label>
           <button class="primary" id="train" disabled>Calibrate voice</button>
           <div class="voiceProgress"><i id="voiceProgress"></i></div><div class="voiceLine"><span id="voiceStep">Waiting for sample</span><span id="voiceTime">Waiting</span></div>
-          <div class="voiceHint">Local Voice Signature shapes the synthetic lead only. A true neural singing/voice model requires a dedicated backend.</div>
+          <div class="voiceHint">Voice Signature remains a local demo. Neural music generation does not claim to clone a voice.</div>
         </section>
 
         <section class="card pad">
@@ -94,5 +94,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="./v4.js"></script>
+<script src="./neural-mode.js"></script>
 </body>
 </html>
