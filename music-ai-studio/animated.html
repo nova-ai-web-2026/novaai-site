@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#070910" />
+  <title>Nova Music AI</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070910}
+    #app{width:100%;height:100%;border:0;display:block;background:#070910}
+  </style>
+</head>
+<body>
+  <iframe id="app" src="/index.html" title="Nova Music AI"></iframe>
+  <script>
+    const ASSETS={
+      hero:'https://d2ol7oe51mr4n9.cloudfront.net/user_3HaQ4baS4Fr7qUVBipOyAsjIYDi/3929e777-7828-41f2-9fbc-88c1c95e9425.svg',
+      models:'https://d2ol7oe51mr4n9.cloudfront.net/user_3HaQ4baS4Fr7qUVBipOyAsjIYDi/0dfc648c-3d4f-4ad1-b180-dc20a62d3aa4.svg',
+      voice:'https://d2ol7oe51mr4n9.cloudfront.net/user_3HaQ4baS4Fr7qUVBipOyAsjIYDi/ac2413da-dcf3-4ec3-a188-7d2f30aa48f5.svg'
+    };
+    document.getElementById('app').addEventListener('load',()=>{
+      const doc=document.getElementById('app').contentDocument;
+      if(!doc)return;
+      const style=doc.createElement('style');
+      style.dataset.source='higgsfield-site-motion';
+      style.textContent=`
+        .hero{background-image:linear-gradient(100deg,rgba(7,9,16,.98) 0%,rgba(7,9,16,.88) 48%,rgba(7,9,16,.38) 100%),url('${ASSETS.hero}');background-size:cover;background-position:center;isolation:isolate}
+        .hero>*{position:relative;z-index:2}.hero:after{z-index:1}
+        .voicebox{background-image:linear-gradient(180deg,rgba(12,16,27,.96),rgba(12,16,27,.79)),url('${ASSETS.voice}');background-size:cover;background-position:center;background-blend-mode:normal}
+        aside .card.pad{background-image:linear-gradient(180deg,rgba(12,16,27,.95),rgba(12,16,27,.82)),url('${ASSETS.models}');background-size:cover;background-position:center}
+        .model{overflow:hidden}.model:before{content:'';position:absolute;inset:auto -30% -85% -30%;height:120px;background:radial-gradient(ellipse,rgba(34,211,238,.15),transparent 65%);opacity:0;transform:translateY(18px);transition:.35s ease;pointer-events:none}.model:hover:before,.model.active:before{opacity:1;transform:none}
+        .primary{position:relative;overflow:hidden}.primary:after{content:'';position:absolute;inset:-80% auto -80% -55%;width:35%;transform:rotate(18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:novaShine 4.6s ease-in-out infinite}
+        @keyframes novaShine{0%,62%{left:-55%}82%,100%{left:130%}}
+        @media(prefers-reduced-motion:reduce){.hero,.voicebox,aside .card.pad{background-image:none}.primary:after{display:none}.model:before{transition:none}}
+      `;
+      doc.head.appendChild(style);
+    });
+  </script>
+</body>
+</html>
