@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220">
+<defs><linearGradient id="vg" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+<rect width="720" height="220" rx="24" fill="#090d17"/>
+<g transform="translate(40 110)" fill="url(#vg)">
+<rect x="0" y="-22" width="12" height="44" rx="6"><animate attributeName="height" values="44;110;44" dur="1.0s" repeatCount="indefinite"/><animate attributeName="y" values="-22;-55;-22" dur="1.0s" repeatCount="indefinite"/></rect>
+<rect x="28" y="-45" width="12" height="90" rx="6"><animate attributeName="height" values="90;34;90" dur=".85s" repeatCount="indefinite"/><animate attributeName="y" values="-45;-17;-45" dur=".85s" repeatCount="indefinite"/></rect>
+<rect x="56" y="-65" width="12" height="130" rx="6"><animate attributeName="height" values="130;60;130" dur="1.2s" repeatCount="indefinite"/><animate attributeName="y" values="-65;-30;-65" dur="1.2s" repeatCount="indefinite"/></rect>
+<rect x="84" y="-34" width="12" height="68" rx="6"><animate attributeName="height" values="68;140;68" dur=".95s" repeatCount="indefinite"/><animate attributeName="y" values="-34;-70;-34" dur=".95s" repeatCount="indefinite"/></rect>
+</g>
+<g transform="translate(210 42)" font-family="Arial, sans-serif"><text fill="#fff" font-size="23" font-weight="700">Voice mapping</text><text y="34" fill="#94a3b8" font-size="15">Low → Mid → High → Dynamics</text><rect y="67" width="430" height="14" rx="7" fill="#1e293b"/><rect y="67" width="20" height="14" rx="7" fill="url(#vg)"><animate attributeName="width" values="20;430;20" dur="4s" repeatCount="indefinite"/></rect><circle cx="16" cy="122" r="7" fill="#7c3aed"><animate attributeName="cx" values="16;414;16" dur="4s" repeatCount="indefinite"/></circle><text y="158" fill="#cbd5e1" font-size="14">2-minute calibration • layer-by-layer analysis</text></g>
+</svg>
