@@ -1,10 +1,11 @@
 (()=>{
 'use strict';
 if(!window.NovaCore)return;
-const rhythmTerms=['trap','drill','edm','house','boom bap','hip hop','r&b','rnb','lofi','lo-fi','rock','afrobeat','afrobeats','reggaeton','dembow','amapiano','ballad','cinematic'];
-function expand(style){let s=String(style||''),low=s.toLowerCase(),cue='';for(const term of rhythmTerms){if(low.includes(term+' drums')||low.includes(term+' drum')||low.includes(term+' beat')||low.includes(term+' rhythm')||low.includes(term+' groove')||low.includes('drums '+term)||low.includes('beat '+term)){cue=term;break}}return cue?s+' | rhythm priority: '+cue+' '+cue+' '+cue:s}
+function detectCue(style){const low=String(style||'').toLowerCase();for(const [name,p] of Object.entries(NovaCore.RHYTHMS||{})){for(const alias of p.aliases||[]){if(low.includes(alias+' drums')||low.includes(alias+' drum')||low.includes(alias+' beat')||low.includes(alias+' rhythm')||low.includes(alias+' groove')||low.includes('drums '+alias)||low.includes('beat '+alias)||low.includes('rhythm '+alias))return name}}return null}
+function expand(style){const raw=String(style||''),cue=detectCue(raw);if(!cue)return raw;const aliases=(NovaCore.RHYTHMS[cue]?.aliases||[]).join(' | ');return raw+' | RHYTHM PRIORITY '+aliases}
 const originalPlan=NovaCore.plan,originalParse=NovaCore.parseStyle;
-NovaCore.plan=args=>{const raw=args?.style||'',bp=originalPlan({...args,style:expand(raw)});bp.style.raw=raw;bp.style.rhythmDirective=expand(raw)!==raw?expand(raw).split('rhythm priority: ')[1]?.split(' ')[0]||null:null;return bp};
-NovaCore.parseStyle=(style,prompt)=>{const out=originalParse(expand(style),prompt);out.raw=style||'';return out};
+NovaCore.plan=args=>{const raw=args?.style||'',cue=detectCue(raw),bp=originalPlan({...args,style:expand(raw)});bp.style.raw=raw;bp.style.rhythmDirective=cue;return bp};
+NovaCore.parseStyle=(style,prompt)=>{const raw=style||'',out=originalParse(expand(raw),prompt);out.raw=raw;out.rhythmDirective=detectCue(raw);return out};
 window.NovaCore.expandStyleDirectives=expand;
+window.NovaCore.detectRhythmDirective=detectCue;
 })();
