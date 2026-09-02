@@ -1,14 +1,28 @@
 {
   "name": "PITCH 27",
   "release": "unified-1",
-  "source_of_truth": "https://github.com/nova-ai-web-2026/novaai-site/tree/main/pitch27",
-  "production": "https://pitch27-game-osamafathy82005-8456s-projects.vercel.app",
-  "fallback": "https://nova-ai-web-2026.github.io/novaai-site/pitch27/",
+  "source_of_truth": {
+    "platform": "GitHub",
+    "repo": "nova-ai-web-2026/novaai-site",
+    "branch": "main",
+    "path": "pitch27",
+    "unified_manifest_base_commit": "767fd63de6e115398f45103b275450bf6c7d34ca"
+  },
+  "game": {
+    "canonical_build": "https://nova-ai-web-2026.github.io/novaai-site/pitch27/"
+  },
+  "production": {
+    "platform": "Vercel",
+    "alias": "https://pitch27-game-osamafathy82005-8456s-projects.vercel.app",
+    "deployment_url": "https://pitch27-game-p27d7dfzb-osamafathy82005-8456s-projects.vercel.app",
+    "deployment_id": "dpl_ENhCDH3rxEkfHQbJCXr1H9EzVrC5",
+    "mode": "gateway_to_github_source",
+    "status": "created_unverified_due_connector_lookup_404"
+  },
   "coordination": {
     "platform": "Slack",
     "channel": "pitch27-game",
     "channel_id": "C0BUKF5M0SY"
   },
-  "workflow": "Edit GitHub main -> publish the same release to Vercel -> record release status in Slack",
-  "note": "GitHub is the single source of truth. Vercel and Slack must reference this same release rather than separate code copies."
+  "workflow": "GitHub main is the only code source. Vercel is the official entry gateway to that exact build. Slack records each release so all three always reference one version."
 }
