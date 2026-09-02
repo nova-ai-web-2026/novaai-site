@@ -9,7 +9,23 @@
     "unified_manifest_base_commit": "767fd63de6e115398f45103b275450bf6c7d34ca"
   },
   "game": {
-    "canonical_build": "https://nova-ai-web-2026.github.io/novaai-site/pitch27/"
+    "canonical_build": "https://nova-ai-web-2026.github.io/novaai-site/pitch27/",
+    "latest_update": {
+      "version": "smart-opponent-ai-v9",
+      "gameplay_commit": "390b10bf2febd8b1c597059408664468f45740c0",
+      "cache_commit": "2c0e644694e7ac9d23a3747e5ada59e99cb6b11a",
+      "pages_run_id": 33643276182,
+      "pages_status": "success",
+      "changes": [
+        "pass-lane evaluation",
+        "pressure-aware passing and dribbling",
+        "coordinated pressing and cover",
+        "unique defensive marking assignments",
+        "transition press after losing possession",
+        "diagonal striker runs and support triangles",
+        "shot decision based on distance, angle and lane"
+      ]
+    }
   },
   "production": {
     "platform": "Vercel",
