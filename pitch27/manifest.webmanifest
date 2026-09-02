@@ -1,18 +1,11 @@
 {
-  "name": "PITCH 27 — Mobile Football",
-  "short_name": "PITCH 27",
+  "name": "PITCH 27 3D — Mobile Football",
+  "short_name": "PITCH 27 3D",
   "start_url": "./",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#07100d",
   "theme_color": "#07100d",
-  "description": "Original touch-first mobile football game prototype.",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "description": "Original WebGL 3D touch-first mobile football game prototype.",
+  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
