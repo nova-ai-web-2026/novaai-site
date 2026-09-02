@@ -1,3 +1,6 @@
+import { pressRoleForBall, boundedContainTarget } from './ai-pressure-policy.mjs';
+globalThis.__P27PressPolicy = { pressRoleForBall, boundedContainTarget };
+
 const ZONAL_RELEASE_URL='https://raw.githubusercontent.com/nova-ai-web-2026/novaai-site/d3f9e57915cdf31a9b8f83e9fdeec20e06972652/pitch27/game3d.js';
 try{
   const res=await fetch(ZONAL_RELEASE_URL,{cache:'no-store'});
@@ -9,18 +12,18 @@ try{
   const pressPatch=String.raw`
   swap(
 "    const ranked=own.map(v=>({...v,shape:Math.hypot(v.q.x-(-dir*46+dir*(v.q.i<=2?14:v.q.i===3?27:35)),v.q.z-(v.q.i===1?-13:v.q.i===2?13:0))})).sort((a,b)=>(a.ballD+a.shape*5)-(b.ballD+b.shape*5));\\n    const press=ranked[0]?.idx??-1,cover=ranked[1]?.idx??-1;",
-"    const ranked=own.map(v=>{const homeX=-dir*46+dir*(v.q.i<=2?14:v.q.i===3?27:35),homeZ=v.q.i===1?-13:v.q.i===2?13:0;const shape=Math.hypot(v.q.x-homeX,v.q.z-homeZ),ballZone=Math.hypot(bx-homeX,(bz-homeZ)*1.05);return {...v,shape,ballZone}}).filter(v=>v.ballZone<18).sort((a,b)=>(a.ballD+a.shape*6+a.ballZone*9)-(b.ballD+b.shape*6+b.ballZone*9));\\n    const press=ranked[0]?.idx??-1;\\n    const cover=own.filter(v=>v.idx!==press).sort((a,b)=>a.ballD-b.ballD)[0]?.idx??-1;",
-'press handoff by zone');
+"    const desiredRole=globalThis.__P27PressPolicy.pressRoleForBall(bx,bz,dir);\\n    const press=own.find(v=>v.q.i===desiredRole)?.idx??-1;\\n    const cover=own.filter(v=>v.idx!==press).sort((a,b)=>a.ballD-b.ballD)[0]?.idx??-1;",
+'third based pressure handoff');
 
   swap(
 "    if(owner<0){\\n      if(plans[p.team].press===i){\\n        steerPlayer(p,bx,bz,dt,justTransition?22.6:21.2,justTransition?16.4:14.8);return;\\n      }",
-"    if(owner<0){\\n      if(plans[p.team].press===i){\\n        const roleZ=p.i===1?-13:p.i===2?13:0,roleDepth=p.i<=2?14:p.i===3?27:35;\\n        const homeX=ownGoal+dir*roleDepth,homeZ=roleZ;\\n        const dx=bx-homeX,dz=bz-homeZ,d=Math.hypot(dx,dz)||1,roam=10.5;\\n        const k=Math.min(1,roam/d),tx=homeX+dx*k,tz=homeZ+dz*k;\\n        steerPlayer(p,tx,tz,dt,justTransition?21.8:20.6,justTransition?15.6:14.2);return;\\n      }",
-'bounded loose-ball press');
+"    if(owner<0){\\n      if(plans[p.team].press===i){\\n        const t=globalThis.__P27PressPolicy.boundedContainTarget(bx,bz,state.ball.vx||0,state.ball.vz||0,dir,p.i,justTransition);\\n        steerPlayer(p,t.x,t.z,dt,justTransition?21.4:20.2,justTransition?15.0:13.8);return;\\n      }",
+'bounded loose ball contain');
 
   swap(
 "    const ballOwner=state.players[owner];\\n    if(plans[p.team].press===i){\\n      const predict=.24+(justTransition?.12:0);\\n      const px=ballOwner.x+ballOwner.vx*predict,pz=ballOwner.z+ballOwner.vz*predict;\\n      steerPlayer(p,px,pz,dt,justTransition?22.9:21.8,justTransition?16.8:15.2);return;\\n    }",
-"    const ballOwner=state.players[owner];\\n    if(plans[p.team].press===i){\\n      const roleZ=p.i===1?-13:p.i===2?13:0,roleDepth=p.i<=2?14:p.i===3?27:35;\\n      const homeX=ownGoal+dir*roleDepth,homeZ=roleZ;\\n      const predict=.20+(justTransition?.08:0);\\n      const rawX=ballOwner.x+ballOwner.vx*predict,rawZ=ballOwner.z+ballOwner.vz*predict;\\n      const dx=rawX-homeX,dz=rawZ-homeZ,d=Math.hypot(dx,dz)||1,roam=11;\\n      const k=Math.min(1,roam/d),px=homeX+dx*k,pz=homeZ+dz*k;\\n      steerPlayer(p,px,pz,dt,justTransition?22.1:20.9,justTransition?16.0:14.4);return;\\n    }",
-'bounded carrier press');
+"    const ballOwner=state.players[owner];\\n    if(plans[p.team].press===i){\\n      const t=globalThis.__P27PressPolicy.boundedContainTarget(ballOwner.x,ballOwner.z,ballOwner.vx,ballOwner.vz,dir,p.i,justTransition);\\n      steerPlayer(p,t.x,t.z,dt,justTransition?21.6:20.4,justTransition?15.2:14.0);return;\\n    }",
+'bounded carrier contain');
 `;
 
   src=src.replace(marker,pressPatch+'\n'+marker);
