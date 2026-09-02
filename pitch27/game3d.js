@@ -5,58 +5,26 @@ try{
   let src=await res.text();
   const must=(from,to,label)=>{if(!src.includes(from))throw new Error(`Hotfix patch missing: ${label}`);src=src.replace(from,to)};
 
-  // Aggressively closer broadcast camera for phone screens.
   must("camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,240);","camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,220);",'camera FOV');
   must("camera.position.set(-4,23,36);","camera.position.set(-3,16.5,27.5);",'camera start');
   must("camDesired.set(THREE.MathUtils.clamp(targetX-2,-43,43),23,36);","camDesired.set(THREE.MathUtils.clamp(targetX-1,-45,45),17,28);",'close broadcast camera');
   must("g.scale.setScalar(.82)","g.scale.setScalar(.88)",'player screen size');
-
-  // Fast match tempo: much higher running speed, acceleration and less artificial drag.
   must("const maxSpeed=state.sprint?16.2:12.4,accel=state.sprint?14.0:15.2;","const maxSpeed=state.sprint?24:18.2,accel=state.sprint?25:26;",'user speed');
   must("const drag=Math.exp(-.72*dt);","const drag=Math.exp(-.22*dt);",'movement drag');
   must("limit=(p===cp&&state.sprint)?16.2:(p.team===1?14.6:13.6)","limit=(p===cp&&state.sprint)?24:(p.team===1?21.5:20.5)",'movement cap');
   must("const minDist=1.05;","const minDist=.92;",'collision spacing');
   src=src.replaceAll("a.vx*=.90;a.vz*=.90;b.vx*=.90;b.vz*=.90;","a.vx*=.97;a.vz*=.97;b.vx*=.97;b.vz*=.97;");
 
-  // Make every AI role move at a genuinely match-like tempo instead of jogging.
-  src=src.replaceAll("p.i===0?10.2:14.1,9.0","p.i===0?11.5:20.5,13.5");
-  src=src.replaceAll("p.i===0?10.0:14.8,10.2","p.i===0?11.0:22.0,15.0");
-  src=src.replaceAll("p.i===0?9.8:(teamOwns?13.8:13.1),8.0","p.i===0?11.0:(teamOwns?20.8:19.6),13.0");
+  const aiPattern=/`function ai\(dt\)\{\n  const owner=state\.ball\.owner;[\s\S]*?\n\}`,'match AI'\);/;
+  if(!aiPattern.test(src))throw new Error('Hotfix patch missing: role based match AI');
+  const newAI="function ai(dt){\n  const owner=state.ball.owner,bx=state.ball.x,bz=state.ball.z;\n  const possessionTeam=owner>=0?state.players[owner]?.team:-1;\n  const plans=[0,1].map(team=>{\n    const field=[];\n    state.players.forEach((q,idx)=>{if(q.team===team&&q.i!==0)field.push({q,idx,d:(q.x-bx)**2+(q.z-bz)**2})});\n    field.sort((a,b)=>a.d-b.d);\n    return {press:field[0]?.idx??-1,cover:field[1]?.idx??-1};\n  });\n\n  state.players.forEach((p,i)=>{\n    p.cool=Math.max(0,p.cool-dt);p.think=(p.think||0)-dt;\n    if(i===state.controlled&&p.team===0)return;\n\n    const dir=p.team?-1:1,ownGoal=-dir*46,oppGoal=dir*51.5;\n    const teamOwns=possessionTeam===p.team;\n\n    if(owner===i){\n      const opponents=state.players.filter(q=>q.team!==p.team);\n      let closest=null,pressure=99;\n      opponents.forEach(q=>{const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<pressure){pressure=d;closest=q}});\n      const mates=state.players.filter(q=>q.team===p.team&&q!==p);\n      let target=null,best=-1e9;\n      mates.forEach(q=>{\n        let space=99;\n        opponents.forEach(o=>{space=Math.min(space,Math.hypot(o.x-q.x,o.z-q.z))});\n        const progress=(q.x-p.x)*dir,dist=Math.hypot(q.x-p.x,q.z-p.z);\n        const roleBonus=q.i===4?2.7:q.i===3?1.6:0;\n        const centralBonus=Math.max(0,5-Math.abs(q.z)*.16);\n        const score=progress*1.25+Math.min(space,9)*.85-dist*.18+roleBonus+centralBonus;\n        if(score>best){best=score;target=q}\n      });\n\n      const goalDist=Math.hypot(oppGoal-p.x,p.z);\n      const shooting=p.i!==0&&goalDist<20&&Math.abs(p.z)<18;\n      if(shooting&&p.think<=0&&(pressure<5.5||goalDist<14)){\n        const gz=THREE.MathUtils.clamp(-p.z*.08+(Math.random()-.5)*4.8,-5.2,5.2);\n        const l=Math.hypot(oppGoal-p.x,gz-p.z)||1;\n        detachBall(p,(oppGoal-p.x)/l,(gz-p.z)/l,31.5,5.2);p.think=.38;return;\n      }\n\n      const shouldPass=p.i===0||pressure<4.4||(target&&best>11&&p.think<=0&&Math.random()<dt*.85);\n      if(target&&p.think<=0&&shouldPass){\n        const lead=target.i===4?1.6:.8;\n        let tx=target.x+target.vx*lead,tz=target.z+target.vz*lead;\n        let dx=tx-p.x,dz=tz-p.z,l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;\n        detachBall(p,dx,dz,p.i===0?23.5:24.5,.9);p.think=.34;return;\n      }\n\n      const avoid=closest?THREE.MathUtils.clamp((p.z-closest.z)*1.8,-5.5,5.5):0;\n      const lane=THREE.MathUtils.clamp(p.z*.62+avoid,-23,23);\n      steerPlayer(p,p.x+dir*13,lane,dt,p.i===0?12:20.5,14.5);return;\n    }\n\n    if(p.i===0){\n      const keeperZ=THREE.MathUtils.clamp(bz*.42,-6.2,6.2);\n      const keeperX=ownGoal+dir*2.2;\n      steerPlayer(p,keeperX,keeperZ,dt,11.5,11.5);return;\n    }\n\n    if(teamOwns){\n      if(p.i===4){\n        const tx=THREE.MathUtils.clamp(bx+dir*(16+Math.max(0,(bx*dir)*.08)),-45,45);\n        const tz=THREE.MathUtils.clamp(-bz*.18+Math.sin(state.time*1.7+i)*4.5,-15,15);\n        steerPlayer(p,tx,tz,dt,21.5,14);return;\n      }\n      if(p.i===3){\n        const supportX=THREE.MathUtils.clamp(bx-dir*6,-40,40);\n        const side=bz>=0?-1:1;\n        const supportZ=THREE.MathUtils.clamp(bz+side*9,-24,24);\n        steerPlayer(p,supportX,supportZ,dt,19.8,13.5);return;\n      }\n      const side=p.i===1?-1:1;\n      const tx=THREE.MathUtils.clamp(-dir*17+bx*.22+dir*5,-36,36);\n      const tz=THREE.MathUtils.clamp(side*17+bz*.12,-25,25);\n      steerPlayer(p,tx,tz,dt,18.2,12.5);return;\n    }\n\n    if(owner<0){\n      if(plans[p.team].press===i){steerPlayer(p,bx,bz,dt,22,15.5);return}\n      const side=p.i===1?-1:p.i===2?1:0;\n      const tx=THREE.MathUtils.clamp(-dir*(p.i<=2?21:8)+bx*.18,-40,40);\n      const tz=THREE.MathUtils.clamp(side*16+bz*.18,-25,25);\n      steerPlayer(p,tx,tz,dt,18.5,12.5);return;\n    }\n\n    const ballOwner=state.players[owner];\n    if(plans[p.team].press===i){\n      const predictX=ballOwner.x+ballOwner.vx*.18,predictZ=ballOwner.z+ballOwner.vz*.18;\n      steerPlayer(p,predictX,predictZ,dt,22.2,15.8);return;\n    }\n    if(plans[p.team].cover===i){\n      const tx=ballOwner.x*.58+ownGoal*.42;\n      const tz=ballOwner.z*.58;\n      steerPlayer(p,tx,tz,dt,20.2,14);return;\n    }\n\n    const opponents=state.players.filter(q=>q.team!==p.team&&q.i!==0);\n    let mark=opponents.find(q=>q.i===p.i);\n    if(!mark)mark=opponents.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];\n    if(mark){\n      const tx=THREE.MathUtils.clamp(mark.x-dir*3.2,-44,44);\n      const tz=THREE.MathUtils.clamp(mark.z*.9,-26,26);\n      steerPlayer(p,tx,tz,dt,19.2,13);return;\n    }\n\n    steerPlayer(p,ownGoal+dir*18,0,dt,18.5,12);\n  });\n}";
+  src=src.replace(aiPattern,`${JSON.stringify(newAI)},'match AI');`);
 
-  // Replace the primitive goal/net with round posts and a dense 3D square mesh net.
-  const oldGoal=`function buildGoal(x,rot){
-  const g=new THREE.Group();g.position.x=x;g.rotation.y=rot;
-  const white=mat(0xf8fff9,.35,.08);const bar=(sx,sy,sz,px,py,pz)=>{const b=mesh(new THREE.BoxGeometry(sx,sy,sz),white);b.position.set(px,py,pz);g.add(b)};
-  bar(.16,2.7,.16,0,1.35,-7.3);bar(.16,2.7,.16,0,1.35,7.3);bar(.16,.16,14.7,0,2.7,0);
-  bar(2.5,.10,.10,-1.25,.10,-7.3);bar(2.5,.10,.10,-1.25,.10,7.3);
-  const netMat=new THREE.LineBasicMaterial({color:0xd9ffe7,transparent:true,opacity:.24});
-  for(let z=-7.3;z<=7.31;z+=1.22){const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.15,z),new THREE.Vector3(-2.4,.15,z),new THREE.Vector3(-2.4,2.5,z)]);g.add(new THREE.Line(geo,netMat))}
-  world.add(g);
-}`;
-  const newGoal=`function buildGoal(x,rot){
-  const g=new THREE.Group();g.position.x=x;g.rotation.y=rot;
-  const white=mat(0xffffff,.28,.12);
-  const pole=(r,len,px,py,pz,rx=0,ry=0,rz=0)=>{const p=mesh(new THREE.CylinderGeometry(r,r,len,16),white);p.position.set(px,py,pz);p.rotation.set(rx,ry,rz);g.add(p)};
-  pole(.11,2.7,0,1.35,-7.3);pole(.11,2.7,0,1.35,7.3);
-  pole(.11,14.6,0,2.7,0,Math.PI/2,0,0);
-  pole(.075,2.45,-2.35,1.22,-7.3);pole(.075,2.45,-2.35,1.22,7.3);
-  pole(.075,14.6,-2.35,2.45,0,Math.PI/2,0,0);
-  const pts=[];const seg=(ax,ay,az,bx,by,bz)=>{pts.push(new THREE.Vector3(ax,ay,az),new THREE.Vector3(bx,by,bz))};
-  for(let z=-7.3;z<=7.301;z+=.73){seg(-2.35,.05,z,-2.35,2.45,z);seg(0,2.7,z,-2.35,2.45,z)}
-  for(let y=.05;y<=2.451;y+=.35)seg(-2.35,y,-7.3,-2.35,y,7.3);
-  for(let d=0;d<=2.351;d+=.39)seg(-d,2.7-d*.105,-7.3,-d,2.7-d*.105,7.3);
-  for(const z of [-7.3,7.3]){
-    for(let y=.05;y<=2.451;y+=.35)seg(0,y,z,-2.35,Math.min(2.45,y),z);
-    for(let d=0;d<=2.351;d+=.39)seg(-d,.05,z,-d,2.7-d*.105,z);
-  }
-  const netGeo=new THREE.BufferGeometry().setFromPoints(pts);
-  const netMat=new THREE.LineBasicMaterial({color:0xf7fff9,transparent:true,opacity:.52});
-  const net=new THREE.LineSegments(netGeo,netMat);net.renderOrder=2;g.add(net);
-  world.add(g);
-}`;
+  const oldGoal="function buildGoal(x,rot){\n  const g=new THREE.Group();g.position.x=x;g.rotation.y=rot;\n  const white=mat(0xf8fff9,.35,.08);const bar=(sx,sy,sz,px,py,pz)=>{const b=mesh(new THREE.BoxGeometry(sx,sy,sz),white);b.position.set(px,py,pz);g.add(b)};\n  bar(.16,2.7,.16,0,1.35,-7.3);bar(.16,2.7,.16,0,1.35,7.3);bar(.16,.16,14.7,0,2.7,0);\n  bar(2.5,.10,.10,-1.25,.10,-7.3);bar(2.5,.10,.10,-1.25,.10,7.3);\n  const netMat=new THREE.LineBasicMaterial({color:0xd9ffe7,transparent:true,opacity:.24});\n  for(let z=-7.3;z<=7.31;z+=1.22){const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,.15,z),new THREE.Vector3(-2.4,.15,z),new THREE.Vector3(-2.4,2.5,z)]);g.add(new THREE.Line(geo,netMat))}\n  world.add(g);\n}";
+  const newGoal="function buildGoal(x,rot){\n  const g=new THREE.Group();g.position.x=x;g.rotation.y=rot;\n  const white=mat(0xffffff,.24,.14);\n  const rod=(a,b,r=.085)=>{\n    const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),mid=av.clone().add(bv).multiplyScalar(.5);\n    const len=av.distanceTo(bv),geo=new THREE.CylinderGeometry(r,r,len,14),m=mesh(geo,white);\n    m.position.copy(mid);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),bv.clone().sub(av).normalize());g.add(m);\n  };\n  rod([0,0,-7.3],[0,2.7,-7.3],.11);rod([0,0,7.3],[0,2.7,7.3],.11);rod([0,2.7,-7.3],[0,2.7,7.3],.11);\n  rod([-2.35,.06,-7.3],[-2.35,2.18,-7.3],.065);rod([-2.35,.06,7.3],[-2.35,2.18,7.3],.065);\n  rod([-2.35,2.18,-7.3],[-2.35,2.18,7.3],.065);\n  rod([0,.06,-7.3],[-2.35,.06,-7.3],.06);rod([0,.06,7.3],[-2.35,.06,7.3],.06);\n  rod([0,2.7,-7.3],[-2.35,2.18,-7.3],.06);rod([0,2.7,7.3],[-2.35,2.18,7.3],.06);\n\n  const pts=[],seg=(a,b)=>pts.push(new THREE.Vector3(...a),new THREE.Vector3(...b));\n  const dz=.62,dy=.43,dd=.47;\n  for(let z=-7.3;z<=7.301;z+=dz)seg([-2.35,.08,z],[-2.35,2.18,z]);\n  for(let y=.08;y<=2.181;y+=dy)seg([-2.35,y,-7.3],[-2.35,y,7.3]);\n\n  for(let z=-7.3;z<=7.301;z+=dz)seg([0,2.7,z],[-2.35,2.18,z]);\n  for(let d=0;d<=2.351;d+=dd){\n    const y=2.7-(d/2.35)*.52;\n    seg([-d,y,-7.3],[-d,y,7.3]);\n  }\n\n  for(const z of [-7.3,7.3]){\n    for(let d=0;d<=2.351;d+=dd)seg([-d,.08,z],[-d,2.7-(d/2.35)*.52,z]);\n    for(let y=.08;y<=2.181;y+=dy){\n      const t=(y-.08)/(2.18-.08),frontY=.08+t*(2.7-.08);\n      seg([0,frontY,z],[-2.35,y,z]);\n    }\n  }\n\n  for(let z=-7.3;z<=7.301;z+=dz)seg([0,.075,z],[-2.35,.075,z]);\n  for(let d=0;d<=2.351;d+=dd)seg([-d,.075,-7.3],[-d,.075,7.3]);\n\n  const netGeo=new THREE.BufferGeometry().setFromPoints(pts);\n  const netMat=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.31,depthWrite:false});\n  const net=new THREE.LineSegments(netGeo,netMat);net.renderOrder=1;g.add(net);\n  world.add(g);\n}";
   const marker="  // Keep improved player proportions and readable football-style arm motion.";
   if(!src.includes(marker))throw new Error('Hotfix patch missing: goal insertion point');
-  src=src.replace(marker,`  swap(${JSON.stringify(oldGoal)},${JSON.stringify(newGoal)},'3D goal net');\n\n${marker}`);
+  src=src.replace(marker,`  swap(${JSON.stringify(oldGoal)},${JSON.stringify(newGoal)},'realistic goal net');\n\n${marker}`);
 
   const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));
   await import(url);
