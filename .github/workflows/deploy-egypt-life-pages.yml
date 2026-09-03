@@ -30,7 +30,7 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.10 actual SFX release files
+      - name: Validate V11.11 additive details and V11.10 actual SFX
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/game-v7.js
@@ -46,6 +46,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-6-runtime.js
           test -s egypt-life-sim-v2/game-v11-8-sfx.js
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
           test -s egypt-life-sim-v2/AUDIO-CREDITS.md
           node --check egypt-life-sim-v2/game-v7.js
           node --check egypt-life-sim-v2/game-v8-layout.js
@@ -60,15 +61,22 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-10-actual-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'actual-cc0-sampled-sfx' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'remoteSamplePrimary:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'proceduralFallback:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq '45df48c4d45f8716216b1a9e22df0b69cd9f5932' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq "release:'11.10'" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "visualRelease:'11.11'" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'additiveOnly:true' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq 'removedMeshes:0' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq 'disabledLegacyMeshes:0' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq 'checkCollisions=false' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'CC0 1.0' egypt-life-sim-v2/AUDIO-CREDITS.md
           if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi
       - name: Upload site
