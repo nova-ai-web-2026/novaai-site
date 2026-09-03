@@ -30,7 +30,7 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V12 open world, V11.11 details and V11.10 actual SFX
+      - name: Validate V12.1 scenes, V11.14 mobile UI and existing game layers
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/game-v7.js
@@ -48,6 +48,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details-base.js
+          test -s egypt-life-sim-v2/game-v11-14-ui-scenes.js
           test -s egypt-life-sim-v2/game-v12-world.js
           test -s egypt-life-sim-v2/AUDIO-CREDITS.md
           node --check egypt-life-sim-v2/game-v7.js
@@ -65,19 +66,26 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details-base.js
+          node --check egypt-life-sim-v2/game-v11-14-ui-scenes.js
           node --check egypt-life-sim-v2/game-v12-world.js
           grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-10-actual-sfx.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-14-ui-scenes.js?v=11.14' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-audiofix.js?v=11.9&visual=11.11' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'game-v11-11-egypt-details-base.js?v=11.11' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'game-v12-world.js?v=12' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq 'game-v11-14-ui-scenes.js?v=11.14' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'openWorld:true' egypt-life-sim-v2/game-v12-world.js
           grep -Fq 'startsAtHome:true' egypt-life-sim-v2/game-v12-world.js
           grep -Fq 'Greater Cairo mixed-use residential street cues' egypt-life-sim-v2/game-v12-world.js
           grep -Fq '#v12Skip{display:none!important}' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "mobileHud:'single-row-stats'" egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          grep -Fq 'missionNoOverlap:true' egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          grep -Fq 'doorTransitionRepaired' egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          grep -Fq 'audioTouched:false' egypt-life-sim-v2/game-v11-14-ui-scenes.js
           grep -Fq 'actual-cc0-sampled-sfx' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'remoteSamplePrimary:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'proceduralFallback:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
