@@ -30,7 +30,7 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.11 additive details and V11.10 actual SFX
+      - name: Validate V11.11 additive details, cache bust and V11.10 actual SFX
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/game-v7.js
@@ -65,7 +65,8 @@ jobs:
           grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-10-actual-sfx.js?v=11.10' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v8-layout.js?v=11.10' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-audiofix.js?v=11.9&visual=11.11' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'actual-cc0-sampled-sfx' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'remoteSamplePrimary:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
