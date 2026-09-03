@@ -12,15 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.12 files
+      - name: Validate V11.12 preview with current HUD layer
         run: |
           test -s egypt-life-sim-v2/game-v11-12-ui.js
+          test -s egypt-life-sim-v2/game-v11-14-ui-scenes.js
           node --check egypt-life-sim-v2/game-v11-12-ui.js
+          node --check egypt-life-sim-v2/game-v11-14-ui-scenes.js
           grep -Fq 'game-v11-12-ui.js?v=11.12' egypt-life-sim-v2/index.html
-          grep -Fq 'HAYAT MASR • V11.12' egypt-life-sim-v2/index.html
-          grep -Fq 'width:46vw' egypt-life-sim-v2/index.html
           grep -Fq 'liveStartScene:true' egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq 'compactMobileHud:true' egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq 'game-v11-14-ui-scenes.js?v=11.14' egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "mobileHud:'single-row-stats'" egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          grep -Fq 'audioTouched:false' egypt-life-sim-v2/game-v11-14-ui-scenes.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -96,7 +99,7 @@ jobs:
           if(after.errorVisible)throw new Error('Runtime errorBox: '+after.errorText);
           if(errors.length)throw new Error(errors.join('\n'));
           await page.screenshot({path:'v1112-game.png',fullPage:true});
-          console.log('V11.12/V11.14 mobile UI compatibility passed',{before,after});
+          console.log('V11.12 preview + V11.14 HUD compatibility passed',{before,after});
           await browser.close();
           EOF
           node v1112-ui.mjs
