@@ -67,23 +67,36 @@ jobs:
           await page.waitForTimeout(1000);
           const after=await page.evaluate(()=>{
             const r=id=>document.getElementById(id)?.getBoundingClientRect();
+            const statBoxes=[...document.querySelectorAll('#stats .stat')].map(el=>el.getBoundingClientRect());
+            const stats=r('stats'),mission=r('mission');
             return {
-              statsWidth:r('stats')?.width||999,
-              missionWidth:r('mission')?.width||999,
+              statsWidth:stats?.width||999,
+              statsHeight:stats?.height||999,
+              missionWidth:mission?.width||999,
+              missionTop:mission?.top??-1,
+              statsBottom:stats?.bottom??999,
+              statRows:[...new Set(statBoxes.map(x=>Math.round(x.top)))],
               soundWidth:r('soundToggle')?.width||999,
               clockWidth:r('clock')?.width||999,
               hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
               preview:window.__V1112_UI?.previewActive,
+              v1114:window.__V1114_UI||null,
               errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
               errorText:document.getElementById('errorBox')?.textContent||''
             };
           });
-          if(after.statsWidth>190||after.missionWidth>190||after.soundWidth>40||after.clockWidth>100)throw new Error('Mobile HUD still crowded '+JSON.stringify(after));
+          if(after.v1114?.ready){
+            if(after.statRows.length!==1||after.statsHeight>50)throw new Error('V11.14 single-row HUD regression '+JSON.stringify(after));
+            if(after.missionTop<after.statsBottom-1)throw new Error('V11.14 mission overlaps stats '+JSON.stringify(after));
+            if(after.soundWidth>42||after.clockWidth>90)throw new Error('V11.14 controls too large '+JSON.stringify(after));
+          }else if(after.statsWidth>190||after.missionWidth>190||after.soundWidth>40||after.clockWidth>100){
+            throw new Error('V11.12 mobile HUD still crowded '+JSON.stringify(after));
+          }
           if(after.hudVisibility==='hidden'||after.preview)throw new Error('Post-start UI state wrong '+JSON.stringify(after));
           if(after.errorVisible)throw new Error('Runtime errorBox: '+after.errorText);
           if(errors.length)throw new Error(errors.join('\n'));
           await page.screenshot({path:'v1112-game.png',fullPage:true});
-          console.log('V11.12 mobile UI passed',{before,after});
+          console.log('V11.12/V11.14 mobile UI compatibility passed',{before,after});
           await browser.close();
           EOF
           node v1112-ui.mjs
