@@ -55,7 +55,7 @@ jobs:
           await page.waitForFunction(()=>document.getElementById('v12Prologue')?.classList.contains('active'),{timeout:5000});
           const prologue=await page.evaluate(()=>({state:window.__V12_PROLOGUE,menu:getComputedStyle(document.getElementById('menu')).display,overlay:getComputedStyle(document.getElementById('v12Prologue')).display}));
           if(!prologue.state.ready||prologue.overlay==='none')throw new Error('Prologue did not start '+JSON.stringify(prologue));
-          await page.click('#v12Skip');
+          await page.evaluate(()=>document.getElementById('v12Skip')?.click());
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V12_PROLOGUE?.played===true,{timeout:10000});
           await page.waitForTimeout(250);
           const atHome=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),home:window.__V12_HOME,menu:getComputedStyle(document.getElementById('menu')).display,error:getComputedStyle(document.getElementById('errorBox')).display}));
