@@ -1,0 +1,92 @@
+name: Test Egyptian Life Simulator V12 Open World
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v12.yml'
+  workflow_dispatch:
+
+jobs:
+  v12-open-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V12 files
+        run: |
+          test -s egypt-life-sim-v2/game-v12-openworld.js
+          node --check egypt-life-sim-v2/game-v12-openworld.js
+          grep -Fq "game-v12-openworld.js?v=12" egypt-life-sim-v2/game-v8-layout.js
+          grep -Fq "introCinematic:true" egypt-life-sim-v2/game-v12-openworld.js
+          grep -Fq "homeInterior:true" egypt-life-sim-v2/game-v12-openworld.js
+          grep -Fq "walkableExtentMeters:390" egypt-life-sim-v2/game-v12-openworld.js
+          grep -Fq "game-v8-layout.js?v=12&visual=12" egypt-life-sim-v2/index.html
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v12-server.log 2>&1 &
+          sleep 2
+      - name: Verify intro, house, open world and Egypt audit
+        run: |
+          cat > v12-smoke.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          fs.mkdirSync('v12-shots',{recursive:true});
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v12',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V12_WORLD?.ready===true,{timeout:60000});
+          const world=await page.evaluate(()=>window.__egyptDebug.v12WorldState());
+          if(!world.openWorld||world.walkableExtentMeters<360)throw new Error('World not expanded '+JSON.stringify(world));
+          if(world.districts.length<5||!world.homeInterior||!world.introCinematic)throw new Error('V12 features missing '+JSON.stringify(world));
+          if(world.authenticity.score<90)throw new Error('Egypt authenticity audit too low '+JSON.stringify(world.authenticity));
+          if(Object.values(world.authenticity.features).some(v=>!v))throw new Error('Authenticity feature missing '+JSON.stringify(world.authenticity.features));
+          await page.screenshot({path:'v12-shots/menu.png'});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('v12-intro'),{timeout:20000});
+          await page.waitForTimeout(450);
+          let introCam=await page.evaluate(()=>window.__egyptDebug.v12WorldState().activeCamera);
+          if(introCam!=='v12_intro_camera')throw new Error('Intro camera did not activate: '+introCam);
+          await page.screenshot({path:'v12-shots/intro-early.png'});
+          await page.waitForTimeout(1650);
+          await page.screenshot({path:'v12-shots/intro-market.png'});
+          await page.waitForTimeout(1450);
+          await page.screenshot({path:'v12-shots/intro-home-approach.png'});
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&!document.body.classList.contains('v12-intro')&&getComputedStyle(document.getElementById('menu')).display==='none',{timeout:14000});
+          await page.waitForTimeout(250);
+          const started=await page.evaluate(()=>window.__egyptDebug.v12WorldState());
+          if(Math.hypot(started.camera.x-started.home.spawnX,started.camera.z-started.home.spawnZ)>4)throw new Error('Player did not start at family home '+JSON.stringify(started));
+          if(started.activeCamera!=='player')throw new Error('Player camera not restored '+started.activeCamera);
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+
+          const frame=async(name,pos,target)=>{
+            await page.evaluate(({pos,target})=>{
+              const B=window.BABYLON,scene=B.Engine.LastCreatedEngine.scenes[0],cam=scene.getCameraByName('player');
+              cam.position.set(pos[0],pos[1],pos[2]);cam.setTarget(new B.Vector3(target[0],target[1],target[2]));
+              const hud=document.getElementById('hud');if(hud)hud.style.visibility='hidden';
+            },{pos,target});
+            await page.waitForTimeout(350);
+            await page.screenshot({path:`v12-shots/${name}.png`});
+          };
+          await frame('home-interior',[-164,1.72,-159.5],[-164,1.35,-168]);
+          await frame('east-market',[144,1.72,86],[142,1.8,59]);
+          await frame('west-residential',[-144,1.72,-101],[-144,5,-40]);
+          await frame('north-workshops',[0,1.72,104],[0,1.8,119]);
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V12 open-world + Egypt authenticity passed',world.authenticity);
+          await browser.close();
+          JS
+          node v12-smoke.mjs
+      - name: Upload V12 visual audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-visual-audit
+          path: v12-shots/
+          if-no-files-found: error
