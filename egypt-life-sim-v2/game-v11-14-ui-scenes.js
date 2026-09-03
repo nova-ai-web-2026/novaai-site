@@ -13,38 +13,38 @@
       #v1114Location{font-size:10px;font-weight:800;color:#f0d28c;opacity:.92;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       #mission{transition:width .16s ease,transform .16s ease,background .16s ease}
       @media(max-width:760px){
-        #top{top:max(7px,env(safe-area-inset-top));left:7px;right:7px;display:grid;grid-template-columns:minmax(0,1fr) 76px;gap:5px;align-items:start;direction:rtl}
-        #stats{grid-template-columns:repeat(4,minmax(0,1fr));width:auto;min-width:0;max-width:none;gap:2px;padding:3px;border-radius:10px;direction:rtl}
-        .stat{min-width:0;padding:3px 2px;border-radius:7px;text-align:center;overflow:hidden}
-        .lab{font-size:7px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .val{font-size:10px;line-height:1.15;margin-top:2px;white-space:nowrap}
-        .meter{height:2px;margin-top:2px}
-        #clock{min-width:0;width:76px;padding:5px 4px;border-radius:10px}
-        .clockMain{font-size:13px;line-height:1.1}.clockSub{font-size:7px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        #mission{right:7px;top:56px;width:min(68vw,255px);max-width:calc(100vw - 58px);padding:6px 8px;border-radius:10px;line-height:1.3;pointer-events:auto;cursor:pointer}
-        #mission.v1114-expanded{width:min(86vw,330px);background:rgba(19,18,16,.92)}
-        .mTitle{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .mText{font-size:9px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        #mission.v1114-expanded .mText{-webkit-line-clamp:unset;display:block;overflow:visible}
-        #soundToggle{top:56px;left:7px;width:38px;height:38px;padding:0;border-radius:50%;font-size:0}
-        #soundToggle:before{content:'🔊';font-size:16px}
-        #toast{top:118px;max-width:76vw;padding:7px 10px;font-size:10px;border-radius:9px}
-        #mapWrap{width:78px;height:78px;left:7px;bottom:142px;padding:4px;border-radius:12px}
-        #joy{left:13px;bottom:18px;width:102px;height:102px}#knob{left:34px;top:34px;width:34px;height:34px}
-        #act{right:15px;bottom:26px;width:60px;height:60px;font-size:11px}#run{right:25px;bottom:96px;width:42px;height:42px;font-size:9px}
-        #prompt{bottom:20%;font-size:10px;padding:7px 10px}
-        #v12DoorPrompt{bottom:20%!important;font-size:10px!important;padding:7px 10px!important;max-width:76vw;text-align:center}
-        .modal{width:min(94vw,520px);max-height:72dvh;padding:14px;border-radius:15px}.modal h2{font-size:18px}.desc{font-size:12px}.item{padding:8px;font-size:12px}.item button,.closeBtn{padding:8px 10px;font-size:11px}
-        .v12copy{right:18px!important;left:18px!important;bottom:9vh!important;max-width:none!important}.v12place{font-size:10px!important}.v12title{font-size:38px!important;margin-top:4px!important}.v12line{font-size:12px!important;line-height:1.55!important;margin-top:5px!important}
+        body #top{top:max(7px,env(safe-area-inset-top))!important;left:7px!important;right:7px!important;display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;gap:5px!important;align-items:start!important;direction:rtl!important}
+        body #stats{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:auto!important;min-width:0!important;max-width:none!important;gap:2px!important;padding:3px!important;border-radius:10px!important;direction:rtl!important}
+        body .stat{min-width:0!important;padding:3px 2px!important;border-radius:7px!important;text-align:center!important;overflow:hidden!important}
+        body .lab{font-size:7px!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+        body .val{font-size:10px!important;line-height:1.15!important;margin-top:2px!important;white-space:nowrap!important}
+        body .meter{height:2px!important;margin-top:2px!important}
+        body #clock{min-width:0!important;width:76px!important;padding:5px 4px!important;border-radius:10px!important}
+        body .clockMain{font-size:13px!important;line-height:1.1!important}body .clockSub{font-size:7px!important;margin-top:2px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+        body #mission{right:7px!important;top:56px!important;width:min(68vw,255px)!important;max-width:calc(100vw - 58px)!important;padding:6px 8px!important;border-radius:10px!important;line-height:1.3!important;pointer-events:auto!important;cursor:pointer!important}
+        body #mission.v1114-expanded{width:min(86vw,330px)!important;background:rgba(19,18,16,.92)!important}
+        body .mTitle{font-size:10px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+        body .mText{font-size:9px!important;margin-top:2px!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
+        body #mission.v1114-expanded .mText{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important}
+        body #soundToggle{top:56px!important;left:7px!important;width:38px!important;height:38px!important;padding:0!important;border-radius:50%!important;font-size:0!important;display:grid!important;place-items:center!important}
+        body #soundToggle:before{content:attr(data-v1112-icon);font-size:16px!important;line-height:1!important}
+        body #toast{top:118px!important;max-width:76vw!important;padding:7px 10px!important;font-size:10px!important;border-radius:9px!important}
+        body #mapWrap{width:78px!important;height:78px!important;left:7px!important;bottom:142px!important;padding:4px!important;border-radius:12px!important}
+        body #joy{left:13px!important;bottom:18px!important;width:102px!important;height:102px!important}body #knob{left:34px!important;top:34px!important;width:34px!important;height:34px!important}
+        body #act{right:15px!important;bottom:26px!important;width:60px!important;height:60px!important;font-size:11px!important}body #run{right:25px!important;bottom:96px!important;width:42px!important;height:42px!important;font-size:9px!important}
+        body #prompt{bottom:20%!important;font-size:10px!important;padding:7px 10px!important}
+        body #v12DoorPrompt{bottom:20%!important;font-size:10px!important;padding:7px 10px!important;max-width:76vw!important;text-align:center!important}
+        body .modal{width:min(94vw,520px)!important;max-height:72dvh!important;padding:14px!important;border-radius:15px!important}body .modal h2{font-size:18px!important}body .desc{font-size:12px!important}body .item{padding:8px!important;font-size:12px!important}body .item button,body .closeBtn{padding:8px 10px!important;font-size:11px!important}
+        body .v12copy{right:18px!important;left:18px!important;bottom:9vh!important;max-width:none!important}body .v12place{font-size:10px!important}body .v12title{font-size:38px!important;margin-top:4px!important}body .v12line{font-size:12px!important;line-height:1.55!important;margin-top:5px!important}
       }
       @media(max-width:390px){
-        #top{grid-template-columns:minmax(0,1fr) 70px}
-        #clock{width:70px}.val{font-size:9px}.lab{font-size:6.5px}
-        #mission{top:54px;width:min(70vw,245px)}#soundToggle{top:54px}
+        body #top{grid-template-columns:minmax(0,1fr) 70px!important}
+        body #clock{width:70px!important}body .val{font-size:9px!important}body .lab{font-size:6.5px!important}
+        body #mission{top:54px!important;width:min(70vw,245px)!important}body #soundToggle{top:54px!important}
       }
       @media(max-height:700px) and (max-width:760px){
-        #mission{top:52px}.mText{-webkit-line-clamp:1}#toast{top:100px}#mapWrap{bottom:126px;width:70px;height:70px}
-        #joy{width:92px;height:92px}#knob{left:30px;top:30px;width:32px;height:32px}
+        body #mission{top:52px!important}body .mText{-webkit-line-clamp:1!important}body #toast{top:100px!important}body #mapWrap{bottom:126px!important;width:70px!important;height:70px!important}
+        body #joy{width:92px!important;height:92px!important}body #knob{left:30px!important;top:30px!important;width:32px!important;height:32px!important}
       }
     `;
     document.head.appendChild(style);
