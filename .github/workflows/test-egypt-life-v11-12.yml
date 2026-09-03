@@ -1,0 +1,98 @@
+name: Test Egyptian Life Simulator V11.12 UI
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-12.yml'
+  workflow_dispatch:
+
+jobs:
+  mobile-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.12 files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-12-ui.js
+          node --check egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq 'game-v11-12-ui.js?v=11.12' egypt-life-sim-v2/index.html
+          grep -Fq 'HAYAT MASR • V11.12' egypt-life-sim-v2/index.html
+          grep -Fq 'width:46vw' egypt-life-sim-v2/index.html
+          grep -Fq 'liveStartScene:true' egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq 'compactMobileHud:true' egypt-life-sim-v2/game-v11-12-ui.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1112-server.log 2>&1 &
+          sleep 2
+      - name: Verify live start scene and compact mobile HUD
+        run: |
+          cat > v1112-ui.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          await page.goto('http://127.0.0.1:4173/?ci=v1112-ui',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V1112_UI?.version==='11.12',{timeout:20000});
+          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true,{timeout:60000});
+          await page.waitForTimeout(1200);
+          const before=await page.evaluate(()=>{
+            const r=id=>document.getElementById(id)?.getBoundingClientRect();
+            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
+            return {
+              menuDisplay:getComputedStyle(document.getElementById('menu')).display,
+              hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+              logoTop:document.querySelector('.logo')?.getBoundingClientRect().top??0,
+              preview:window.__V1112_UI?.previewActive,
+              sceneMeshes:scene?.meshes?.length||0,
+              menuBackground:getComputedStyle(document.getElementById('menu')).backgroundImage,
+              statsWidth:r('stats')?.width||999,
+              missionWidth:r('mission')?.width||999,
+              soundWidth:r('soundToggle')?.width||999,
+              clockWidth:r('clock')?.width||999
+            };
+          });
+          if(before.menuDisplay==='none'||before.hudVisibility!=='hidden')throw new Error('Start screen state wrong '+JSON.stringify(before));
+          if(!before.preview||before.sceneMeshes<50)throw new Error('Live 3D preview missing '+JSON.stringify(before));
+          if(before.logoTop<300)throw new Error('Menu still covers too much of mobile scene '+JSON.stringify(before));
+          await page.screenshot({path:'v1112-start.png',fullPage:true});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&document.body.classList.contains('game-started'),{timeout:60000});
+          await page.waitForTimeout(1000);
+          const after=await page.evaluate(()=>{
+            const r=id=>document.getElementById(id)?.getBoundingClientRect();
+            return {
+              statsWidth:r('stats')?.width||999,
+              missionWidth:r('mission')?.width||999,
+              soundWidth:r('soundToggle')?.width||999,
+              clockWidth:r('clock')?.width||999,
+              hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+              preview:window.__V1112_UI?.previewActive,
+              errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+              errorText:document.getElementById('errorBox')?.textContent||''
+            };
+          });
+          if(after.statsWidth>190||after.missionWidth>190||after.soundWidth>40||after.clockWidth>100)throw new Error('Mobile HUD still crowded '+JSON.stringify(after));
+          if(after.hudVisibility==='hidden'||after.preview)throw new Error('Post-start UI state wrong '+JSON.stringify(after));
+          if(after.errorVisible)throw new Error('Runtime errorBox: '+after.errorText);
+          if(errors.length)throw new Error(errors.join('\n'));
+          await page.screenshot({path:'v1112-game.png',fullPage:true});
+          console.log('V11.12 mobile UI passed',{before,after});
+          await browser.close();
+          EOF
+          node v1112-ui.mjs
+      - name: Upload V11.12 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1112-mobile-ui-screenshots
+          path: |
+            v1112-start.png
+            v1112-game.png
+          if-no-files-found: ignore
