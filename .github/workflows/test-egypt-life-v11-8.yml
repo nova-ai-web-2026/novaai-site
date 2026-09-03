@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.10 Actual SFX
+name: Test Egyptian Life Simulator V11.12 Mobile SFX
 
 on:
   pull_request:
@@ -8,29 +8,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  v1110-actual-sfx:
+  v1112-mobile-sfx:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.10 actual SFX files
+      - name: Validate V11.12 SFX files
         run: |
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          test -s egypt-life-sim-v2/AUDIO-CREDITS.md
+          test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
+          test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
+          test -s egypt-life-sim-v2/audio/v11-8/interact.wav
+          test -s egypt-life-sim-v2/audio/v11-8/buy_coin.wav
+          test -s egypt-life-sim-v2/audio/v11-8/door.wav
+          test -s egypt-life-sim-v2/audio/v11-8/reward.wav
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          node --check egypt-life-sim-v2/game-v11-8-sfx.js
-          node --check egypt-life-sim-v2/game-v11-6-runtime.js
-          node --check egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "game-v11-6-runtime.js?v=11.10" egypt-life-sim-v2/index.html
-          grep -Fq "game-v11-8-sfx.js?v=11.10" egypt-life-sim-v2/index.html
-          grep -Fq "game-v11-10-actual-sfx.js?v=11.10" egypt-life-sim-v2/index.html
-          grep -Fq "game-v8-layout.js?v=11.10" egypt-life-sim-v2/index.html
-          grep -Fq "actual-cc0-sampled-sfx" egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          grep -Fq "remoteSamplePrimary:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          grep -Fq "proceduralFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          grep -Fq "45df48c4d45f8716216b1a9e22df0b69cd9f5932" egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          grep -Fq "release:'11.10'" egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "CC0 1.0" egypt-life-sim-v2/AUDIO-CREDITS.md
+          grep -Fq "game-v11-10-actual-sfx.js?v=11.12" egypt-life-sim-v2/index.html
+          grep -Fq "const VERSION='11.12'" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "sameOriginFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "localWavFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "audio/v11-8/step_pavement.wav" egypt-life-sim-v2/game-v11-10-actual-sfx.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -38,70 +35,76 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start game server
         run: |
-          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1110-server.log 2>&1 &
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1112-server.log 2>&1 &
           sleep 2
-      - name: Verify actual samples on mobile WebAudio
+      - name: Verify remote actual samples
         run: |
-          cat > v1110-actual.mjs <<'EOF'
+          cat > v1112-remote.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];
-          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/?ci=v1110-actual',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V119_READY===true&&window.__V1110_SFX?.version==='11.10'&&!!window.__V1110_SFX_API,{timeout:55000});
+          const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1112-remote',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1112_SFX?.version==='11.12'&&!!window.__V1112_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V119_CONTEXT?.state==='running',{timeout:12000});
-          await page.evaluate(()=>window.__V1110_SFX_API.unlock());
-          await page.waitForFunction(()=>{
-            const s=window.__V1110_SFX_API?.state?.();
-            return s?.bankReady===true&&s.sampleLoaded+s.sampleFailed===s.sampleTotal;
-          },{timeout:25000});
-
-          const loaded=await page.evaluate(()=>window.__V1110_SFX_API.state());
-          if(loaded.sampleTotal!==17||loaded.sampleLoaded!==17||loaded.sampleFailed!==0)throw new Error('Actual sample preload incomplete '+JSON.stringify(loaded));
-          if(loaded.actualSamples!==true||loaded.remoteSamplePrimary!==true||loaded.proceduralFallback!==true)throw new Error('Wrong V11.10 engine '+JSON.stringify(loaded));
-          if(loaded.proceduralBusMuted!==true)throw new Error('Procedural V11.9 bus not muted '+JSON.stringify(loaded));
-
-          const metrics=await page.evaluate(()=>window.__V1110_SFX_API.bufferMetrics());
-          const expected={step_pavement:4,step_asphalt:4,interact:2,buy:2,door:2,reward:2,deny:1};
-          for(const [key,count] of Object.entries(expected)){
-            if((metrics[key]?.length||0)!==count)throw new Error('Wrong actual sample count '+key+' '+JSON.stringify(metrics[key]));
-            for(const m of metrics[key])if(m.duration<=0||m.rms<.001||m.peak<.005)throw new Error('Silent/invalid actual sample '+key+' '+JSON.stringify(m));
-          }
-
-          async function verifyPlay(name){
-            const before=await page.evaluate(()=>window.__V1110_SFX_API.state().playResolved);
-            await page.evaluate(n=>window.__V1110_SFX_API.play(n),name);
-            await page.waitForFunction(before=>window.__V1110_SFX_API.state().playResolved>before,before,{timeout:3000});
-            const out=await page.evaluate(()=>window.__V1110_SFX_API.state().lastPlayed);
-            if(out?.transport!=='actual-sample')throw new Error('Fallback used for '+name+' '+JSON.stringify(out));
-            return out;
-          }
-
-          const plays={};
-          for(const name of ['interact','buy','door','reward','deny','step','asphalt'])plays[name]=await verifyPlay(name);
-
-          const probe=await page.evaluate(async()=>{
-            window.__V1110_SFX_API.play('door');
-            const a=window.__V1110_SFX_ANALYSER,n=a?.fftSize||0,d=n?new Uint8Array(n):null;
-            let bestRms=0,bestPeak=0;
-            for(let j=0;j<30;j++){
-              await new Promise(r=>setTimeout(r,4));
-              if(!a||!d)continue;a.getByteTimeDomainData(d);let sum=0,peak=0;
-              for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-              bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);
-            }
-            return {bestRms,bestPeak,last:window.__V1110_SFX_API.state().lastPlayed};
-          });
-          if(probe.last?.transport!=='actual-sample'||probe.bestRms<.0008||probe.bestPeak<.003)throw new Error('No measurable actual SFX graph output '+JSON.stringify(probe));
-
-          const finalState=await page.evaluate(()=>window.__V1110_SFX_API.state());
-          if(finalState.playRejected!==0||finalState.playResolved<8)throw new Error('Actual SFX playback unhealthy '+JSON.stringify(finalState));
-          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          await page.evaluate(()=>window.__V1112_SFX_API.unlock());
+          await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.localReady&&s.localLoaded===7;},{timeout:12000});
+          await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.bankReady&&s.sampleLoaded+s.sampleFailed===s.sampleTotal;},{timeout:25000});
+          const state=await page.evaluate(()=>window.__V1112_SFX_API.state());
+          if(state.sampleLoaded!==17||state.sampleFailed!==0)throw new Error('Remote actual samples incomplete '+JSON.stringify(state));
+          await page.evaluate(()=>window.__V1112_SFX_API.play('buy'));
+          await page.waitForFunction(()=>window.__V1112_SFX_API.state().lastPlayed?.key==='buy');
+          const last=await page.evaluate(()=>window.__V1112_SFX_API.state().lastPlayed);
+          if(last.transport!=='actual-sample')throw new Error('Remote primary not used '+JSON.stringify(last));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.10 actual SFX passed',{loaded,metrics,plays,probe,finalState});
           await browser.close();
           EOF
-          node v1110-actual.mjs
+          node v1112-remote.mjs
+      - name: Verify same-origin fallback with remote blocked
+        run: |
+          cat > v1112-local.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('remote preload'))errors.push('console: '+m.text());});
+          await page.route('https://raw.githubusercontent.com/**',route=>route.abort());
+          await page.goto('http://127.0.0.1:4173/?ci=v1112-local',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1112_SFX?.version==='11.12'&&!!window.__V1112_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V119_CONTEXT?.state==='running',{timeout:12000});
+          await page.evaluate(()=>window.__V1112_SFX_API.unlock());
+          await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.localReady&&s.localLoaded===7&&s.localFailed===0;},{timeout:12000});
+          const localMetrics=await page.evaluate(()=>window.__V1112_SFX_API.localBufferMetrics());
+          for(const [key,list] of Object.entries(localMetrics)){
+            if(!list.length)throw new Error('Missing local bank '+key);
+            for(const m of list)if(m.duration<=0||m.rms<.001||m.peak<.004)throw new Error('Silent local sample '+key+' '+JSON.stringify(m));
+          }
+          async function probe(name){
+            return await page.evaluate(async name=>{
+              const before=window.__V1112_SFX_API.state().playResolved;
+              window.__V1112_SFX_API.play(name);
+              const a=window.__V1112_SFX_ANALYSER,n=a.fftSize,d=new Uint8Array(n);let bestRms=0,bestPeak=0;
+              for(let i=0;i<55;i++){
+                await new Promise(r=>setTimeout(r,5));a.getByteTimeDomainData(d);let sum=0,peak=0;
+                for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+                bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);
+              }
+              return {before,after:window.__V1112_SFX_API.state().playResolved,last:window.__V1112_SFX_API.state().lastPlayed,bestRms,bestPeak};
+            },name);
+          }
+          const results={};
+          for(const name of ['step','asphalt','interact','buy','door','reward','deny']){
+            const r=results[name]=await probe(name);
+            if(r.after<=r.before)throw new Error('No playback resolved for '+name+' '+JSON.stringify(r));
+            if(r.last?.transport!=='same-origin-local-sample')throw new Error('Wrong fallback transport for '+name+' '+JSON.stringify(r));
+            if(r.bestRms<.0007||r.bestPeak<.0025)throw new Error('No local waveform for '+name+' '+JSON.stringify(r));
+          }
+          const state=await page.evaluate(()=>window.__V1112_SFX_API.state());
+          if(state.activeTransport!=='same-origin-local-sample')throw new Error('Local transport not active '+JSON.stringify(state));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.12 remote-blocked local SFX passed',{state,results});
+          await browser.close();
+          EOF
+          node v1112-local.mjs
