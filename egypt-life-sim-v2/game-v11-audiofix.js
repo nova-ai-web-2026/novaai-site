@@ -6,9 +6,14 @@
     const s=document.createElement('script');s.src='game-v11-11-egypt-details.js?v=11.11';s.dataset.egyptV1111Details='true';s.async=false;s.onerror=()=>console.error('V11.11 Egyptian details failed to load');document.body.appendChild(s);
   }
 
+  function loadV1114Local(){
+    if(document.querySelector('script[data-egypt-v1114-sfx]'))return;
+    const s=document.createElement('script');s.src='game-v11-14-local-sfx.js?v=11.14';s.dataset.egyptV1114Sfx='true';s.async=false;s.onerror=()=>console.error('V11.14 local SFX failed to load');document.body.appendChild(s);
+  }
+
   function loadV1110Actual(){
-    if(document.querySelector('script[data-egypt-v1110-sfx]'))return;
-    const s=document.createElement('script');s.src='game-v11-10-actual-sfx.js?v=11.10';s.dataset.egyptV1110Sfx='true';s.async=false;s.onerror=()=>console.error('V11.10 actual SFX failed to load');document.body.appendChild(s);
+    if(document.querySelector('script[data-egypt-v1110-sfx]')){loadV1114Local();return;}
+    const s=document.createElement('script');s.src='game-v11-10-actual-sfx.js?v=11.10';s.dataset.egyptV1110Sfx='true';s.async=false;s.onload=loadV1114Local;s.onerror=()=>{console.error('V11.10 actual SFX failed to load');loadV1114Local();};document.body.appendChild(s);
   }
 
   function loadV119Sfx(){
@@ -23,7 +28,7 @@
 
   document.getElementById('v113-startup-style')?.remove();document.body.classList.remove('v113-menu-open');document.getElementById('v115SoundTest')?.remove();
 
-  window.__V11_AUDIOFIX={version:14,release:'11.10',visualRelease:'11.11',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,actualSamples:true,remoteSamplePrimary:true,proceduralFallback:true,v1111EgyptDetails:true,additiveVisualLayer:true};
+  window.__V11_AUDIOFIX={version:15,release:'11.14',visualRelease:'11.13',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,v1114LocalSfx:true,sameOriginSfxPrimary:true,remoteRequired:false,proceduralFallback:true,v1111EgyptDetails:true,additiveVisualLayer:true};
   if(window.__egyptDebug)window.__egyptDebug.v11AudioFixState=()=>({...window.__V11_AUDIOFIX});
   loadV1111Details();
   loadRuntime();
