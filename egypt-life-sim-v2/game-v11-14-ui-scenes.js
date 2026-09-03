@@ -3,7 +3,9 @@
 
   const MOBILE='(max-width: 760px)';
   const HOME={x:-150,z:-150};
-  let locationChip=null,lastLocation='';
+  const HOME_DOOR={x:-150,z:-143.15};
+  const STREET_DOOR={x:-96,z:-82.2};
+  let locationChip=null,lastLocation='',safeStreetDoor=null;
 
   function installStyles(){
     if(document.getElementById('v1114-ui-style'))return;
@@ -66,6 +68,7 @@
   function cameraPoint(){
     try{return window.__egyptDebug?.getCamera?.()||null;}catch(_){return null;}
   }
+  const distance=(a,b)=>a&&b?Math.hypot(a.x-b.x,a.z-b.z):999;
   function locationFor(cam){
     if(!cam)return 'الحارة';
     if(Math.hypot(cam.x-HOME.x,cam.z-HOME.z)<18)return 'البيت';
@@ -78,13 +81,68 @@
     const name=locationFor(cam);if(name===lastLocation)return;lastLocation=name;chip.textContent='📍 '+name;
   }
 
+  function activeScene(){return window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]||null;}
+  function pointBlocked(scene,x,z,r=.44){
+    for(const mesh of scene?.meshes||[]){
+      if(!mesh?.checkCollisions||mesh.isEnabled?.()===false||!mesh.getBoundingInfo)continue;
+      try{
+        mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;
+        if(max.y<.12||min.y>2.45)continue;
+        if(x+r>min.x&&x-r<max.x&&z+r>min.z&&z-r<max.z)return mesh.name||'collision';
+      }catch(_){}
+    }
+    return null;
+  }
+  function nearestBaseBuilding(scene,x,z){
+    let best=Infinity;
+    for(const mesh of scene?.meshes||[]){
+      if(mesh?.name!=='building'||!mesh.getBoundingInfo)continue;
+      try{
+        mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;
+        const dx=Math.max(min.x-x,0,x-max.x),dz=Math.max(min.z-z,0,z-max.z);best=Math.min(best,Math.hypot(dx,dz));
+      }catch(_){}
+    }
+    return Number.isFinite(best)?best:99;
+  }
+  function resolveSafeStreetDoor(){
+    const scene=activeScene();if(!scene)return null;
+    const candidates=[[0,2.45],[0,2.2],[0,-2.45],[2.2,0],[-2.2,0],[1.55,1.55],[-1.55,1.55],[1.55,-1.55],[-1.55,-1.55],[0,1.8]];
+    for(const [dx,dz] of candidates){
+      const x=STREET_DOOR.x+dx,z=STREET_DOOR.z+dz;
+      if(!pointBlocked(scene,x,z)&&nearestBaseBuilding(scene,x,z)>.45)return {x,z};
+    }
+    return null;
+  }
+  function rewriteToast(text){
+    const t=document.getElementById('toast');if(!t)return;t.textContent=text;t.classList.add('show');
+  }
+  function normalizeDoorExit(){
+    const cam=cameraPoint();if(!cam||distance(cam,STREET_DOOR)>1.15)return false;
+    const safe=safeStreetDoor||resolveSafeStreetDoor();if(!safe)return false;safeStreetDoor=safe;
+    try{
+      window.__egyptDebug?.v12Teleport?.(safe.x,safe.z);rewriteToast('نزلت للشارع 🇪🇬');
+      window.__V1114_UI={...window.__V1114_UI,safeStreetDoor:{x:+safe.x.toFixed(2),z:+safe.z.toFixed(2)},doorTransitionRepaired:true};
+      return true;
+    }catch(_){return false;}
+  }
+  function installDoorRepair(){
+    if(window.__V1114_DOOR_REPAIR)return;
+    const original=window.__V12_INTERACT_DOOR;if(typeof original!=='function')return;
+    safeStreetDoor=resolveSafeStreetDoor();
+    window.__V12_INTERACT_DOOR=()=>{const result=original();normalizeDoorExit();return result;};
+    const afterInput=()=>setTimeout(normalizeDoorExit,0);
+    window.addEventListener('keydown',e=>{if(e.key==='e'||e.key==='E')afterInput();});
+    document.getElementById('act')?.addEventListener('click',afterInput);
+    window.__V1114_DOOR_REPAIR=true;
+  }
+
   function stabilizeSceneUI(){
-    installStyles();ensureLocationChip();
+    installStyles();ensureLocationChip();installDoorRepair();
     const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V12.1';
     const foot=document.querySelector('.menuFoot');if(foot)foot.textContent='V12.1 — Mobile HUD + scene UI polish';
-    const timer=setInterval(updateLocation,180);updateLocation();
+    const timer=setInterval(()=>{updateLocation();if(!window.__V1114_DOOR_REPAIR)installDoorRepair();},180);updateLocation();
     window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
-    window.__V1114_UI={version:'11.14',release:'12.1',ready:true,mobileHud:'single-row-stats',missionNoOverlap:true,locationAware:true,scenes:['المقدمة','البيت','الحارة','منطقة المحطة','منطقة السوق'],audioTouched:false};
+    window.__V1114_UI={version:'11.14',release:'12.1',ready:true,mobileHud:'single-row-stats',missionNoOverlap:true,locationAware:true,scenes:['المقدمة','البيت','الحارة','منطقة المحطة','منطقة السوق'],audioTouched:false,doorTransitionRepaired:!!window.__V1114_DOOR_REPAIR,safeStreetDoor:safeStreetDoor?{x:+safeStreetDoor.x.toFixed(2),z:+safeStreetDoor.z.toFixed(2)}:null};
     window.__egyptDebug=window.__egyptDebug||{};
     window.__egyptDebug.v1114UiState=()=>({...window.__V1114_UI,location:lastLocation,mobile:matchMedia(MOBILE).matches});
   }
