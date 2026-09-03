@@ -25,6 +25,7 @@ jobs:
           grep -Fq "openWorld:true" egypt-life-sim-v2/game-v12-world.js
           grep -Fq "startsAtHome:true" egypt-life-sim-v2/game-v12-world.js
           grep -Fq "Greater Cairo mixed-use residential street cues" egypt-life-sim-v2/game-v12-world.js
+          grep -Fq "#v12Skip{display:none!important}" egypt-life-sim-v2/game-v11-11-egypt-details.js
       - name: Install browser
         run: |
           npm init -y >/dev/null 2>&1
@@ -53,13 +54,12 @@ jobs:
           await page.screenshot({path:'v12-menu.png',fullPage:true});
           await page.click('#newGameBtn');
           await page.waitForFunction(()=>document.getElementById('v12Prologue')?.classList.contains('active'),{timeout:5000});
-          const prologue=await page.evaluate(()=>({state:window.__V12_PROLOGUE,menu:getComputedStyle(document.getElementById('menu')).display,overlay:getComputedStyle(document.getElementById('v12Prologue')).display}));
-          if(!prologue.state.ready||prologue.overlay==='none')throw new Error('Prologue did not start '+JSON.stringify(prologue));
-          await page.evaluate(()=>document.getElementById('v12Skip')?.click());
+          const prologue=await page.evaluate(()=>({state:window.__V12_PROLOGUE,menu:getComputedStyle(document.getElementById('menu')).display,overlay:getComputedStyle(document.getElementById('v12Prologue')).display,skip:getComputedStyle(document.getElementById('v12Skip')).display}));
+          if(!prologue.state.ready||prologue.overlay==='none'||prologue.skip!=='none')throw new Error('Prologue did not start cleanly '+JSON.stringify(prologue));
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V12_PROLOGUE?.played===true,{timeout:10000});
           await page.waitForTimeout(250);
           const atHome=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),home:window.__V12_HOME,menu:getComputedStyle(document.getElementById('menu')).display,error:getComputedStyle(document.getElementById('errorBox')).display}));
-          if(Math.hypot(atHome.cam.x-atHome.home.spawn.x,atHome.cam.z-atHome.home.spawn.z)>2.5)throw new Error('Did not start inside home '+JSON.stringify(atHome));
+          if(Math.hypot(atHome.cam.x-atHome.home.spawn.x,atHome.cam.z-atHome.home.spawn.z)>1)throw new Error('Did not start inside home '+JSON.stringify(atHome));
           if(atHome.menu!=='none'||atHome.error!=='none')throw new Error('Post-prologue UI error '+JSON.stringify(atHome));
           await page.screenshot({path:'v12-home.png',fullPage:true});
           await page.evaluate(()=>{const d=window.__V12_HOME.door;window.__egyptDebug.v12Teleport(d.x,d.z);window.__V12_INTERACT_DOOR();});
