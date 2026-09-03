@@ -63,16 +63,22 @@ jobs:
           if(atHome.menu!=='none'||atHome.error!=='none')throw new Error('Post-prologue UI error '+JSON.stringify(atHome));
           await page.screenshot({path:'v12-home.png',fullPage:true});
           await page.evaluate(()=>{const d=window.__V12_HOME.door;window.__egyptDebug.v12Teleport(d.x,d.z);window.__V12_INTERACT_DOOR();});
-          await page.waitForTimeout(120);
-          const street=await page.evaluate(()=>window.__egyptDebug.getCamera());
-          if(Math.hypot(street.x+96,street.z+82.2)>3)throw new Error('Home exit failed '+JSON.stringify(street));
+          await page.waitForTimeout(180);
+          const street=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),ui:window.__V1114_UI||null,location:document.getElementById('v1114Location')?.textContent||''}));
+          if(street.ui?.ready){
+            const safe=street.ui.safeStreetDoor;if(!street.ui.doorTransitionRepaired||!safe)throw new Error('V11.14 door repair missing '+JSON.stringify(street));
+            if(Math.hypot(street.cam.x-safe.x,street.cam.z-safe.z)>1.2)throw new Error('Home exit did not land at repaired street door '+JSON.stringify(street));
+            if(Math.hypot(street.cam.x+96,street.cam.z+82.2)>3.2)throw new Error('Repaired exit moved too far from home street door '+JSON.stringify(street));
+          }else if(Math.hypot(street.cam.x+96,street.cam.z+82.2)>3){
+            throw new Error('Home exit failed '+JSON.stringify(street));
+          }
           await page.evaluate(()=>window.__egyptDebug.v12Teleport(142,120));
           await page.waitForTimeout(200);
           const district=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),v12Meshes:BABYLON.Engine.LastCreatedEngine.scenes[0].meshes.filter(m=>m.name.startsWith('v12_')).length,buildings:BABYLON.Engine.LastCreatedEngine.scenes[0].meshes.filter(m=>m.name.startsWith('v12_building_')).length,error:getComputedStyle(document.getElementById('errorBox')).display}));
           if(district.cam.x<135||district.v12Meshes<300||district.buildings<24||district.error!=='none')throw new Error('Expanded district failed '+JSON.stringify(district));
           await page.screenshot({path:'v12-district.png',fullPage:true});
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V12 open-world test passed',{score:world.authenticity.score,counters:c,district});
+          console.log('V12 open-world test passed',{score:world.authenticity.score,counters:c,street,district});
           await browser.close();
           EOF
           node v12-smoke.mjs
