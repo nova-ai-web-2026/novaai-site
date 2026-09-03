@@ -76,6 +76,7 @@ jobs:
           await page.evaluate(()=>window.__V1112_SFX_API.unlock());
           await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.localReady&&s.localLoaded===7&&s.localFailed===0;},{timeout:12000});
           const localMetrics=await page.evaluate(()=>window.__V1112_SFX_API.localBufferMetrics());
+          console.log('V11.12 local metrics',JSON.stringify(localMetrics));
           for(const [key,list] of Object.entries(localMetrics)){
             if(!list.length)throw new Error('Missing local bank '+key);
             for(const m of list)if(m.duration<=0||m.rms<.001||m.peak<.004)throw new Error('Silent local sample '+key+' '+JSON.stringify(m));
