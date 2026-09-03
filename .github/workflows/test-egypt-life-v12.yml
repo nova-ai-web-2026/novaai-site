@@ -51,23 +51,34 @@ jobs:
           await page.screenshot({path:'v12-shots/menu.png'});
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('v12-intro'),{timeout:20000});
-          await page.waitForTimeout(700);
-          const introCam=await page.evaluate(()=>window.__egyptDebug.v12WorldState().activeCamera);
+          await page.waitForTimeout(450);
+          let introCam=await page.evaluate(()=>window.__egyptDebug.v12WorldState().activeCamera);
           if(introCam!=='v12_intro_camera')throw new Error('Intro camera did not activate: '+introCam);
-          await page.screenshot({path:'v12-shots/intro.png'});
+          await page.screenshot({path:'v12-shots/intro-early.png'});
+          await page.waitForTimeout(1650);
+          await page.screenshot({path:'v12-shots/intro-market.png'});
+          await page.waitForTimeout(1450);
+          await page.screenshot({path:'v12-shots/intro-home-approach.png'});
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&!document.body.classList.contains('v12-intro')&&getComputedStyle(document.getElementById('menu')).display==='none',{timeout:14000});
           await page.waitForTimeout(250);
           const started=await page.evaluate(()=>window.__egyptDebug.v12WorldState());
           if(Math.hypot(started.camera.x-started.home.spawnX,started.camera.z-started.home.spawnZ)>4)throw new Error('Player did not start at family home '+JSON.stringify(started));
           if(started.activeCamera!=='player')throw new Error('Player camera not restored '+started.activeCamera);
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
-          await page.screenshot({path:'v12-shots/home.png'});
-          await page.evaluate(()=>window.__egyptDebug.v12Teleport(144,62));
-          await page.waitForTimeout(250);await page.screenshot({path:'v12-shots/east-market.png'});
-          await page.evaluate(()=>window.__egyptDebug.v12Teleport(-144,-24));
-          await page.waitForTimeout(250);await page.screenshot({path:'v12-shots/west-residential.png'});
-          await page.evaluate(()=>window.__egyptDebug.v12Teleport(0,145));
-          await page.waitForTimeout(250);await page.screenshot({path:'v12-shots/north-workshops.png'});
+
+          const frame=async(name,pos,target)=>{
+            await page.evaluate(({pos,target})=>{
+              const B=window.BABYLON,scene=B.Engine.LastCreatedEngine.scenes[0],cam=scene.getCameraByName('player');
+              cam.position.set(pos[0],pos[1],pos[2]);cam.setTarget(new B.Vector3(target[0],target[1],target[2]));
+              const hud=document.getElementById('hud');if(hud)hud.style.visibility='hidden';
+            },{pos,target});
+            await page.waitForTimeout(350);
+            await page.screenshot({path:`v12-shots/${name}.png`});
+          };
+          await frame('home-interior',[-164,1.72,-159.5],[-164,1.35,-168]);
+          await frame('east-market',[144,1.72,86],[142,1.8,59]);
+          await frame('west-residential',[-144,1.72,-101],[-144,5,-40]);
+          await frame('north-workshops',[0,1.72,104],[0,1.8,119]);
           if(errors.length)throw new Error(errors.join('\n'));
           console.log('V12 open-world + Egypt authenticity passed',world.authenticity);
           await browser.close();
