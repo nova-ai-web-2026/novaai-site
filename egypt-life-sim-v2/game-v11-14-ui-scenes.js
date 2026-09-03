@@ -137,15 +137,19 @@
     window.__V1114_DOOR_REPAIR=true;
   }
 
-  function stabilizeSceneUI(){
-    installStyles();ensureLocationChip();installDoorRepair();
-    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V12.1';
-    const foot=document.querySelector('.menuFoot');if(foot)foot.textContent='V12.1 — Mobile HUD + scene UI polish';
-    const timer=setInterval(()=>{updateLocation();if(!window.__V1114_DOOR_REPAIR)installDoorRepair();},180);updateLocation();
-    window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
-    window.__V1114_UI={version:'11.14',release:'12.1',ready:true,mobileHud:'single-row-stats',missionNoOverlap:true,locationAware:true,scenes:['المقدمة','البيت','الحارة','منطقة المحطة','منطقة السوق'],audioTouched:false,doorTransitionRepaired:!!window.__V1114_DOOR_REPAIR,safeStreetDoor:safeStreetDoor?{x:+safeStreetDoor.x.toFixed(2),z:+safeStreetDoor.z.toFixed(2)}:null};
+  function installDebugHook(){
     window.__egyptDebug=window.__egyptDebug||{};
     window.__egyptDebug.v1114UiState=()=>({...window.__V1114_UI,location:lastLocation,mobile:matchMedia(MOBILE).matches});
+  }
+
+  function stabilizeSceneUI(){
+    installStyles();ensureLocationChip();installDoorRepair();installDebugHook();
+    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent='HAYAT MASR • V12.1';
+    const foot=document.querySelector('.menuFoot');if(foot)foot.textContent='V12.1 — Mobile HUD + scene UI polish';
+    const timer=setInterval(()=>{installDebugHook();updateLocation();if(!window.__V1114_DOOR_REPAIR)installDoorRepair();},180);updateLocation();
+    window.addEventListener('beforeunload',()=>clearInterval(timer),{once:true});
+    window.__V1114_UI={version:'11.14',release:'12.1',ready:true,mobileHud:'single-row-stats',missionNoOverlap:true,locationAware:true,scenes:['المقدمة','البيت','الحارة','منطقة المحطة','منطقة السوق'],audioTouched:false,doorTransitionRepaired:!!window.__V1114_DOOR_REPAIR,safeStreetDoor:safeStreetDoor?{x:+safeStreetDoor.x.toFixed(2),z:+safeStreetDoor.z.toFixed(2)}:null};
+    installDebugHook();
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',stabilizeSceneUI,{once:true});else stabilizeSceneUI();
