@@ -47,6 +47,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-8-sfx.js
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
+          test -s egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
           test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
           test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
           test -s egypt-life-sim-v2/audio/v11-8/interact.wav
@@ -60,16 +61,21 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
+          node --check egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
           grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-10-actual-sfx.js?v=11.12' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-audiofix.js?v=11.9&visual=11.11' egypt-life-sim-v2/game-v8-layout.js
           grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'game-v11-12-sfx-outputfix.js?v=11.12' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "const VERSION='11.12'" egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'remoteSamplePrimary:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'sameOriginFallback:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'localWavFallback:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq 'directDestination:routed' egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
+          grep -Fq 'independentFromAmbientMaster:true' egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
+          grep -Fq 'directSfxDestination:true' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'proceduralFallback:true' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq 'audio/v11-8/step_pavement.wav' egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq '45df48c4d45f8716216b1a9e22df0b69cd9f5932' egypt-life-sim-v2/game-v11-10-actual-sfx.js
