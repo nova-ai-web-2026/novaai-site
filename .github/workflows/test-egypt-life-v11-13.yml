@@ -1,0 +1,132 @@
+name: Test Egyptian Life Simulator V11.13 HUD
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-13.yml'
+  workflow_dispatch:
+
+jobs:
+  mobile-hud-spawn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.13 files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-13-hud.js
+          node --check egypt-life-sim-v2/game-v11-13-hud.js
+          grep -Fq 'game-v11-13-hud.js?v=11.13' egypt-life-sim-v2/index.html
+          grep -Fq 'HAYAT MASR • V11.13' egypt-life-sim-v2/index.html
+          grep -Fq "body.game-started #hud" egypt-life-sim-v2/game-v11-13-hud.js
+          grep -Fq "spawnRepaired" egypt-life-sim-v2/game-v11-13-hud.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1113-server.log 2>&1 &
+          sleep 2
+      - name: Verify visible HUD and clear street spawn
+        run: |
+          cat > v1113-ui.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+
+          async function inspectGame(page,label){
+            await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&window.__V1113_HUD?.gameStarted===true,{timeout:60000});
+            await page.waitForTimeout(900);
+            const result=await page.evaluate(()=>{
+              const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
+              const cam=scene?.activeCamera;
+              const viewport={w:innerWidth,h:innerHeight};
+              const visible=id=>{
+                const el=document.getElementById(id);if(!el)return {id,ok:false,missing:true};
+                const s=getComputedStyle(el),r=el.getBoundingClientRect();
+                const ok=s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.01&&r.width>1&&r.height>1&&r.right>0&&r.bottom>0&&r.left<viewport.w&&r.top<viewport.h;
+                return {id,ok,display:s.display,visibility:s.visibility,opacity:s.opacity,x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};
+              };
+              const pointBlocked=(x,z,r=.52)=>{
+                for(const mesh of scene?.meshes||[]){
+                  if(!mesh?.checkCollisions||mesh.isEnabled?.()===false||!mesh.getBoundingInfo)continue;
+                  mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;
+                  if(max.y<.12||min.y>2.45)continue;
+                  if(x+r>min.x&&x-r<max.x&&z+r>min.z&&z-r<max.z)return mesh.name;
+                }
+                return null;
+              };
+              let nearest=Infinity;
+              for(const mesh of scene?.meshes||[]){
+                if(mesh?.name!=='building'||!mesh.getBoundingInfo||!cam)continue;
+                mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;
+                const dx=Math.max(min.x-cam.position.x,0,cam.position.x-max.x),dz=Math.max(min.z-cam.position.z,0,cam.position.z-max.z);nearest=Math.min(nearest,Math.hypot(dx,dz));
+              }
+              const ids=['stats','clock','mission','soundToggle','mapWrap','joy','run','act'];
+              const boxes=ids.map(visible);
+              const hud=document.getElementById('hud'),hs=getComputedStyle(hud);
+              return {
+                boxes,
+                hud:{visibility:hs.visibility,opacity:hs.opacity,data:hud.dataset.v1113Visible||null},
+                marker:window.__V1113_HUD,
+                camera:cam?{x:cam.position.x,y:cam.position.y,z:cam.position.z}:null,
+                blocked:cam?pointBlocked(cam.position.x,cam.position.z):'no-camera',
+                nearestBuilding:Number.isFinite(nearest)?nearest:null,
+                sceneMeshes:scene?.meshes?.length||0,
+                activeMeshes:scene?.getActiveMeshes?.().length||0,
+                canvas:{w:document.getElementById('game')?.getBoundingClientRect().width||0,h:document.getElementById('game')?.getBoundingClientRect().height||0},
+                errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+                errorText:document.getElementById('errorBox')?.textContent||''
+              };
+            });
+            if(result.hud.visibility==='hidden'||Number(result.hud.opacity)<.9||result.hud.data!=='true')throw new Error(label+' HUD not actually visible '+JSON.stringify(result));
+            for(const b of result.boxes)if(!b.ok)throw new Error(label+' HUD element not visible/in viewport '+JSON.stringify(b));
+            if(result.blocked)throw new Error(label+' camera still inside collision '+JSON.stringify(result));
+            if(result.nearestBuilding!==null&&result.nearestBuilding<.75)throw new Error(label+' camera too close to building '+JSON.stringify(result));
+            if(result.sceneMeshes<50||result.activeMeshes<5||result.canvas.w<380||result.canvas.h<830)throw new Error(label+' 3D scene not healthy '+JSON.stringify(result));
+            if(result.errorVisible)throw new Error(label+' runtime errorBox '+result.errorText);
+            return result;
+          }
+
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1113-new',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true&&window.__V1113_HUD?.installed===true,{timeout:60000});
+          const before=await page.evaluate(()=>({menu:getComputedStyle(document.getElementById('menu')).display,hud:getComputedStyle(document.getElementById('hud')).visibility,preview:window.__V1112_UI?.previewActive,meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0}));
+          if(before.menu==='none'||before.hud!=='hidden'||!before.preview||before.meshes<50)throw new Error('Start screen unhealthy '+JSON.stringify(before));
+          await page.screenshot({path:'v1113-start.png',fullPage:true});
+          await page.tap('#newGameBtn');
+          const fresh=await inspectGame(page,'new-game');
+          await page.evaluate(()=>{const t=document.getElementById('toast');t.textContent='اختبار رسالة قصيرة';t.classList.add('show');});
+          const overlap=await page.evaluate(()=>{const a=document.getElementById('toast').getBoundingClientRect(),b=document.getElementById('mission').getBoundingClientRect();return !(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom);});
+          if(overlap)throw new Error('Toast still overlaps mission');
+          await page.screenshot({path:'v1113-game.png',fullPage:true});
+          if(errors.length)throw new Error(errors.join('\n'));
+
+          const old=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const oldErrors=[];old.on('pageerror',e=>oldErrors.push('pageerror: '+e.message));
+          await old.addInitScript(()=>localStorage.setItem('hayat-masr-v4',JSON.stringify({money:300,hunger:84,energy:92,mood:76,minute:500,day:1,task:0,worked:0,savedX:0,savedZ:0})));
+          await old.goto('http://127.0.0.1:4173/?ci=v1113-old-save',{waitUntil:'domcontentloaded'});
+          await old.waitForFunction(()=>window.__V1113_HUD?.installed===true&&window.__V119_READY===true,{timeout:60000});
+          await old.tap('#continueBtn');
+          const repaired=await inspectGame(old,'old-save');
+          if(!repaired.marker?.spawnRepaired)throw new Error('Blocked old save was not repaired '+JSON.stringify(repaired));
+          if(oldErrors.length)throw new Error(oldErrors.join('\n'));
+          await old.screenshot({path:'v1113-old-save.png',fullPage:true});
+
+          console.log('V11.13 HUD/spawn regression passed',{before,fresh,repaired});
+          await browser.close();
+          EOF
+          node v1113-ui.mjs
+      - name: Upload V11.13 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1113-hud-spawn-screenshots
+          path: |
+            v1113-start.png
+            v1113-game.png
+            v1113-old-save.png
+          if-no-files-found: ignore
