@@ -7,6 +7,12 @@
   const buttons=['newGameBtn','continueBtn'];
   let menuObserver=null,checkTimer=null,spawnTimer=null,lastReason='boot',spawnRepaired=false,lastBlockedBy=null,lastSpawn=null;
 
+  function syncCopy(){
+    const kicker=document.querySelector('.kicker'),foot=document.querySelector('.menuFoot');
+    if(kicker)kicker.textContent='HAYAT MASR • V11.13';
+    if(foot)foot.textContent='V11.13 — HUD + safe street spawn';
+  }
+
   function installStyle(){
     if(document.getElementById('v1113-hud-style'))return;
     const style=document.createElement('style');
@@ -90,6 +96,8 @@
     window.__V1113_HUD={
       version:VERSION,
       installed:true,
+      compactMobileHud:true,
+      safeSpawnGuard:true,
       menuHidden:menuHidden(),
       gameStarted:document.body.classList.contains('game-started'),
       hudVisibility:hud?getComputedStyle(hud).visibility:null,
@@ -115,7 +123,7 @@
   }
 
   function hook(){
-    installStyle();
+    installStyle();syncCopy();
     if(menu){
       menuObserver=new MutationObserver(()=>syncHud('menu-mutation'));
       menuObserver.observe(menu,{attributes:true,attributeFilter:['style','class','hidden']});
@@ -129,7 +137,7 @@
     }
     let checks=0;
     checkTimer=setInterval(()=>{
-      syncHud('watchdog');
+      syncCopy();syncHud('watchdog');
       if(document.body.classList.contains('game-started')&&repairSpawn('watchdog-spawn'))checks+=3;else checks++;
       if(checks>60){clearInterval(checkTimer);checkTimer=null;}
     },180);
