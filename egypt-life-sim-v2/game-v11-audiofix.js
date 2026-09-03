@@ -23,7 +23,7 @@
 
   document.getElementById('v113-startup-style')?.remove();document.body.classList.remove('v113-menu-open');document.getElementById('v115SoundTest')?.remove();
 
-  window.__V11_AUDIOFIX={version:14,release:'11.11',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,actualSamples:true,remoteSamplePrimary:true,proceduralFallback:true,v1111EgyptDetails:true,additiveVisualLayer:true};
+  window.__V11_AUDIOFIX={version:14,release:'11.10',visualRelease:'11.11',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,actualSamples:true,remoteSamplePrimary:true,proceduralFallback:true,v1111EgyptDetails:true,additiveVisualLayer:true};
   if(window.__egyptDebug)window.__egyptDebug.v11AudioFixState=()=>({...window.__V11_AUDIOFIX});
   loadV1111Details();
   loadRuntime();
