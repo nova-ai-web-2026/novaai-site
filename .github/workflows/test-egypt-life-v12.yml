@@ -1,0 +1,86 @@
+name: Test Egyptian Life Simulator V12 Open World
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v12.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v12-open-world:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V12 files
+        run: |
+          test -s egypt-life-sim-v2/game-v12-world.js
+          test -s egypt-life-sim-v2/game-v11-11-egypt-details-base.js
+          node --check egypt-life-sim-v2/game-v12-world.js
+          node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "game-v12-world.js?v=12" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "openWorld:true" egypt-life-sim-v2/game-v12-world.js
+          grep -Fq "startsAtHome:true" egypt-life-sim-v2/game-v12-world.js
+          grep -Fq "Greater Cairo mixed-use residential street cues" egypt-life-sim-v2/game-v12-world.js
+          grep -Fq "#v12Skip{display:none!important}" egypt-life-sim-v2/game-v11-11-egypt-details.js
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v12-server.log 2>&1 &
+          sleep 2
+      - name: Verify prologue home open world and Egypt cues
+        run: |
+          cat > v12-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v12',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V12_WORLD?.ready===true&&window.__V1111_DETAILS?.ready===true,{timeout:60000});
+          const world=await page.evaluate(()=>window.__egyptDebug.v12WorldState());
+          if(!world.openWorld||world.boundary<170||world.diameter<340)throw new Error('World expansion missing '+JSON.stringify(world));
+          if(!world.home?.ready||world.home.props<20)throw new Error('Home not complete '+JSON.stringify(world.home));
+          if(world.authenticity.score<92||world.authenticity.grade!=='strong')throw new Error('Egypt cue score too low '+JSON.stringify(world.authenticity));
+          const c=world.counters;
+          const mins={buildings:24,mixedUse:12,arabicSigns:14,microbuses:5,balconies:55,laundry:30,satelliteDishes:10,acUnits:35,utilityWires:15,narrowLanes:8,pedestrians:12,homeProps:20};
+          for(const [k,v] of Object.entries(mins))if((c[k]??0)<v)throw new Error(`Egypt cue ${k} ${c[k]} < ${v}`);
+          await page.screenshot({path:'v12-menu.png',fullPage:true});
+          await page.click('#newGameBtn');
+          await page.waitForFunction(()=>document.getElementById('v12Prologue')?.classList.contains('active'),{timeout:5000});
+          const prologue=await page.evaluate(()=>({state:window.__V12_PROLOGUE,menu:getComputedStyle(document.getElementById('menu')).display,overlay:getComputedStyle(document.getElementById('v12Prologue')).display,skip:getComputedStyle(document.getElementById('v12Skip')).display}));
+          if(!prologue.state.ready||prologue.overlay==='none'||prologue.skip!=='none')throw new Error('Prologue did not start cleanly '+JSON.stringify(prologue));
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V12_PROLOGUE?.played===true,{timeout:10000});
+          await page.waitForTimeout(250);
+          const atHome=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),home:window.__V12_HOME,menu:getComputedStyle(document.getElementById('menu')).display,error:getComputedStyle(document.getElementById('errorBox')).display}));
+          if(Math.hypot(atHome.cam.x-atHome.home.spawn.x,atHome.cam.z-atHome.home.spawn.z)>1)throw new Error('Did not start inside home '+JSON.stringify(atHome));
+          if(atHome.menu!=='none'||atHome.error!=='none')throw new Error('Post-prologue UI error '+JSON.stringify(atHome));
+          await page.screenshot({path:'v12-home.png',fullPage:true});
+          await page.evaluate(()=>{const d=window.__V12_HOME.door;window.__egyptDebug.v12Teleport(d.x,d.z);window.__V12_INTERACT_DOOR();});
+          await page.waitForTimeout(120);
+          const street=await page.evaluate(()=>window.__egyptDebug.getCamera());
+          if(Math.hypot(street.x+96,street.z+82.2)>3)throw new Error('Home exit failed '+JSON.stringify(street));
+          await page.evaluate(()=>window.__egyptDebug.v12Teleport(142,120));
+          await page.waitForTimeout(200);
+          const district=await page.evaluate(()=>({cam:window.__egyptDebug.getCamera(),v12Meshes:BABYLON.Engine.LastCreatedEngine.scenes[0].meshes.filter(m=>m.name.startsWith('v12_')).length,buildings:BABYLON.Engine.LastCreatedEngine.scenes[0].meshes.filter(m=>m.name.startsWith('v12_building_')).length,error:getComputedStyle(document.getElementById('errorBox')).display}));
+          if(district.cam.x<135||district.v12Meshes<300||district.buildings<24||district.error!=='none')throw new Error('Expanded district failed '+JSON.stringify(district));
+          await page.screenshot({path:'v12-district.png',fullPage:true});
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V12 open-world test passed',{score:world.authenticity.score,counters:c,district});
+          await browser.close();
+          EOF
+          node v12-smoke.mjs
+      - name: Upload V12 visual checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-visual-checks
+          path: |
+            v12-menu.png
+            v12-home.png
+            v12-district.png
