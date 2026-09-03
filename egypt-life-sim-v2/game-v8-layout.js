@@ -30,7 +30,14 @@
   }
   function nearestRoadDistance(z){return Math.min(...[-72,-24,24,72].map(r=>Math.abs(z-r)));}
 
-  function markReady(){(window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
+  function markRuntimeReady(){(window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
+  function loadV12(){
+    if(document.querySelector('script[data-egypt-v12-openworld]')){if(window.__V12_WORLD?.ready)markRuntimeReady();return;}
+    const s=document.createElement('script');s.src='game-v12-openworld.js?v=12';s.dataset.egyptV12Openworld='true';s.async=false;
+    s.onload=()=>{if(window.__V12_WORLD?.ready)markRuntimeReady();else fail('V12 world loaded but did not become ready');};
+    s.onerror=()=>fail('V12 open world failed to load');document.body.appendChild(s);
+  }
+  function markReady(){loadV12();}
   function loadV11AudioFix(){
     if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v119QualitySfx)markReady();return;}
     const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.9&visual=11.11';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
