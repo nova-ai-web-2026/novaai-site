@@ -31,7 +31,7 @@
         body #mission.v1114-expanded .mText{-webkit-line-clamp:unset!important;display:block!important;overflow:visible!important}
         body #soundToggle{top:56px!important;left:7px!important;width:38px!important;height:38px!important;padding:0!important;border-radius:50%!important;font-size:0!important;display:grid!important;place-items:center!important}
         body #soundToggle:before{content:attr(data-v1112-icon);font-size:16px!important;line-height:1!important}
-        body #toast{top:118px!important;max-width:76vw!important;padding:7px 10px!important;font-size:10px!important;border-radius:9px!important}
+        body #toast{top:auto!important;bottom:148px!important;max-width:76vw!important;padding:7px 10px!important;font-size:10px!important;border-radius:9px!important}
         body #mapWrap{width:78px!important;height:78px!important;left:7px!important;bottom:142px!important;padding:4px!important;border-radius:12px!important}
         body #joy{left:13px!important;bottom:18px!important;width:102px!important;height:102px!important}body #knob{left:34px!important;top:34px!important;width:34px!important;height:34px!important}
         body #act{right:15px!important;bottom:26px!important;width:60px!important;height:60px!important;font-size:11px!important}body #run{right:25px!important;bottom:96px!important;width:42px!important;height:42px!important;font-size:9px!important}
@@ -46,7 +46,7 @@
         body #mission{top:54px!important;width:min(70vw,245px)!important}body #soundToggle{top:54px!important}
       }
       @media(max-height:700px) and (max-width:760px){
-        body #mission{top:52px!important}body .mText{-webkit-line-clamp:1!important}body #toast{top:100px!important}body #mapWrap{bottom:126px!important;width:70px!important;height:70px!important}
+        body #mission{top:52px!important}body .mText{-webkit-line-clamp:1!important}body #toast{top:auto!important;bottom:132px!important}body #mapWrap{bottom:126px!important;width:70px!important;height:70px!important}
         body #joy{width:92px!important;height:92px!important}body #knob{left:30px!important;top:30px!important;width:32px!important;height:32px!important}
       }
     `;
