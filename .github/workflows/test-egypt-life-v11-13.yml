@@ -13,14 +13,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.13 files
+      - name: Validate V11.13 HUD under current V11.14 UI
         run: |
           test -s egypt-life-sim-v2/game-v11-13-hud.js
+          test -s egypt-life-sim-v2/game-v11-14-ui-scenes.js
           node --check egypt-life-sim-v2/game-v11-13-hud.js
+          node --check egypt-life-sim-v2/game-v11-14-ui-scenes.js
           grep -Fq 'game-v11-13-hud.js?v=11.13' egypt-life-sim-v2/index.html
-          grep -Fq 'HAYAT MASR • V11.13' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-14-ui-scenes.js?v=11.14' egypt-life-sim-v2/index.html
           grep -Fq "body.game-started #hud" egypt-life-sim-v2/game-v11-13-hud.js
           grep -Fq "spawnRepaired" egypt-life-sim-v2/game-v11-13-hud.js
+          grep -Fq "mobileHud:'single-row-stats'" egypt-life-sim-v2/game-v11-14-ui-scenes.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -71,6 +74,7 @@ jobs:
                 boxes,
                 hud:{visibility:hs.visibility,opacity:hs.opacity,data:hud.dataset.v1113Visible||null},
                 marker:window.__V1113_HUD,
+                currentUi:window.__V1114_UI||null,
                 camera:cam?{x:cam.position.x,y:cam.position.y,z:cam.position.z}:null,
                 blocked:cam?pointBlocked(cam.position.x,cam.position.z):'no-camera',
                 nearestBuilding:Number.isFinite(nearest)?nearest:null,
@@ -93,7 +97,7 @@ jobs:
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
           const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v1113-new',{waitUntil:'domcontentloaded'});
-          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true&&window.__V1113_HUD?.installed===true,{timeout:60000});
+          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true&&window.__V1113_HUD?.installed===true&&window.__V1114_UI?.ready===true,{timeout:60000});
           const before=await page.evaluate(()=>({menu:getComputedStyle(document.getElementById('menu')).display,hud:getComputedStyle(document.getElementById('hud')).visibility,preview:window.__V1112_UI?.previewActive,meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0}));
           if(before.menu==='none'||before.hud!=='hidden'||!before.preview||before.meshes<50)throw new Error('Start screen unhealthy '+JSON.stringify(before));
           await page.screenshot({path:'v1113-start.png',fullPage:true});
@@ -109,14 +113,14 @@ jobs:
           const oldErrors=[];old.on('pageerror',e=>oldErrors.push('pageerror: '+e.message));
           await old.addInitScript(()=>localStorage.setItem('hayat-masr-v4',JSON.stringify({money:300,hunger:84,energy:92,mood:76,minute:500,day:1,task:0,worked:0,savedX:0,savedZ:0})));
           await old.goto('http://127.0.0.1:4173/?ci=v1113-old-save',{waitUntil:'domcontentloaded'});
-          await old.waitForFunction(()=>window.__V1113_HUD?.installed===true&&window.__V119_READY===true,{timeout:60000});
+          await old.waitForFunction(()=>window.__V1113_HUD?.installed===true&&window.__V119_READY===true&&window.__V1114_UI?.ready===true,{timeout:60000});
           await old.tap('#continueBtn');
           const repaired=await inspectGame(old,'old-save');
           if(!repaired.marker?.spawnRepaired)throw new Error('Blocked old save was not repaired '+JSON.stringify(repaired));
           if(oldErrors.length)throw new Error(oldErrors.join('\n'));
           await old.screenshot({path:'v1113-old-save.png',fullPage:true});
 
-          console.log('V11.13 HUD/spawn regression passed',{before,fresh,repaired});
+          console.log('V11.13 HUD/spawn + V11.14 compatibility passed',{before,fresh,repaired});
           await browser.close();
           EOF
           node v1113-ui.mjs
