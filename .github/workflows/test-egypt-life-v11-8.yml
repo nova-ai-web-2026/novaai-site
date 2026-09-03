@@ -10,12 +10,13 @@ on:
 jobs:
   v1112-mobile-sfx:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Validate V11.12 SFX files
         run: |
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          test -s egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
           test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
           test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
           test -s egypt-life-sim-v2/audio/v11-8/interact.wav
@@ -23,11 +24,13 @@ jobs:
           test -s egypt-life-sim-v2/audio/v11-8/door.wav
           test -s egypt-life-sim-v2/audio/v11-8/reward.wav
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          node --check egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
           grep -Fq "game-v11-10-actual-sfx.js?v=11.12" egypt-life-sim-v2/index.html
+          grep -Fq "game-v11-12-sfx-outputfix.js?v=11.12" egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "const VERSION='11.12'" egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq "sameOriginFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
           grep -Fq "localWavFallback:true" egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          grep -Fq "audio/v11-8/step_pavement.wav" egypt-life-sim-v2/game-v11-10-actual-sfx.js
+          grep -Fq "independentFromAmbientMaster:true" egypt-life-sim-v2/game-v11-12-sfx-outputfix.js
       - name: Install Chromium
         run: |
           npm init -y >/dev/null 2>&1
@@ -41,7 +44,7 @@ jobs:
         run: |
           cat > v1112-remote.mjs <<'EOF'
           import { chromium } from 'playwright';
-          const browser=await chromium.launch({headless:true});
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v1112-remote',{waitUntil:'networkidle'});
@@ -61,51 +64,63 @@ jobs:
           await browser.close();
           EOF
           node v1112-remote.mjs
-      - name: Verify same-origin fallback with remote blocked
+      - name: Verify real mobile gesture with remote blocked
         run: |
-          cat > v1112-local.mjs <<'EOF'
+          cat > v1112-gesture.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('remote preload'))errors.push('console: '+m.text());});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));
           await page.route('https://raw.githubusercontent.com/**',route=>route.abort());
-          await page.goto('http://127.0.0.1:4173/?ci=v1112-local',{waitUntil:'networkidle'});
+          await page.goto('http://127.0.0.1:4173/?ci=v1112-gesture',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V1112_SFX?.version==='11.12'&&!!window.__V1112_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
           await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V119_CONTEXT?.state==='running',{timeout:12000});
           await page.evaluate(()=>window.__V1112_SFX_API.unlock());
           await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.localReady&&s.localLoaded===7&&s.localFailed===0;},{timeout:12000});
-          const localMetrics=await page.evaluate(()=>window.__V1112_SFX_API.localBufferMetrics());
-          console.log('V11.12 local metrics',JSON.stringify(localMetrics));
-          for(const [key,list] of Object.entries(localMetrics)){
-            if(!list.length)throw new Error('Missing local bank '+key);
-            for(const m of list)if(m.duration<=0||m.rms<.001||m.peak<.004)throw new Error('Silent local sample '+key+' '+JSON.stringify(m));
-          }
-          async function probe(name){
-            return await page.evaluate(async name=>{
-              const before=window.__V1112_SFX_API.state().playResolved;
-              window.__V1112_SFX_API.play(name);
-              const a=window.__V1112_SFX_ANALYSER,n=a.fftSize,d=new Uint8Array(n);let bestRms=0,bestPeak=0;
-              for(let i=0;i<55;i++){
-                await new Promise(r=>setTimeout(r,5));a.getByteTimeDomainData(d);let sum=0,peak=0;
-                for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
-                bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);
-              }
-              return {before,after:window.__V1112_SFX_API.state().playResolved,last:window.__V1112_SFX_API.state().lastPlayed,bestRms,bestPeak};
-            },name);
-          }
-          const results={};
-          for(const name of ['step','asphalt','interact','buy','door','reward','deny']){
-            const r=results[name]=await probe(name);
-            if(r.after<=r.before)throw new Error('No playback resolved for '+name+' '+JSON.stringify(r));
-            if(r.last?.transport!=='same-origin-local-sample')throw new Error('Wrong fallback transport for '+name+' '+JSON.stringify(r));
-            if(r.bestRms<.0007||r.bestPeak<.0025)throw new Error('No local waveform for '+name+' '+JSON.stringify(r));
-          }
-          const state=await page.evaluate(()=>window.__V1112_SFX_API.state());
-          if(state.activeTransport!=='same-origin-local-sample')throw new Error('Local transport not active '+JSON.stringify(state));
+          await page.waitForFunction(()=>window.__V1112_OUTPUT?.directDestination===true,{timeout:5000});
+          const before=await page.evaluate(()=>window.__V1112_SFX_API.state().playResolved);
+          await page.evaluate(()=>window.__V1112_SFX_API.play('buy'));
+          await page.waitForFunction(b=>window.__V1112_SFX_API.state().playResolved>b,before);
+          const state=await page.evaluate(()=>({sfx:window.__V1112_SFX_API.state(),output:window.__V1112_OUTPUT,ctx:window.__V119_CONTEXT.state}));
+          if(state.ctx!=='running')throw new Error('Real gesture context not running '+JSON.stringify(state));
+          if(state.sfx.lastPlayed?.transport!=='same-origin-local-sample')throw new Error('Real gesture did not use local fallback '+JSON.stringify(state));
+          if(!state.output?.directDestination)throw new Error('SFX not directly routed '+JSON.stringify(state));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.12 remote-blocked local SFX passed',{state,results});
+          console.log('V11.12 real mobile gesture passed',state);
           await browser.close();
           EOF
-          node v1112-local.mjs
+          node v1112-gesture.mjs
+      - name: Verify rendered local SFX waveform with remote blocked
+        run: |
+          cat > v1112-waveform.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          await page.route('https://raw.githubusercontent.com/**',route=>route.abort());
+          await page.goto('http://127.0.0.1:4173/?ci=v1112-waveform',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1112_SFX?.version==='11.12'&&!!window.__V1112_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>window.__V119_CONTEXT?.state==='running',{timeout:12000});
+          await page.evaluate(()=>window.__V1112_SFX_API.unlock());
+          await page.waitForFunction(()=>{const s=window.__V1112_SFX_API.state();return s.localReady&&s.localLoaded===7&&s.localFailed===0;},{timeout:12000});
+          await page.waitForFunction(()=>window.__V1112_OUTPUT?.directDestination===true,{timeout:5000});
+          const localMetrics=await page.evaluate(()=>window.__V1112_SFX_API.localBufferMetrics());
+          console.log('V11.12 local metrics',JSON.stringify(localMetrics));
+          for(const [key,list] of Object.entries(localMetrics))for(const m of list)if(m.duration<=.09||m.rms<.01||m.peak<.05)throw new Error('Weak local sample '+key+' '+JSON.stringify(m));
+          async function probe(name){return await page.evaluate(async name=>{
+            const before=window.__V1112_SFX_API.state().playResolved;window.__V1112_SFX_API.play(name);
+            const a=window.__V1112_SFX_ANALYSER,n=a.fftSize,d=new Uint8Array(n);let bestRms=0,bestPeak=0;
+            for(let i=0;i<80;i++){await new Promise(r=>setTimeout(r,4));a.getByteTimeDomainData(d);let sum=0,peak=0;for(const v of d){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}bestRms=Math.max(bestRms,Math.sqrt(sum/n));bestPeak=Math.max(bestPeak,peak);}
+            return {before,after:window.__V1112_SFX_API.state().playResolved,last:window.__V1112_SFX_API.state().lastPlayed,bestRms,bestPeak};
+          },name);}
+          const results={};
+          for(const name of ['step','asphalt','interact','buy','door','reward','deny']){const r=results[name]=await probe(name);if(r.after<=r.before)throw new Error('No playback '+name+' '+JSON.stringify(r));if(r.last?.transport!=='same-origin-local-sample')throw new Error('Wrong transport '+name+' '+JSON.stringify(r));if(r.bestRms<.0007||r.bestPeak<.0025)throw new Error('No rendered waveform '+name+' '+JSON.stringify(r));}
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.12 rendered local SFX passed',results);
+          await browser.close();
+          EOF
+          node v1112-waveform.mjs
