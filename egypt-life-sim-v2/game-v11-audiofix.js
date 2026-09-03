@@ -1,6 +1,11 @@
 (() => {
   'use strict';
 
+  function loadV1111Details(){
+    if(document.querySelector('script[data-egypt-v1111-details]'))return;
+    const s=document.createElement('script');s.src='game-v11-11-egypt-details.js?v=11.11';s.dataset.egyptV1111Details='true';s.async=false;s.onerror=()=>console.error('V11.11 Egyptian details failed to load');document.body.appendChild(s);
+  }
+
   function loadV1110Actual(){
     if(document.querySelector('script[data-egypt-v1110-sfx]'))return;
     const s=document.createElement('script');s.src='game-v11-10-actual-sfx.js?v=11.10';s.dataset.egyptV1110Sfx='true';s.async=false;s.onerror=()=>console.error('V11.10 actual SFX failed to load');document.body.appendChild(s);
@@ -18,7 +23,8 @@
 
   document.getElementById('v113-startup-style')?.remove();document.body.classList.remove('v113-menu-open');document.getElementById('v115SoundTest')?.remove();
 
-  window.__V11_AUDIOFIX={version:13,release:'11.10',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,actualSamples:true,remoteSamplePrimary:true,proceduralFallback:true};
+  window.__V11_AUDIOFIX={version:14,release:'11.11',singleAudioEngine:true,startupGuard:false,legacyExtraLayersDisabled:true,v1110ActualSfx:true,actualSamples:true,remoteSamplePrimary:true,proceduralFallback:true,v1111EgyptDetails:true,additiveVisualLayer:true};
   if(window.__egyptDebug)window.__egyptDebug.v11AudioFixState=()=>({...window.__V11_AUDIOFIX});
+  loadV1111Details();
   loadRuntime();
 })();
