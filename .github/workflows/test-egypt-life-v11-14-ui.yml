@@ -1,0 +1,79 @@
+name: Test Egyptian Life Simulator V11.14 UI Scenes
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-14-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-ui-scenes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.14 UI files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          node --check egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "game-v11-14-ui-scenes.js?v=11.14" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "audioTouched:false" egypt-life-sim-v2/game-v11-14-ui-scenes.js
+          grep -Fq "single-row-stats" egypt-life-sim-v2/game-v11-14-ui-scenes.js
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1114-server.log 2>&1 &
+          sleep 2
+      - name: Verify mobile HUD and scene transitions
+        run: |
+          cat > v1114-ui.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1114-ui',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1114_UI?.ready===true&&window.__V12_WORLD?.ready===true,{timeout:60000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V12_PROLOGUE?.played===true,{timeout:12000});
+          await page.waitForTimeout(350);
+          const home=await page.evaluate(()=>{
+            const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+            const stats=[...document.querySelectorAll('#stats .stat')].map(x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};});
+            return {
+              statsBox:rect('stats'), mission:rect('mission'), clock:rect('clock'), sound:rect('soundToggle'),
+              statRows:[...new Set(stats.map(x=>Math.round(x.top)))], stats,
+              missionText:document.getElementById('taskText')?.textContent||'',
+              location:document.getElementById('v1114Location')?.textContent||'',
+              state:window.__egyptDebug.v1114UiState(),
+              errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none'
+            };
+          });
+          if(home.statRows.length!==1)throw new Error('Stats are not one row '+JSON.stringify(home));
+          if(home.statsBox.height>50)throw new Error('Stats too tall '+JSON.stringify(home));
+          if(home.mission.top < home.statsBox.bottom-1)throw new Error('Mission overlaps stats '+JSON.stringify(home));
+          if(!home.location.includes('البيت'))throw new Error('Home location chip missing '+JSON.stringify(home));
+          if(home.errorVisible)throw new Error('Visible error box at home');
+          await page.evaluate(()=>{const d=window.__V12_HOME.door;window.__egyptDebug.v12Teleport(d.x,d.z);window.__V12_INTERACT_DOOR();});
+          await page.waitForTimeout(500);
+          const street=await page.evaluate(()=>({location:document.getElementById('v1114Location')?.textContent||'',cam:window.__egyptDebug.getCamera(),error:getComputedStyle(document.getElementById('errorBox')).display}));
+          if(street.location.includes('البيت'))throw new Error('Location chip did not leave home '+JSON.stringify(street));
+          if(street.error!=='none')throw new Error('Visible runtime error after leaving home '+JSON.stringify(street));
+          await page.evaluate(()=>window.__egyptDebug.v12Teleport(0,120));
+          await page.waitForTimeout(400);
+          const district=await page.evaluate(()=>({location:document.getElementById('v1114Location')?.textContent||'',state:window.__egyptDebug.v1114UiState()}));
+          if(!district.location.includes('المحطة'))throw new Error('District location chip missing '+JSON.stringify(district));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.14 mobile UI scenes passed',{home,street,district});
+          await browser.close();
+          EOF
+          node v1114-ui.mjs
