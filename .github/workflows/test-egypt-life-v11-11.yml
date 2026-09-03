@@ -78,20 +78,23 @@ jobs:
           if(!details.hasLayoutCacheBust||!details.hasAudiofixCacheBust)throw new Error('V11.11 cache-bust chain missing '+JSON.stringify(details));
           await page.waitForFunction(()=>window.__V117_READY===true||window.__V119_READY===true,{timeout:50000});
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none',{timeout:12000});
-          await page.waitForTimeout(900);
+          await page.waitForFunction(()=>window.__V12_PROLOGUE?.played===true&&document.body.classList.contains('game-started'),{timeout:15000});
+          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&getComputedStyle(document.getElementById('hud')).visibility!=='hidden',{timeout:5000});
+          await page.waitForTimeout(300);
           const after=await page.evaluate(()=>({
             errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
             errorText:document.getElementById('errorBox')?.textContent||'',
             hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
             details:window.__V1111_DETAILS,
-            audiofix:window.__V11_AUDIOFIX
+            audiofix:window.__V11_AUDIOFIX,
+            v12:window.__V12_WORLD
           }));
           if(after.errorVisible)throw new Error('Visible runtime error: '+after.errorText);
-          if(after.hudVisibility==='hidden')throw new Error('HUD stayed hidden after Start');
+          if(after.hudVisibility==='hidden')throw new Error('HUD stayed hidden after V12 prologue');
           if(after.audiofix?.v1110ActualSfx!==true)throw new Error('V11.10 SFX chain was not preserved '+JSON.stringify(after.audiofix));
+          if(!after.v12?.openWorld)throw new Error('V12 open world marker missing after start');
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.11 additive Egyptian detail + cache-bust test passed',{details,after});
+          console.log('V11.11 details preserved through V12 prologue',{details,after});
           await browser.close();
           EOF
           node v1111-smoke.mjs
