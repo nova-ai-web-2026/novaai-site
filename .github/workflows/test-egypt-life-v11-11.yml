@@ -1,0 +1,90 @@
+name: Test Egyptian Life Simulator V11.11 Details
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v1111-details:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate additive detail files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
+          node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "game-v11-11-egypt-details.js?v=11.11" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "additiveOnly:true" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "removedMeshes:0" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "disabledLegacyMeshes:0" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "checkCollisions=false" egypt-life-sim-v2/game-v11-11-egypt-details.js
+          grep -Fq "game-v11-10-actual-sfx.js?v=11.10" egypt-life-sim-v2/game-v11-audiofix.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1111-server.log 2>&1 &
+          sleep 2
+      - name: Verify additive Egyptian details and clean start
+        run: |
+          cat > v1111-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.goto('http://127.0.0.1:4173/?ci=v1111',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1111_DETAILS?.ready===true,{timeout:50000});
+          const details=await page.evaluate(()=>{
+            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
+            const d=window.__V1111_DETAILS;
+            const added=scene.meshes.filter(m=>m.name.startsWith('v1111_'));
+            const legacy=scene.meshes.filter(m=>!m.name.startsWith('v1111_'));
+            return {
+              d,
+              addedCount:added.length,
+              legacyCount:legacy.length,
+              collisionAdded:added.filter(m=>m.checkCollisions).length,
+              dishCount:added.filter(m=>m.name.startsWith('v1111_satelliteDish_')).length,
+              tankCount:added.filter(m=>m.name.startsWith('v1111_roofTank_')).length,
+              acCount:added.filter(m=>m.name.startsWith('v1111_acBody_')).length,
+              signCount:added.filter(m=>m.name.startsWith('v1111_street_')).length,
+              posterCount:added.filter(m=>m.name.startsWith('v1111_poster_')).length,
+              flagCount:added.filter(m=>m.name.startsWith('v1111_egyptFlag_')).length
+            };
+          });
+          if(!details.d.additiveOnly||details.d.removedMeshes!==0||details.d.disabledLegacyMeshes!==0)throw new Error('Not additive '+JSON.stringify(details));
+          if(details.d.addedMeshes<75||details.addedCount<75)throw new Error('Too few added details '+JSON.stringify(details));
+          if(details.collisionAdded!==0)throw new Error('New props must not collide '+JSON.stringify(details));
+          if(details.legacyCount<details.d.beforeMeshes)throw new Error('Legacy meshes were lost '+JSON.stringify(details));
+          if(details.dishCount<8||details.tankCount<8||details.acCount<12||details.posterCount<6||details.flagCount<3)throw new Error('Egyptian detail categories incomplete '+JSON.stringify(details));
+          await page.waitForFunction(()=>window.__V117_READY===true||window.__V119_READY===true,{timeout:50000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none',{timeout:12000});
+          await page.waitForTimeout(900);
+          const after=await page.evaluate(()=>({
+            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+            errorText:document.getElementById('errorBox')?.textContent||'',
+            hudVisibility:getComputedStyle(document.getElementById('hud')).visibility,
+            details:window.__V1111_DETAILS,
+            audiofix:window.__V11_AUDIOFIX
+          }));
+          if(after.errorVisible)throw new Error('Visible runtime error: '+after.errorText);
+          if(after.hudVisibility==='hidden')throw new Error('HUD stayed hidden after Start');
+          if(after.audiofix?.v1110ActualSfx!==true)throw new Error('V11.10 SFX chain was not preserved '+JSON.stringify(after.audiofix));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.11 additive Egyptian detail test passed',{details,after});
+          await browser.close();
+          EOF
+          node v1111-smoke.mjs
