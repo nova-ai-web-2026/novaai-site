@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if(window.__V1114_BOOTED)return;window.__V1114_BOOTED=true;
 
   const MOBILE='(max-width: 760px)';
   const HOME={x:-150,z:-150};
