@@ -1,0 +1,117 @@
+name: Test Egyptian Life Simulator V11.17 Gameplay Scene
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-17-scene.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gameplay-scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.17 files
+        run: |
+          test -s egypt-life-sim-v2/v11-17.html
+          test -s egypt-life-sim-v2/game-v11-17-scene-guard.js
+          node --check egypt-life-sim-v2/game-v11-17-scene-guard.js
+          grep -Fq "game-v11-12-ui.js?v=11.17" egypt-life-sim-v2/v11-17.html
+          grep -Fq "game-v11-6-runtime.js?v=11.17" egypt-life-sim-v2/v11-17.html
+          grep -Fq "game-v11-15-real-sfx.js?v=11.17" egypt-life-sim-v2/v11-17.html
+          grep -Fq "game-v11-17-scene-guard.js?v=11.17" egypt-life-sim-v2/v11-17.html
+      - name: Install test packages
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 pngjs@7.0.0
+          google-chrome --version
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1117-server.log 2>&1 &
+          sleep 2
+      - name: Verify visible gameplay scene after Start
+        run: |
+          cat > v1117-scene.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import { PNG } from 'pngjs';
+          import fs from 'node:fs';
+
+          const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome'});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const errors=[],badResponses=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text());});
+          page.on('response',r=>{
+            if(r.status()<400)return;
+            const u=new URL(r.url());
+            if(u.origin!=='http://127.0.0.1:4173')return;
+            if(u.pathname.endsWith('/favicon.ico'))return;
+            badResponses.push(`${r.status()} ${u.pathname}${u.search}`);
+          });
+          await page.goto('http://127.0.0.1:4173/v11-17.html?ci=gameplay-scene',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V1116_START_SCENE?.previewActive===true&&window.__V1117_SCENE?.version==='11.17',{timeout:60000});
+          await page.waitForFunction(()=>typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>{
+            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
+            const menu=document.getElementById('menu');
+            return document.body.classList.contains('game-started')&&getComputedStyle(menu).display==='none'&&scene?.activeCamera&&scene.activeCamera.name!=='v1116PreviewCamera'&&scene.meshes.length>50;
+          },{timeout:15000});
+          await page.waitForTimeout(900);
+
+          const state=await page.evaluate(()=>({
+            guard:window.__V1117_SCENE,
+            preview:window.__V1116_START_SCENE,
+            activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,
+            meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0,
+            renderWidth:window.BABYLON?.Engine?.LastCreatedEngine?.getRenderWidth?.()||0,
+            renderHeight:window.BABYLON?.Engine?.LastCreatedEngine?.getRenderHeight?.()||0,
+            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
+            errorText:document.getElementById('errorBox')?.textContent||'',
+            sfx:!!document.querySelector('script[data-egypt-v1115-sfx]')
+          }));
+          if(state.activeCamera==='v1116PreviewCamera'||!state.activeCamera)throw new Error('Gameplay camera missing '+JSON.stringify(state));
+          if(state.meshes<=50||state.renderWidth<=0||state.renderHeight<=0)throw new Error('Gameplay scene not renderable '+JSON.stringify(state));
+          if(state.errorVisible)throw new Error('Runtime errorBox: '+state.errorText);
+          if(!state.sfx)throw new Error('V11.15 sampled SFX missing');
+
+          await page.locator('#game').screenshot({path:'v1117-after-a.png'});
+          await page.evaluate(()=>{
+            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0],cam=scene?.activeCamera;
+            if(!cam)throw new Error('No active gameplay camera');
+            cam.position.x+=1.4;cam.position.z-=.7;
+          });
+          await page.waitForTimeout(700);
+          await page.locator('#game').screenshot({path:'v1117-after-b.png'});
+
+          const a=PNG.sync.read(fs.readFileSync('v1117-after-a.png'));
+          const b=PNG.sync.read(fs.readFileSync('v1117-after-b.png'));
+          let sum=0,sum2=0,diff=0,count=0,nonDark=0;
+          for(let i=0;i<a.data.length;i+=4){
+            const lum=(a.data[i]+a.data[i+1]+a.data[i+2])/3;
+            sum+=lum;sum2+=lum*lum;count++;if(lum>28)nonDark++;
+            diff+=Math.abs(a.data[i]-b.data[i])+Math.abs(a.data[i+1]-b.data[i+1])+Math.abs(a.data[i+2]-b.data[i+2]);
+          }
+          const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count,meanRgbDiff=diff/(count*3);
+          if(mean<25||variance<180||nonDarkRatio<.28)throw new Error('Gameplay canvas blank/dark '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff,state}));
+          if(meanRgbDiff<.12)throw new Error('Gameplay canvas not rendering camera movement '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff,state}));
+          if(badResponses.length)throw new Error('Critical HTTP failures: '+badResponses.join(', '));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.17 visible gameplay scene passed',{mean,variance,nonDarkRatio,meanRgbDiff,state,badResponses});
+          await browser.close();
+          EOF
+          node v1117-scene.mjs
+      - name: Upload V11.17 gameplay screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1117-gameplay-scene
+          path: |
+            v1117-after-a.png
+            v1117-after-b.png
+          if-no-files-found: ignore
