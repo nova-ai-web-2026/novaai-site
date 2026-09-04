@@ -43,9 +43,16 @@ jobs:
 
           const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome'});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
-          const errors=[];
+          const errors=[],badResponses=[];
           page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text());});
+          page.on('response',r=>{
+            if(r.status()<400)return;
+            const u=new URL(r.url());
+            if(u.origin!=='http://127.0.0.1:4173')return;
+            if(u.pathname.endsWith('/favicon.ico'))return;
+            badResponses.push(`${r.status()} ${u.pathname}${u.search}`);
+          });
           await page.goto('http://127.0.0.1:4173/v11-17.html?ci=gameplay-scene',{waitUntil:'domcontentloaded'});
           await page.waitForFunction(()=>window.__V1116_START_SCENE?.previewActive===true&&window.__V1117_SCENE?.version==='11.17',{timeout:60000});
           await page.waitForFunction(()=>typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
@@ -93,8 +100,9 @@ jobs:
           const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count,meanRgbDiff=diff/(count*3);
           if(mean<25||variance<180||nonDarkRatio<.28)throw new Error('Gameplay canvas blank/dark '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff,state}));
           if(meanRgbDiff<.12)throw new Error('Gameplay canvas not rendering camera movement '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff,state}));
+          if(badResponses.length)throw new Error('Critical HTTP failures: '+badResponses.join(', '));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.17 visible gameplay scene passed',{mean,variance,nonDarkRatio,meanRgbDiff,state});
+          console.log('V11.17 visible gameplay scene passed',{mean,variance,nonDarkRatio,meanRgbDiff,state,badResponses});
           await browser.close();
           EOF
           node v1117-scene.mjs
