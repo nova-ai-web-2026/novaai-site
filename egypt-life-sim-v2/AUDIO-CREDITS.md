@@ -1,6 +1,6 @@
-# Audio sources — V11.10
+# Audio sources — V11.15
 
-V11.10 uses actual sampled sound effects from Kenney asset packs under Creative Commons Zero (CC0 1.0).
+V11.15 uses actual sampled sound effects from Kenney asset packs under Creative Commons Zero (CC0 1.0). The mix prefers the pinned samples through jsDelivr, falls back to the same pinned GitHub mirror, and keeps the existing same-origin local bank only as an emergency fallback.
 
 ## Kenney RPG Audio
 
@@ -24,4 +24,10 @@ Used for interaction clicks, confirmations and denial/error feedback.
 - Original pack: Kenney Interface Sounds
 - Files used: `click_001.ogg`, `click_003.ogg`, `confirmation_001.ogg`, `confirmation_003.ogg`, `error_001.ogg`
 
-The browser fetches these pinned samples and decodes them into the game's shared WebAudio context. The V11.9 procedural Foley bank remains only as an emergency fallback if a sample cannot be loaded.
+## V11.15 mix changes
+
+- Four variants per walking surface instead of one repeated file.
+- Separate samples for interaction, purchase, door, confirmation and denial.
+- Lower SFX bus gain and gentler dynamics processing.
+- Short event cooldowns prevent accidental double-triggering.
+- Subtle pitch/pan variation only; no heavily pitched-down denial sound.
