@@ -12,11 +12,12 @@
   <script>
   (async()=>{
     try{
-      const r=await fetch('index.html?bootstrap=11.15',{cache:'no-store'});
+      const r=await fetch('index.html?bootstrap=11.15-startscene-11.16',{cache:'no-store'});
       if(!r.ok)throw new Error('index '+r.status);
       let html=await r.text();
-      html=html.replace('HAYAT MASR • V11.13','HAYAT MASR • V11.15')
-               .replace('V11.13 — HUD + safe street spawn','V11.15 — sampled CC0 sound effects');
+      html=html.replace('game-v11-12-ui.js?v=11.12','game-v11-12-ui.js?v=11.16')
+               .replace('HAYAT MASR • V11.13','HAYAT MASR • V11.16')
+               .replace('V11.13 — HUD + safe street spawn','V11.16 — live start scene + V11.15 sampled SFX');
       const inject='<scr'+'ipt src="game-v11-15-real-sfx.js?v=11.15" data-egypt-v1115-sfx="true"></scr'+'ipt>';
       html=html.replace('</body>',inject+'</body>');
       document.open();document.write(html);document.close();
