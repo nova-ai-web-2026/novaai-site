@@ -30,10 +30,11 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.14 local SFX and current world
+      - name: Validate V11.15 sampled SFX and current world
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/v11-14.html
+          test -s egypt-life-sim-v2/v11-15.html
           test -s egypt-life-sim-v2/game-v7.js
           test -s egypt-life-sim-v2/game-v8-layout.js
           test -s egypt-life-sim-v2/game-v9.js
@@ -50,6 +51,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details-base.js
           test -s egypt-life-sim-v2/game-v11-14-local-sfx.js
+          test -s egypt-life-sim-v2/game-v11-15-real-sfx.js
           test -s egypt-life-sim-v2/game-v12-world.js
           test -s egypt-life-sim-v2/AUDIO-CREDITS.md
           test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
@@ -74,14 +76,17 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details-base.js
           node --check egypt-life-sim-v2/game-v11-14-local-sfx.js
+          node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
           node --check egypt-life-sim-v2/game-v12-world.js
           grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-10-actual-sfx.js?v=11.10' egypt-life-sim-v2/index.html
           grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/v11-14.html
+          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-15.html
           grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'game-v11-11-egypt-details-base.js?v=11.11' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'game-v12-world.js?v=12' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'openWorld:true' egypt-life-sim-v2/game-v12-world.js
@@ -89,9 +94,11 @@ jobs:
           grep -Fq 'Greater Cairo mixed-use residential street cues' egypt-life-sim-v2/game-v12-world.js
           grep -Fq '#v12Skip{display:none!important}' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'same-origin-local-sfx' egypt-life-sim-v2/game-v11-14-local-sfx.js
-          grep -Fq 'sameOriginPrimary:true' egypt-life-sim-v2/game-v11-14-local-sfx.js
-          grep -Fq 'remoteRequired:false' egypt-life-sim-v2/game-v11-14-local-sfx.js
-          grep -Fq "release:'11.14'" egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq 'kenney-cc0-multivariant-sfx' egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq 'bus.gain.value=.76' egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq 'footstep07.ogg' egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq 'error_001.ogg' egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "release:'11.15'" egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq "visualRelease:'11.13'" egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'additiveOnly:true' egypt-life-sim-v2/game-v11-11-egypt-details.js
           grep -Fq 'removedMeshes:0' egypt-life-sim-v2/game-v11-11-egypt-details.js
