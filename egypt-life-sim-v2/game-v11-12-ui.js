@@ -3,7 +3,7 @@
 
   const menu=document.getElementById('menu');
   const soundToggle=document.getElementById('soundToggle');
-  let previewScene=null,previewCamera=null,gameCamera=null,previewHandle=null,previewTimer=null,menuObserver=null,previewActive=false;
+  let previewScene=null,previewCamera=null,gameCamera=null,previewHandle=null,previewTimer=null,menuObserver=null,previewActive=false,previewExitQueued=false;
 
   function installStyle(){
     if(document.getElementById('v1116-ui-style'))return;
@@ -58,8 +58,8 @@
   function publish(extra={}){
     const canvas=document.getElementById('game');
     window.__V1112_UI={
-      version:'11.12',hardeningVersion:'11.16',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,
-      previewActive,mobileStatsWidthVw:46,mobileMissionWidthVw:46,
+      version:'11.12',hardeningVersion:'11.16',startHandoffVersion:'11.17',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,
+      previewActive,previewExitQueued,previewHeldUntilMenuHidden:true,twoFrameHandoff:true,mobileStatsWidthVw:46,mobileMissionWidthVw:46,
       sceneMeshes:previewScene?.meshes?.length||0,
       previewCamera:previewCamera?{x:+previewCamera.position.x.toFixed(2),y:+previewCamera.position.y.toFixed(2),z:+previewCamera.position.z.toFixed(2)}:null,
       canvasVisible:canvas?getComputedStyle(canvas).visibility!=='hidden'&&getComputedStyle(canvas).display!=='none':false,
@@ -72,7 +72,16 @@
     if(previewScene&&previewHandle){try{previewScene.onBeforeRenderObservable.remove(previewHandle);}catch(_){}}
     if(previewScene&&gameCamera&&previewScene.activeCamera===previewCamera){try{previewScene.activeCamera=gameCamera;}catch(_){}}
     try{previewCamera?.dispose();}catch(_){}
-    previewHandle=null;previewCamera=null;gameCamera=null;previewScene=null;previewActive=false;publish({stopped:true});
+    previewHandle=null;previewCamera=null;gameCamera=null;previewScene=null;previewActive=false;previewExitQueued=false;publish({stopped:true,handoffComplete:true});
+  }
+
+  function queueStopPreview(){
+    if(!previewActive||previewExitQueued)return;
+    previewExitQueued=true;publish({handoffQueued:true});
+    const raf=window.requestAnimationFrame||((fn)=>setTimeout(fn,16));
+    // Keep the last live preview framebuffer through the menu disappearance, then
+    // hand the scene back to the gameplay camera after two paint opportunities.
+    raf(()=>raf(()=>stopPreview()));
   }
 
   function menuVisible(){
@@ -93,7 +102,7 @@
     scene.activeCamera=previewCamera;
 
     previewHandle=scene.onBeforeRenderObservable.add(()=>{
-      if(document.body.classList.contains('game-started')||!menuVisible()){stopPreview();return;}
+      if(!menuVisible()){queueStopPreview();return;}
       const t=performance.now()*.00018;
       previewCamera.position.x=-24+Math.sin(t)*1.25;
       previewCamera.position.z=-7+Math.cos(t*.72)*1.55;
@@ -110,15 +119,12 @@
   installStyle();syncMenuCopy();syncSoundIcon();publish();
   if(soundToggle)new MutationObserver(syncSoundIcon).observe(soundToggle,{childList:true,subtree:true,characterData:true});
   if(menu){
-    menuObserver=new MutationObserver(()=>{if(!menuVisible())stopPreview();});
+    menuObserver=new MutationObserver(()=>{if(!menuVisible())queueStopPreview();});
     menuObserver.observe(menu,{attributes:true,attributeFilter:['style','class','hidden']});
   }
-  for(const id of ['newGameBtn','continueBtn']){
-    const el=document.getElementById(id);if(!el)continue;
-    el.addEventListener('pointerdown',stopPreview,{capture:true});
-    el.addEventListener('touchstart',stopPreview,{capture:true,passive:true});
-    el.addEventListener('click',stopPreview,{capture:true});
-  }
+  // Do not dispose the preview on pointerdown/touchstart/click. V11.17 deliberately
+  // holds it until the menu has actually disappeared so a slow late patch cannot
+  // expose a blank canvas between preview and gameplay.
 
   previewTimer=setInterval(()=>{if(tryInstallPreview()&&previewTimer){clearInterval(previewTimer);previewTimer=null;}},100);
   tryInstallPreview();
