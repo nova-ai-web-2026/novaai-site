@@ -30,12 +30,13 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.16 start scene, V11.15 sampled SFX and current world
+      - name: Validate V11.17 scene start, V11.16 preview and V11.15 sampled SFX
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/v11-14.html
           test -s egypt-life-sim-v2/v11-15.html
           test -s egypt-life-sim-v2/v11-16.html
+          test -s egypt-life-sim-v2/v11-17.html
           test -s egypt-life-sim-v2/game-v7.js
           test -s egypt-life-sim-v2/game-v8-layout.js
           test -s egypt-life-sim-v2/game-v9.js
@@ -90,6 +91,13 @@ jobs:
           grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-15.html
           grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-16.html
           grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-16.html
+          grep -Fq 'game-v11-6-runtime.js?v=11.17' egypt-life-sim-v2/v11-17.html
+          grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-17.html
+          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-17.html
+          grep -Fq "const START_FIX='11.17'" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq 'coreStartIndependent:true' egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq 'sceneRescue:true' egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq 'v1117SceneState' egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "hardeningVersion:'11.16'" egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq 'dedicatedPreviewCamera:true' egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq "previewTarget:'street--24'" egypt-life-sim-v2/game-v11-12-ui.js
