@@ -24,9 +24,13 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-12-ui.js
           node --check egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "hardeningVersion:'11.16'" egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq "startHandoffVersion:'11.17'" egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq "previewHeldUntilMenuHidden:true" egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq "twoFrameHandoff:true" egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq "dedicatedPreviewCamera:true" egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq "const START_FIX='11.17'" egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "coreStartIndependent:true" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "directCoreStart:true" egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "sceneRescue:true" egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "game-v11-6-runtime.js?v=11.17" egypt-life-sim-v2/v11-17.html
           grep -Fq "game-v11-12-ui.js?v=11.16" egypt-life-sim-v2/v11-17.html
@@ -40,7 +44,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1117-server.log 2>&1 &
           sleep 2
-      - name: Verify preview and immediate real scene start while late patch is delayed
+      - name: Verify continuous visual handoff and authoritative core Start
         run: |
           cat > v1117-start.mjs <<'EOF'
           import { chromium } from 'playwright';
@@ -48,71 +52,77 @@ jobs:
           import fs from 'node:fs';
 
           const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
-          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
-          const errors=[];
-          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
 
-          // Deliberately hold a late V11 patch. The gameplay scene must no longer wait
-          // for that patch chain once the base game's own Start handler exists.
-          await page.route('**/game-v11.js?v=11',async route=>{
-            await new Promise(r=>setTimeout(r,5000));
-            await route.continue();
+          const luminance=path=>{
+            const png=PNG.sync.read(fs.readFileSync(path));let sum=0,sum2=0,count=0,nonDark=0;
+            for(let i=0;i<png.data.length;i+=4){const lum=(png.data[i]+png.data[i+1]+png.data[i+2])/3;sum+=lum;sum2+=lum*lum;count++;if(lum>28)nonDark++;}
+            const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count;
+            return {mean,variance,nonDarkRatio};
+          };
+          const assertVisible=(label,m)=>{if(m.mean<25||m.variance<180||m.nonDarkRatio<.28)throw new Error(label+' canvas blank/dark '+JSON.stringify(m));};
+          const installCoreTiming=page=>page.evaluate(()=>{
+            const btn=document.getElementById('newGameBtn'),original=btn?.onclick;
+            if(typeof original!=='function')throw new Error('Base newGame onclick missing');
+            btn.onclick=function(...args){
+              const t0=performance.now();const result=original.apply(this,args);const t1=performance.now();
+              window.__CI_CORE_START={durationMs:t1-t0,menuHidden:getComputedStyle(document.getElementById('menu')).display==='none',at:t0};
+              return result;
+            };
           });
 
-          await page.goto('http://127.0.0.1:4173/v11-17.html?ci=start-scene',{waitUntil:'domcontentloaded'});
-          await page.waitForFunction(()=>window.__V1116_START_SCENE?.hardeningVersion==='11.16'&&window.__V1116_START_SCENE?.previewActive===true&&typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
-          await page.waitForTimeout(500);
-
-          const before=await page.evaluate(()=>({
-            preview:window.__V1116_START_SCENE,
-            startFix:window.__V1117_START_FIX,
-            patchReady:window.__V119_READY===true,
-            menu:getComputedStyle(document.getElementById('menu')).display,
-            activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,
-            meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0,
-            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none'
-          }));
-          if(before.menu==='none'||!before.preview?.canvasVisible||before.meshes<50)throw new Error('Preview scene not armed '+JSON.stringify(before));
-          if(before.activeCamera!=='v1116PreviewCamera')throw new Error('Preview camera not active '+JSON.stringify(before));
-          if(before.startFix?.installed!==true||before.startFix?.coreStartIndependent!==true)throw new Error('V11.17 start fix missing '+JSON.stringify(before));
-          if(before.patchReady)throw new Error('Late patch unexpectedly ready; regression setup invalid '+JSON.stringify(before));
+          // Scenario A: hold a late patch for 5s. The base enterGame call must still
+          // run immediately, and the preview framebuffer must be held until the menu
+          // disappears instead of being killed on pointerdown.
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          await page.route('**/game-v11.js?v=11',async route=>{await new Promise(r=>setTimeout(r,5000));await route.continue();});
+          await page.goto('http://127.0.0.1:4173/v11-17.html?ci=start-scene-delayed',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V1116_START_SCENE?.previewActive===true&&typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
+          await installCoreTiming(page);await page.waitForTimeout(350);
+          const before=await page.evaluate(()=>({preview:window.__V1116_START_SCENE,startFix:window.__V1117_START_FIX,patchReady:window.__V119_READY===true,activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0,errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none'}));
+          if(!before.preview?.canvasVisible||before.meshes<50||before.activeCamera!=='v1116PreviewCamera')throw new Error('Preview scene not armed '+JSON.stringify(before));
+          if(before.preview?.startHandoffVersion!=='11.17'||before.preview?.previewHeldUntilMenuHidden!==true||before.preview?.twoFrameHandoff!==true)throw new Error('V11.17 visual handoff not armed '+JSON.stringify(before));
+          if(before.startFix?.directCoreStart!==true||before.patchReady)throw new Error('Delayed-patch regression setup invalid '+JSON.stringify(before));
           if(before.errorVisible)throw new Error('Error box visible before Start');
+          await page.locator('#game').screenshot({path:'v1117-preview.png'});assertVisible('Preview',luminance('v1117-preview.png'));
 
-          await page.locator('#game').screenshot({path:'v1117-preview.png'});
-          const startedAt=Date.now();
-          await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>{
-            const menu=document.getElementById('menu');
-            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
-            return getComputedStyle(menu).display==='none'&&document.body.classList.contains('game-started')&&!!scene?.activeCamera&&scene.activeCamera.name!=='v1116PreviewCamera'&&scene.meshes.length>50;
-          },{timeout:2000});
-          const startMs=Date.now()-startedAt;
-          await page.waitForTimeout(300);
+          const actionStarted=Date.now();await page.tap('#newGameBtn');const playwrightActionMs=Date.now()-actionStarted;
+          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&document.body.classList.contains('game-started'),{timeout:8000});
+          await page.waitForTimeout(350);
           await page.locator('#game').screenshot({path:'v1117-gameplay.png'});
-
-          const after=await page.evaluate(()=>({
-            scene:window.__egyptDebug?.v1117SceneState?.(),
-            preview:window.__V1116_START_SCENE?.previewActive,
-            activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,
-            patchReady:window.__V119_READY===true,
-            sfxScript:!!document.querySelector('script[data-egypt-v1115-sfx]'),
-            errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
-            errorText:document.getElementById('errorBox')?.textContent||''
-          }));
-          if(startMs>1900)throw new Error('Scene entry still waited for late patches '+JSON.stringify({startMs,before,after}));
-          if(after.preview||after.activeCamera==='v1116PreviewCamera')throw new Error('Preview camera leaked into gameplay '+JSON.stringify(after));
-          if(!after.scene?.scene||!after.scene?.activeCamera||after.scene?.meshes<=50||after.scene?.menuVisible)throw new Error('No real gameplay scene after Start '+JSON.stringify(after));
-          if(!after.sfxScript)throw new Error('V11.15 sampled SFX missing from V11.17 entry');
+          const after=await page.evaluate(()=>({scene:window.__egyptDebug?.v1117SceneState?.(),previewState:window.__V1116_START_SCENE,coreTiming:window.__CI_CORE_START,activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,sfxScript:!!document.querySelector('script[data-egypt-v1115-sfx]'),errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',errorText:document.getElementById('errorBox')?.textContent||''}));
+          if(!after.coreTiming?.menuHidden||after.coreTiming.durationMs>500)throw new Error('Base enterGame did not run immediately '+JSON.stringify({playwrightActionMs,before,after}));
+          if((after.scene?.directCoreStarts||0)<1)throw new Error('Authoritative core Start did not execute '+JSON.stringify(after));
+          if(!after.scene?.scene||!after.scene?.activeCamera||after.scene?.meshes<=50||after.scene?.menuVisible||after.activeCamera==='v1116PreviewCamera')throw new Error('No real gameplay scene after Start '+JSON.stringify(after));
+          if(after.previewState?.previewActive||after.previewState?.handoffComplete!==true)throw new Error('Preview handoff did not complete cleanly '+JSON.stringify(after.previewState));
+          if(!after.sfxScript)throw new Error('V11.15 sampled SFX missing');
           if(after.errorVisible)throw new Error('Runtime error after Start: '+after.errorText);
-
-          const png=PNG.sync.read(fs.readFileSync('v1117-gameplay.png'));
-          let sum=0,sum2=0,count=0,nonDark=0;
-          for(let i=0;i<png.data.length;i+=4){const lum=(png.data[i]+png.data[i+1]+png.data[i+2])/3;sum+=lum;sum2+=lum*lum;count++;if(lum>28)nonDark++;}
-          const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count;
-          if(mean<25||variance<180||nonDarkRatio<.28)throw new Error('Gameplay canvas blank/dark '+JSON.stringify({mean,variance,nonDarkRatio,after}));
+          const gameplayMetrics=luminance('v1117-gameplay.png');assertVisible('Gameplay',gameplayMetrics);
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.17 immediate scene start passed',{startMs,mean,variance,nonDarkRatio,before,after});
+          await page.close();
+
+          // Scenario B: reproduce the fully-loaded live page where V12 has installed
+          // its capture-phase prologue listener. V11.17 must keep base Start
+          // authoritative so the menu cannot vanish into a hidden/blank prologue gap.
+          const live=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+          const liveErrors=[];live.on('pageerror',e=>liveErrors.push('pageerror: '+e.message));live.on('console',m=>{if(m.type()==='error')liveErrors.push('console: '+m.text());});
+          await live.goto('http://127.0.0.1:4173/v11-17.html?ci=start-scene-v12',{waitUntil:'domcontentloaded'});
+          await live.waitForFunction(()=>window.__V12_PROLOGUE?.ready===true&&window.__V1116_START_SCENE?.previewActive===true&&typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
+          await installCoreTiming(live);
+          const v12Before=await live.evaluate(()=>({prologue:window.__V12_PROLOGUE,preview:window.__V1116_START_SCENE,activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null}));
+          await live.tap('#newGameBtn');
+          await live.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&document.body.classList.contains('game-started'),{timeout:5000});
+          await live.waitForTimeout(350);await live.locator('#game').screenshot({path:'v1117-v12-gameplay.png'});
+          const v12After=await live.evaluate(()=>({coreTiming:window.__CI_CORE_START,scene:window.__egyptDebug?.v1117SceneState?.(),activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,prologueActive:document.getElementById('v12Prologue')?.classList.contains('active')===true,preview:window.__V1116_START_SCENE,errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',errorText:document.getElementById('errorBox')?.textContent||''}));
+          if(!v12After.coreTiming?.menuHidden||v12After.coreTiming.durationMs>500)throw new Error('V12 listener delayed base enterGame '+JSON.stringify({v12Before,v12After}));
+          if(v12After.prologueActive)throw new Error('Hidden V12 prologue still intercepted Start '+JSON.stringify(v12After));
+          if(!v12After.scene?.scene||!v12After.scene?.activeCamera||v12After.scene?.meshes<=50||v12After.scene?.menuVisible||v12After.activeCamera==='v1116PreviewCamera')throw new Error('V12-loaded page has no gameplay scene '+JSON.stringify(v12After));
+          if(v12After.preview?.previewActive||v12After.preview?.handoffComplete!==true)throw new Error('V12-loaded preview handoff failed '+JSON.stringify(v12After.preview));
+          if(v12After.errorVisible)throw new Error('V12-loaded runtime error: '+v12After.errorText);
+          const v12Metrics=luminance('v1117-v12-gameplay.png');assertVisible('V12 gameplay',v12Metrics);
+          if(liveErrors.length)throw new Error(liveErrors.join('\n'));
+
+          console.log('V11.17 visual handoff and authoritative Start passed',{playwrightActionMs,coreTiming:after.coreTiming,gameplayMetrics,v12CoreTiming:v12After.coreTiming,v12Metrics});
           await browser.close();
           EOF
           node v1117-start.mjs
@@ -124,4 +134,5 @@ jobs:
           path: |
             v1117-preview.png
             v1117-gameplay.png
+            v1117-v12-gameplay.png
           if-no-files-found: ignore
