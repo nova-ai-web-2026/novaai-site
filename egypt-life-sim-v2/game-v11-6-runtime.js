@@ -5,7 +5,7 @@
   const START_FIX='11.17';
   const NativeAC=window.AudioContext||window.webkitAudioContext;
   let ctx=null,master=null,analyser=null,roadBed=null,timer=null,starting=false,ready=false,menuObserver=null,corePoll=null;
-  let originalCreateGain=null,gameMaster=null,legacyBusCount=0,coreClickPending=null,coreRescueUsed=0,lastStartId=null;
+  let originalCreateGain=null,gameMaster=null,legacyBusCount=0,coreClickPending=null,coreRescueUsed=0,lastStartId=null,directCoreStarts=0;
 
   const menuVisible=()=>{const m=document.getElementById('menu');if(!m)return false;const s=getComputedStyle(m);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0';};
   const sceneState=()=>{
@@ -16,10 +16,10 @@
       cameras:scene?.cameras?.length||0,activeCamera:!!scene?.activeCamera,
       renderWidth:engine?.getRenderWidth?.()||0,renderHeight:engine?.getRenderHeight?.()||0,
       canvasWidth:canvas?.width||0,canvasHeight:canvas?.height||0,
-      coreClickPending,coreRescueUsed,lastStartId,latePatchReady:ready
+      coreClickPending,coreRescueUsed,lastStartId,directCoreStarts,latePatchReady:ready
     };
   };
-  const audioState=()=>({...window.__V119_AUDIO,version:VERSION,startFix:START_FIX,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,coreClickPending,coreRescueUsed});
+  const audioState=()=>({...window.__V119_AUDIO,version:VERSION,startFix:START_FIX,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,coreClickPending,coreRescueUsed,directCoreStarts});
   const attachDebug=()=>{
     window.__V119_AUDIO_STATE=audioState;window.__V118_AUDIO_STATE=audioState;
     window.__egyptDebug=window.__egyptDebug||{};
@@ -125,7 +125,18 @@
     startAudio();
     const el=e.currentTarget;
     if(coreHandlerReady(el)){
-      coreClickPending=null;ensureSceneAfterStart(el,id);return;
+      // V12's cinematic/prologue and other late layers also register capture-phase
+      // click handlers. Make the base game's own onclick authoritative: stop later
+      // capture listeners, invoke enterGame immediately ourselves, then repair the
+      // Babylon camera/canvas. This removes the blank gap after the preview stops.
+      coreClickPending=null;
+      e.preventDefault();e.stopImmediatePropagation();
+      if(el.__v1117DirectStarting)return;
+      el.__v1117DirectStarting=true;directCoreStarts++;
+      ensureSceneAfterStart(el,id);
+      try{el.onclick.call(el,e);}catch(err){fail('V11.17 direct core Start failed',err);}
+      setTimeout(()=>{el.__v1117DirectStarting=false;},0);
+      return;
     }
     // Only block if the base game's own onclick has not been installed yet. Late
     // world/audio/visual patches must never prevent the core scene from opening.
@@ -156,7 +167,7 @@
     if(menuVisible()){
       const status=document.getElementById('menuStatus');if(status&&!coreClickPending)status.textContent='جاهز — ابدأ يوم جديد.';
     }
-    window.__V119_STARTUP={version:VERSION,startFix:START_FIX,ready:true,queuedStartSupported:false,coreStartIndependent:true,audioArmedBeforeCore:true,stableMenu:true,sceneRescue:true};window.__V118_STARTUP=window.__V119_STARTUP;window.__V117_STARTUP=window.__V119_STARTUP;window.__V116_STARTUP=window.__V119_STARTUP;
+    window.__V119_STARTUP={version:VERSION,startFix:START_FIX,ready:true,queuedStartSupported:false,coreStartIndependent:true,directCoreStart:true,audioArmedBeforeCore:true,stableMenu:true,sceneRescue:true};window.__V118_STARTUP=window.__V119_STARTUP;window.__V117_STARTUP=window.__V119_STARTUP;window.__V116_STARTUP=window.__V119_STARTUP;
   }
 
   if(installSharedContextConstructor()){
@@ -164,6 +175,6 @@
     window.__V118_AUDIO=window.__V119_AUDIO;window.__V117_AUDIO=window.__V119_AUDIO;window.__V116_AUDIO=window.__V119_AUDIO;
   }
   installStartBridge();attachDebug();window.__V119_MARK_READY=markReady;window.__V118_MARK_READY=markReady;window.__V117_MARK_READY=markReady;window.__V119_AUDIO_START=startAudio;window.__V118_AUDIO_START=startAudio;window.__V117_AUDIO_START=startAudio;
-  window.__V1117_START_FIX={version:START_FIX,installed:true,coreStartIndependent:true,sceneRescue:true};
+  window.__V1117_START_FIX={version:START_FIX,installed:true,coreStartIndependent:true,directCoreStart:true,sceneRescue:true};
   window.addEventListener('beforeunload',()=>{if(timer)clearInterval(timer);if(corePoll)clearInterval(corePoll);menuObserver?.disconnect();},{once:true});
 })();
