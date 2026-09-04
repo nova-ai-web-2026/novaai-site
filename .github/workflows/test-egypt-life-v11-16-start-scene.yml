@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.16 Start Scene
+name: Test Egyptian Life Simulator V11.17 Scene Start
 
 on:
   pull_request:
@@ -16,16 +16,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.16 files
+      - name: Validate V11.17 files
         run: |
           test -s egypt-life-sim-v2/game-v11-12-ui.js
-          test -s egypt-life-sim-v2/v11-16.html
+          test -s egypt-life-sim-v2/game-v11-6-runtime.js
+          test -s egypt-life-sim-v2/v11-17.html
           node --check egypt-life-sim-v2/game-v11-12-ui.js
+          node --check egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "hardeningVersion:'11.16'" egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq "dedicatedPreviewCamera:true" egypt-life-sim-v2/game-v11-12-ui.js
-          grep -Fq "game-v11-12-ui.js?v=11.16" egypt-life-sim-v2/v11-16.html
-          grep -Fq "game-v11-15-real-sfx.js?v=11.15" egypt-life-sim-v2/v11-16.html
-          grep -Fq "game-v11-12-ui.js?v=11.16" egypt-life-sim-v2/v11-15.html
+          grep -Fq "const START_FIX='11.17'" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "coreStartIndependent:true" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "sceneRescue:true" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "game-v11-6-runtime.js?v=11.17" egypt-life-sim-v2/v11-17.html
+          grep -Fq "game-v11-12-ui.js?v=11.16" egypt-life-sim-v2/v11-17.html
+          grep -Fq "game-v11-15-real-sfx.js?v=11.15" egypt-life-sim-v2/v11-17.html
       - name: Install Chromium and PNG tools
         run: |
           npm init -y >/dev/null 2>&1
@@ -33,11 +38,11 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start game server
         run: |
-          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1116-server.log 2>&1 &
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1117-server.log 2>&1 &
           sleep 2
-      - name: Verify visible moving start scene
+      - name: Verify preview and immediate real scene start while late patch is delayed
         run: |
-          cat > v1116-start.mjs <<'EOF'
+          cat > v1117-start.mjs <<'EOF'
           import { chromium } from 'playwright';
           import { PNG } from 'pngjs';
           import fs from 'node:fs';
@@ -47,65 +52,76 @@ jobs:
           const errors=[];
           page.on('pageerror',e=>errors.push('pageerror: '+e.message));
           page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
-          await page.goto('http://127.0.0.1:4173/v11-16.html?ci=start-scene',{waitUntil:'domcontentloaded'});
-          await page.waitForFunction(()=>window.__V1116_START_SCENE?.hardeningVersion==='11.16'&&window.__V1116_START_SCENE?.previewActive===true,{timeout:60000});
-          await page.waitForTimeout(900);
+
+          // Deliberately hold a late V11 patch. The gameplay scene must no longer wait
+          // for that patch chain once the base game's own Start handler exists.
+          await page.route('**/game-v11.js?v=11',async route=>{
+            await new Promise(r=>setTimeout(r,5000));
+            await route.continue();
+          });
+
+          await page.goto('http://127.0.0.1:4173/v11-17.html?ci=start-scene',{waitUntil:'domcontentloaded'});
+          await page.waitForFunction(()=>window.__V1116_START_SCENE?.hardeningVersion==='11.16'&&window.__V1116_START_SCENE?.previewActive===true&&typeof document.getElementById('newGameBtn')?.onclick==='function',{timeout:60000});
+          await page.waitForTimeout(500);
 
           const before=await page.evaluate(()=>({
-            state:window.__V1116_START_SCENE,
+            preview:window.__V1116_START_SCENE,
+            startFix:window.__V1117_START_FIX,
+            patchReady:window.__V119_READY===true,
             menu:getComputedStyle(document.getElementById('menu')).display,
-            menuBg:getComputedStyle(document.getElementById('menu')).backgroundImage,
             activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,
-            sfxScript:!!document.querySelector('script[data-egypt-v1115-sfx]'),
+            meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0,
             errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none'
           }));
-          if(before.menu==='none'||!before.state.canvasVisible||before.state.sceneMeshes<50)throw new Error('Preview scene not visibly armed '+JSON.stringify(before));
-          if(before.activeCamera!=='v1116PreviewCamera')throw new Error('Dedicated preview camera not active '+JSON.stringify(before));
-          if(!before.sfxScript)throw new Error('V11.15 sampled SFX missing from V11.16 entry');
-          if(before.errorVisible)throw new Error('Error box visible before start');
+          if(before.menu==='none'||!before.preview?.canvasVisible||before.meshes<50)throw new Error('Preview scene not armed '+JSON.stringify(before));
+          if(before.activeCamera!=='v1116PreviewCamera')throw new Error('Preview camera not active '+JSON.stringify(before));
+          if(before.startFix?.installed!==true||before.startFix?.coreStartIndependent!==true)throw new Error('V11.17 start fix missing '+JSON.stringify(before));
+          if(before.patchReady)throw new Error('Late patch unexpectedly ready; regression setup invalid '+JSON.stringify(before));
+          if(before.errorVisible)throw new Error('Error box visible before Start');
 
-          await page.locator('#game').screenshot({path:'v1116-canvas-a.png'});
-          const p1=before.state.previewCamera;
-          await page.waitForTimeout(850);
-          const p2=await page.evaluate(()=>window.__V1116_START_SCENE?.previewCamera);
-          await page.locator('#game').screenshot({path:'v1116-canvas-b.png'});
-          const cameraTravel=Math.hypot((p2?.x||0)-(p1?.x||0),(p2?.y||0)-(p1?.y||0),(p2?.z||0)-(p1?.z||0));
-          if(cameraTravel<.03)throw new Error('Preview camera is not moving '+JSON.stringify({p1,p2,cameraTravel}));
-
-          const a=PNG.sync.read(fs.readFileSync('v1116-canvas-a.png'));
-          const b=PNG.sync.read(fs.readFileSync('v1116-canvas-b.png'));
-          let sum=0,sum2=0,diff=0,count=0,nonDark=0;
-          for(let i=0;i<a.data.length;i+=4){
-            const lum=(a.data[i]+a.data[i+1]+a.data[i+2])/3;
-            sum+=lum;sum2+=lum*lum;count++;if(lum>28)nonDark++;
-            diff+=Math.abs(a.data[i]-b.data[i])+Math.abs(a.data[i+1]-b.data[i+1])+Math.abs(a.data[i+2]-b.data[i+2]);
-          }
-          const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count,meanRgbDiff=diff/(count*3);
-          if(mean<25||variance<180||nonDarkRatio<.28)throw new Error('Canvas is visually blank/dark '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff}));
-          if(meanRgbDiff<.12)throw new Error('Canvas preview is visually static '+JSON.stringify({mean,variance,nonDarkRatio,meanRgbDiff,cameraTravel}));
-
+          await page.locator('#game').screenshot({path:'v1117-preview.png'});
+          const startedAt=Date.now();
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&document.body.classList.contains('game-started'),{timeout:60000});
-          await page.waitForTimeout(500);
+          await page.waitForFunction(()=>{
+            const menu=document.getElementById('menu');
+            const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
+            return getComputedStyle(menu).display==='none'&&document.body.classList.contains('game-started')&&!!scene?.activeCamera&&scene.activeCamera.name!=='v1116PreviewCamera'&&scene.meshes.length>50;
+          },{timeout:2000});
+          const startMs=Date.now()-startedAt;
+          await page.waitForTimeout(300);
+          await page.locator('#game').screenshot({path:'v1117-gameplay.png'});
+
           const after=await page.evaluate(()=>({
+            scene:window.__egyptDebug?.v1117SceneState?.(),
             preview:window.__V1116_START_SCENE?.previewActive,
             activeCamera:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.activeCamera?.name||null,
+            patchReady:window.__V119_READY===true,
+            sfxScript:!!document.querySelector('script[data-egypt-v1115-sfx]'),
             errorVisible:getComputedStyle(document.getElementById('errorBox')).display!=='none',
             errorText:document.getElementById('errorBox')?.textContent||''
           }));
+          if(startMs>1900)throw new Error('Scene entry still waited for late patches '+JSON.stringify({startMs,before,after}));
           if(after.preview||after.activeCamera==='v1116PreviewCamera')throw new Error('Preview camera leaked into gameplay '+JSON.stringify(after));
-          if(after.errorVisible)throw new Error('Runtime error after start: '+after.errorText);
+          if(!after.scene?.scene||!after.scene?.activeCamera||after.scene?.meshes<=50||after.scene?.menuVisible)throw new Error('No real gameplay scene after Start '+JSON.stringify(after));
+          if(!after.sfxScript)throw new Error('V11.15 sampled SFX missing from V11.17 entry');
+          if(after.errorVisible)throw new Error('Runtime error after Start: '+after.errorText);
+
+          const png=PNG.sync.read(fs.readFileSync('v1117-gameplay.png'));
+          let sum=0,sum2=0,count=0,nonDark=0;
+          for(let i=0;i<png.data.length;i+=4){const lum=(png.data[i]+png.data[i+1]+png.data[i+2])/3;sum+=lum;sum2+=lum*lum;count++;if(lum>28)nonDark++;}
+          const mean=sum/count,variance=sum2/count-mean*mean,nonDarkRatio=nonDark/count;
+          if(mean<25||variance<180||nonDarkRatio<.28)throw new Error('Gameplay canvas blank/dark '+JSON.stringify({mean,variance,nonDarkRatio,after}));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.16 visible start scene passed',{mean,variance,nonDarkRatio,meanRgbDiff,cameraTravel,before,after});
+          console.log('V11.17 immediate scene start passed',{startMs,mean,variance,nonDarkRatio,before,after});
           await browser.close();
           EOF
-          node v1116-start.mjs
-      - name: Upload V11.16 start screenshots
+          node v1117-start.mjs
+      - name: Upload V11.17 scene screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v1116-start-scene-screenshots
+          name: v1117-scene-start-screenshots
           path: |
-            v1116-canvas-a.png
-            v1116-canvas-b.png
+            v1117-preview.png
+            v1117-gameplay.png
           if-no-files-found: ignore
