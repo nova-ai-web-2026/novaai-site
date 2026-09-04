@@ -2,16 +2,30 @@
   'use strict';
 
   const NativeAC=window.AudioContext||window.webkitAudioContext;
-  let ctx=null,master=null,analyser=null,roadBed=null,timer=null,lastCam=null,stepDistance=0,starting=false,ready=false,queuedStart=null,menuObserver=null;
-  let originalCreateGain=null,gameMaster=null,legacyBusCount=0;
+  let ctx=null,master=null,analyser=null,roadBed=null,timer=null,lastCam=null,stepDistance=0,starting=false,ready=false,menuObserver=null,corePoll=null;
+  let originalCreateGain=null,gameMaster=null,legacyBusCount=0,coreClickPending=null,coreRescueUsed=0,lastStartId=null;
+
+  const menuVisible=()=>{const m=document.getElementById('menu');return !!m&&getComputedStyle(m).display!=='none';};
+  const sceneState=()=>{
+    const engine=window.BABYLON?.Engine?.LastCreatedEngine||null,scene=engine?.scenes?.[0]||null,canvas=document.getElementById('game');
+    return {
+      version:'11.8',menuVisible:menuVisible(),gameStarted:document.body.classList.contains('game-started'),
+      engine:!!engine,scene:!!scene,sceneReady:!!scene?.isReady?.(),meshes:scene?.meshes?.length||0,
+      cameras:scene?.cameras?.length||0,activeCamera:!!scene?.activeCamera,
+      renderWidth:engine?.getRenderWidth?.()||0,renderHeight:engine?.getRenderHeight?.()||0,
+      canvasWidth:canvas?.width||0,canvasHeight:canvas?.height||0,
+      coreClickPending,coreRescueUsed,lastStartId
+    };
+  };
 
   const stableMenu=()=>{
+    if(!menuVisible())return;
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
     if(kicker&&kicker.textContent!=='HAYAT MASR • V11.8')kicker.textContent='HAYAT MASR • V11.8';
-    const t='حياة مصر — مؤثرات لعب أوضح للخطوات والتفاعل والشراء والأبواب، مع صوت الشارع الهادئ.';
+    const t='حياة مصر — مؤثرات لعب أوضح، مع بداية مباشرة للمشهد من غير ما الصوت يعطل الدخول.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.8 — gameplay sound effects')foot.textContent='V11.8 — gameplay sound effects';
-    if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
+    if(foot&&foot.textContent!=='V11.8 — direct scene start + gameplay SFX')foot.textContent='V11.8 — direct scene start + gameplay SFX';
+    if(status&&!ready&&!coreClickPending&&status.textContent!=='جاري تجهيز التفاصيل…')status.textContent='جاري تجهيز التفاصيل…';
   };
 
   function fail(msg,err){
@@ -37,10 +51,7 @@
 
   function installSharedContextConstructor(){
     if(!NativeAC)return false;
-    function SharedAudioContext(...args){
-      if(!ctx)createContext(args);
-      return ctx;
-    }
+    function SharedAudioContext(...args){if(!ctx)createContext(args);return ctx;}
     SharedAudioContext.prototype=NativeAC.prototype;
     try{
       window.AudioContext=SharedAudioContext;
@@ -60,14 +71,12 @@
       g.connect=(dest,...rest)=>{
         if(dest===ctx.destination&&g!==master){
           if(!gameMaster){
-            gameMaster=g;
-            g.__v118GameMaster=true;
+            gameMaster=g;g.__v118GameMaster=true;
             window.__V118_GAME_MASTER=g;window.__V117_GAME_MASTER=g;window.__V116_GAME_MASTER=g;
             try{g.gain.setTargetAtTime(.24,ctx.currentTime,.03);}catch(_){}
             return master?connect(master,...rest):connect(dest,...rest);
           }
-          legacyBusCount++;
-          g.__v118LegacyExtraBus=true;
+          legacyBusCount++;g.__v118LegacyExtraBus=true;
           try{g.gain.setValueAtTime(0,ctx.currentTime);}catch(_){}
           return master?connect(master,...rest):connect(dest,...rest);
         }
@@ -115,14 +124,47 @@
     }catch(err){fail('V11.8 audio start failed',err);}finally{starting=false;}
   }
 
-  function handleStartCapture(id,e){
-    startAudio(true);
-    if(ready){document.body.classList.add('game-started');return;}
-    queuedStart=id;e.preventDefault();e.stopImmediatePropagation();
-    const status=document.getElementById('menuStatus');if(status)status.textContent='ثانية واحدة… بنجهز الشارع والصوت.';
+  function coreHandlerReady(el){return !!el&&typeof el.onclick==='function';}
+
+  function ensureSceneAfterStart(el,id){
+    lastStartId=id;document.body.classList.add('game-started');
+    const repair=()=>{
+      try{
+        const engine=window.BABYLON?.Engine?.LastCreatedEngine,scene=engine?.scenes?.[0];
+        engine?.resize?.();
+        if(scene&&!scene.activeCamera&&scene.cameras?.[0])scene.activeCamera=scene.cameras[0];
+      }catch(err){console.warn('V11.8 scene resize repair skipped',err);}
+    };
+    setTimeout(repair,40);
+    setTimeout(()=>{
+      const menu=document.getElementById('menu');
+      const stillVisible=!!menu&&getComputedStyle(menu).display!=='none';
+      if(stillVisible&&coreHandlerReady(el)&&!el.__v118SceneRescue){
+        el.__v118SceneRescue=true;coreRescueUsed++;
+        try{el.onclick.call(el);}catch(err){fail('V11.8 core scene rescue failed',err);}
+        document.body.classList.add('game-started');repair();
+        setTimeout(()=>{el.__v118SceneRescue=false;},500);
+      }
+      window.__V118_SCENE_START=sceneState();
+    },180);
   }
 
-  function installStartGate(){
+  function handleStartCapture(id,e){
+    startAudio(true);
+    const el=e.currentTarget;
+    if(coreHandlerReady(el)){
+      coreClickPending=null;
+      ensureSceneAfterStart(el,id);
+      return;
+    }
+    // Only queue when the base game's own handler is not installed yet. Never wait
+    // for V9/V10/V11 patches or audio/SFX readiness before allowing the core scene.
+    coreClickPending=id;
+    e.preventDefault();e.stopImmediatePropagation();
+    const status=document.getElementById('menuStatus');if(status)status.textContent='بنجهز المشهد الأساسي…';
+  }
+
+  function installStartBridge(){
     window.__V118_READY=false;window.__V117_READY=false;document.body.classList.remove('game-started');stableMenu();
     for(const id of ['newGameBtn','continueBtn']){
       const el=document.getElementById(id);if(!el)continue;
@@ -130,31 +172,41 @@
       el.addEventListener('touchstart',()=>startAudio(false),{capture:true,passive:true});
       el.addEventListener('click',e=>handleStartCapture(id,e),{capture:true});
     }
+    corePoll=setInterval(()=>{
+      if(!coreClickPending)return;
+      const id=coreClickPending,el=document.getElementById(id);
+      if(!coreHandlerReady(el))return;
+      coreClickPending=null;
+      setTimeout(()=>el.click(),0);
+    },25);
     const toggle=document.getElementById('soundToggle');
     if(toggle)new MutationObserver(()=>{if(!master||!ctx)return;const muted=toggle.textContent.includes('مكتوم');master.gain.setTargetAtTime(muted?0:.72,ctx.currentTime,.05);}).observe(toggle,{childList:true,subtree:true,characterData:true});
     const menu=document.getElementById('menu');
-    if(menu)menuObserver=new MutationObserver(()=>{if(!ready)stableMenu();});
+    if(menu)menuObserver=new MutationObserver(()=>{if(!ready&&menuVisible())stableMenu();});
     menuObserver?.observe(menu,{childList:true,subtree:true,characterData:true});
   }
 
   function markReady(){
     if(ready)return;ready=true;window.__V118_READY=true;window.__V117_READY=true;window.__V116_READY=true;
-    menuObserver?.disconnect();stableMenu();
-    const status=document.getElementById('menuStatus');if(status)status.textContent='جاهز — ابدأ يوم جديد.';
-    window.__V118_STARTUP={version:'11.8',ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};
+    menuObserver?.disconnect();
+    if(menuVisible()){
+      stableMenu();
+      const status=document.getElementById('menuStatus');if(status&&!coreClickPending)status.textContent='جاهز — ابدأ يوم جديد.';
+    }
+    window.__V118_STARTUP={version:'11.8',ready:true,coreStartIndependent:true,audioArmedBeforeCore:true,stableMenu:true,sceneRescue:true};
     window.__V117_STARTUP=window.__V118_STARTUP;window.__V116_STARTUP=window.__V118_STARTUP;
-    if(queuedStart){const id=queuedStart;queuedStart=null;setTimeout(()=>document.getElementById(id)?.click(),0);}
   }
 
   if(installSharedContextConstructor()){
     window.__V118_AUDIO={version:'11.8',engine:'shared-native-audiocontext-plus-sampled-sfx',armedBeforeCore:true,started:false,contextState:null,masterGain:.72,gameMasterPreserved:true,legacyExtraBusesMuted:true,hornEvents:false,oscillatorTones:false};
     window.__V117_AUDIO=window.__V118_AUDIO;window.__V116_AUDIO=window.__V118_AUDIO;
   }
-  installStartGate();
+  installStartBridge();
   window.__V118_MARK_READY=markReady;window.__V117_MARK_READY=markReady;
   window.__V118_AUDIO_START=startAudio;window.__V117_AUDIO_START=startAudio;
   window.__egyptDebug=window.__egyptDebug||{};
-  window.__egyptDebug.v118AudioState=()=>({...window.__V118_AUDIO,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,queuedStart});
+  window.__egyptDebug.v118AudioState=()=>({...window.__V118_AUDIO,ctxState:ctx?.state||null,masterValue:master?.gain?.value??null,gameMasterValue:gameMaster?.gain?.value??null,gameMasterConnected:!!gameMaster,legacyBusCount,ready,coreClickPending,coreRescueUsed});
+  window.__egyptDebug.v118SceneState=sceneState;
   window.__egyptDebug.v117AudioState=window.__egyptDebug.v118AudioState;window.__egyptDebug.v116AudioState=window.__egyptDebug.v118AudioState;
-  window.addEventListener('beforeunload',()=>{if(timer)clearInterval(timer);menuObserver?.disconnect();},{once:true});
+  window.addEventListener('beforeunload',()=>{if(timer)clearInterval(timer);if(corePoll)clearInterval(corePoll);menuObserver?.disconnect();},{once:true});
 })();
