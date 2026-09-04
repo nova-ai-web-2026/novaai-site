@@ -27,14 +27,15 @@
   document.getElementById('v115SoundTest')?.remove();
 
   window.__V11_AUDIOFIX={
-    version:10,
+    version:11,
     singleAudioEngine:true,
     startupGuard:false,
     legacyExtraLayersDisabled:true,
     v116Runtime:true,
     v117EarlyRuntime:true,
     v118EventSfx:true,
-    gameplayMasterPreserved:true
+    gameplayMasterPreserved:true,
+    sceneStartIndependent:true
   };
   if(window.__egyptDebug)window.__egyptDebug.v11AudioFixState=()=>({...window.__V11_AUDIOFIX});
   loadV118Fallback();
