@@ -1,0 +1,84 @@
+name: Test Egyptian Life Simulator V11.15 Sampled SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-15.yml'
+  workflow_dispatch:
+
+jobs:
+  v1115-sampled-sfx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.15 files
+        run: |
+          test -s egypt-life-sim-v2/v11-15.html
+          test -s egypt-life-sim-v2/game-v11-15-real-sfx.js
+          node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "game-v11-15-real-sfx.js?v=11.15" egypt-life-sim-v2/v11-15.html
+          grep -Fq "kenney-cc0-multivariant-sfx" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "bus.gain.value=.76" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "footstep07.ogg" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "error_001.ogg" egypt-life-sim-v2/game-v11-15-real-sfx.js
+      - name: Prepare runner Chrome
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright-core@1.55.0
+          test -x /usr/bin/google-chrome || test -x /usr/bin/google-chrome-stable
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1115-server.log 2>&1 &
+          sleep 2
+      - name: Verify sampled bank, mix and variant rotation
+        run: |
+          cat > v1115-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright-core';
+          import fs from 'node:fs';
+          const executablePath=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':'/usr/bin/google-chrome-stable';
+          const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[],notFound=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text());});
+          page.on('response',r=>{
+            if(r.status()!==404)return;
+            const u=r.url();notFound.push(u);
+            if(u.includes('game-v11-15-real-sfx.js')||u.includes('/audio/')||u.endsWith('.ogg'))errors.push('404 release resource: '+u);
+          });
+          await page.goto('http://127.0.0.1:4173/v11-15.html?ci=v1115',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1115_SFX?.version==='11.15'&&!!window.__V1115_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:15000});
+          await page.evaluate(()=>window.__V1115_SFX_API.unlock());
+          await page.waitForFunction(()=>window.__V1115_SFX_API.state().bankReady===true,{timeout:30000});
+          const state=await page.evaluate(()=>window.__V1115_SFX_API.state());
+          if(state.remoteTotal!==17)throw new Error('Expected 17 sampled variants '+JSON.stringify(state));
+          if(state.remoteLoaded<10)throw new Error('Too few real Kenney samples loaded '+JSON.stringify(state));
+          if((state.variations.step_pavement||0)<2||(state.variations.step_asphalt||0)<2)throw new Error('Footstep variation missing '+JSON.stringify(state));
+          if(state.busGain>.80)throw new Error('SFX bus still too hot '+JSON.stringify(state));
+          if(state.olderSfxMuted!==true)throw new Error('Older SFX buses still audible '+JSON.stringify(state));
+
+          async function playAndRead(name,wait=260){
+            return await page.evaluate(async ({name,wait})=>{
+              const api=window.__V1115_SFX_API;
+              api.play(name);
+              await new Promise(r=>setTimeout(r,wait));
+              return api.state().lastPlayed;
+            },{name,wait});
+          }
+          const categories={};
+          for(const name of ['interact','buy','door','reward','deny']){
+            categories[name]=await playAndRead(name);
+            if(!categories[name]||!String(categories[name].transport).includes('kenney'))throw new Error('Expected real sampled '+name+' '+JSON.stringify(categories[name]));
+          }
+          const first=await playAndRead('step',220);
+          const second=await playAndRead('step',220);
+          if(first?.variant===second?.variant)throw new Error('Footstep variant repeated '+JSON.stringify({first,second}));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.15 sampled SFX passed',{state,categories,first,second,nonCritical404:notFound});
+          await browser.close();
+          EOF
+          node v1115-smoke.mjs
