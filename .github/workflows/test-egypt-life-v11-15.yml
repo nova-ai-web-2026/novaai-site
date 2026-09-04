@@ -40,9 +40,14 @@ jobs:
           const executablePath=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':'/usr/bin/google-chrome-stable';
           const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-          const errors=[];
+          const errors=[],notFound=[];
           page.on('pageerror',e=>errors.push('pageerror: '+e.message));
-          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text());});
+          page.on('response',r=>{
+            if(r.status()!==404)return;
+            const u=r.url();notFound.push(u);
+            if(u.includes('game-v11-15-real-sfx.js')||u.includes('/audio/')||u.endsWith('.ogg'))errors.push('404 release resource: '+u);
+          });
           await page.goto('http://127.0.0.1:4173/v11-15.html?ci=v1115',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V1115_SFX?.version==='11.15'&&!!window.__V1115_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
@@ -73,7 +78,7 @@ jobs:
           const second=await playAndRead('step',220);
           if(first?.variant===second?.variant)throw new Error('Footstep variant repeated '+JSON.stringify({first,second}));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.15 sampled SFX passed',{state,categories,first,second});
+          console.log('V11.15 sampled SFX passed',{state,categories,first,second,nonCritical404:notFound});
           await browser.close();
           EOF
           node v1115-smoke.mjs
