@@ -1,4 +1,4 @@
-name: Test Egyptian Life Simulator V11.8 SFX
+name: Test Egyptian Life Simulator V11.8 Scene + SFX
 
 on:
   pull_request:
@@ -8,16 +8,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  v118-sfx:
+  v118-scene-sfx:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate V11.8 sample SFX files
+      - name: Validate V11.8 scene bridge and sample SFX files
         run: |
+          test -s egypt-life-sim-v2/game-v11-6-runtime.js
           test -s egypt-life-sim-v2/game-v11-8-sfx.js
           for f in step_pavement.wav step_asphalt.wav interact.wav buy_coin.wav door.wav reward.wav; do test -s "egypt-life-sim-v2/audio/v11-8/$f"; done
+          node --check egypt-life-sim-v2/game-v11-6-runtime.js
           node --check egypt-life-sim-v2/game-v11-8-sfx.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "coreStartIndependent:true" egypt-life-sim-v2/game-v11-6-runtime.js
+          grep -Fq "sceneRescue:true" egypt-life-sim-v2/game-v11-6-runtime.js
           grep -Fq "game-v11-8-sfx.js?v=11.8" egypt-life-sim-v2/index.html
           grep -Fq "sampled-media-sfx" egypt-life-sim-v2/game-v11-8-sfx.js
           grep -Fq "legacyHum:false" egypt-life-sim-v2/game-v11-8-sfx.js
@@ -31,19 +35,47 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v118-server.log 2>&1 &
           sleep 2
-      - name: Verify real WAV gameplay effects on mobile gesture policy
+      - name: Verify early scene entry and real WAV gameplay effects
         run: |
           cat > v118-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true});
+
+          // Regression 1: delay a late V11 patch on purpose. Start must still enter the
+          // base scene immediately and must not wait for the patch/audio chain.
+          const early=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const earlyErrors=[];
+          early.on('pageerror',e=>earlyErrors.push('pageerror: '+e.message));
+          early.on('console',m=>{if(m.type()==='error')earlyErrors.push('console: '+m.text());});
+          await early.route('**/game-v11.js?v=11',async route=>{await new Promise(r=>setTimeout(r,2500));await route.continue();});
+          await early.goto('http://127.0.0.1:4173/?ci=v118-early-scene',{waitUntil:'domcontentloaded'});
+          await early.waitForFunction(()=>typeof document.getElementById('newGameBtn')?.onclick==='function'&&typeof window.__egyptDebug?.v118SceneState==='function',{timeout:25000});
+          const earlyBefore=await early.evaluate(()=>({patchReady:window.__V118_READY===true,scene:window.__egyptDebug.v118SceneState()}));
+          await early.tap('#newGameBtn');
+          await early.waitForFunction(()=>{
+            const s=window.__egyptDebug?.v118SceneState?.();
+            return s&&s.menuVisible===false&&s.gameStarted===true&&s.engine===true&&s.scene===true&&s.activeCamera===true&&s.meshes>50&&s.renderWidth>0&&s.renderHeight>0;
+          },{timeout:6000});
+          await early.waitForTimeout(300);
+          const earlyAfter=await early.evaluate(()=>window.__egyptDebug.v118SceneState());
+          if(earlyAfter.menuVisible||!earlyAfter.gameStarted||!earlyAfter.scene||!earlyAfter.activeCamera||earlyAfter.meshes<=50)throw new Error('Early Start did not enter a real scene '+JSON.stringify({earlyBefore,earlyAfter}));
+          if(await early.isVisible('#errorBox'))throw new Error('Early Start errorBox: '+await early.textContent('#errorBox'));
+          if(earlyErrors.length)throw new Error('Early Start errors: '+earlyErrors.join('\n'));
+          await early.close();
+
+          // Regression 2: normal loaded game, real mobile gesture policy and actual WAV SFX.
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
           const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v118-samples-real-policy',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.engine==='sampled-media-sfx'&&!!window.__V118_SFX_API,{timeout:55000});
+          await page.waitForFunction(()=>window.__V117_READY===true&&window.__V118_SFX?.engine==='sampled-media-sfx-with-webaudio-fallback'&&!!window.__V118_SFX_API,{timeout:55000});
           const assets=await page.evaluate(async()=>Promise.all(['step_pavement.wav','step_asphalt.wav','interact.wav','buy_coin.wav','door.wav','reward.wav'].map(async n=>{const r=await fetch('audio/v11-8/'+n+'?ci=1');return {n,status:r.status,size:(await r.arrayBuffer()).byteLength};})));
           for(const a of assets)if(a.status!==200||a.size<500)throw new Error('Bad WAV asset '+JSON.stringify(a));
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>document.body.classList.contains('game-started')&&window.__V118_SFX_API.state().unlockAttempted===true,{timeout:12000});
+          await page.waitForFunction(()=>{
+            const s=window.__egyptDebug?.v118SceneState?.();
+            return document.body.classList.contains('game-started')&&s?.menuVisible===false&&s?.scene===true&&s?.activeCamera===true&&s?.meshes>50;
+          },{timeout:12000});
+          await page.waitForFunction(()=>window.__V118_SFX_API.state().unlockAttempted===true,{timeout:12000});
           await page.waitForFunction(()=>window.__V118_SFX_API.state().mediaUnlocked===true,{timeout:5000});
           const unlocked=await page.evaluate(()=>window.__V118_SFX_API.state());
           if(unlocked.unlockFailures!==0)throw new Error('Mobile media unlock failed '+JSON.stringify(unlocked));
@@ -85,13 +117,15 @@ jobs:
           await page.waitForFunction(before=>(window.__V118_SFX_API.state().resolvedByKey.step_asphalt||0)>before,beforeAsphalt,{timeout:6000});
 
           const finalState=await page.evaluate(()=>window.__V118_SFX_API.state());
+          const finalScene=await page.evaluate(()=>window.__egyptDebug.v118SceneState());
           if(finalState.sampleFiles!==6||finalState.playRejected!==0||finalState.unlockFailures!==0)throw new Error('Sample engine unhealthy '+JSON.stringify(finalState));
           for(const key of ['interact','buy','door','reward','step_pavement','step_asphalt'])if((finalState.resolvedByKey[key]||0)<1)throw new Error('SFX did not resolve: '+key+' '+JSON.stringify(finalState));
           if(!finalState.footsteps||!finalState.purchase||!finalState.doors||!finalState.rewards)throw new Error('SFX features missing '+JSON.stringify(finalState));
           if(finalState.legacyHum!==false||finalState.legacyHorns!==false)throw new Error('Legacy harsh audio returned '+JSON.stringify(finalState));
+          if(finalScene.menuVisible||!finalScene.scene||!finalScene.activeCamera||finalScene.meshes<=50)throw new Error('Scene disappeared during SFX test '+JSON.stringify(finalScene));
           if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
           if(errors.length)throw new Error(errors.join('\n'));
-          console.log('V11.8 WAV SFX real mobile-policy passed',{assets,finalState});
+          console.log('V11.8 early scene + WAV SFX mobile-policy passed',{earlyBefore,earlyAfter,assets,finalScene,finalState});
           await browser.close();
           EOF
           node v118-smoke.mjs
