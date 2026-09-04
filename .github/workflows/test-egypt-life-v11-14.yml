@@ -1,0 +1,91 @@
+name: Test Egyptian Life Simulator V11.14 Local SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-14.yml'
+  workflow_dispatch:
+
+jobs:
+  v1114-local-sfx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.14 local SFX files
+        run: |
+          test -s egypt-life-sim-v2/v11-14.html
+          test -s egypt-life-sim-v2/game-v11-14-local-sfx.js
+          test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
+          test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
+          test -s egypt-life-sim-v2/audio/v11-8/interact.wav
+          test -s egypt-life-sim-v2/audio/v11-8/buy_coin.wav
+          test -s egypt-life-sim-v2/audio/v11-8/door.wav
+          test -s egypt-life-sim-v2/audio/v11-8/reward.wav
+          node --check egypt-life-sim-v2/game-v11-14-local-sfx.js
+          grep -Fq "game-v11-14-local-sfx.js?v=11.14" egypt-life-sim-v2/v11-14.html
+          grep -Fq "same-origin-local-sfx" egypt-life-sim-v2/game-v11-14-local-sfx.js
+          grep -Fq "remoteRequired:false" egypt-life-sim-v2/game-v11-14-local-sfx.js
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1114-server.log 2>&1 &
+          sleep 2
+      - name: Verify local SFX with remote sample host blocked
+        run: |
+          cat > v1114-local.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('V11.10 preload failed'))errors.push('console: '+m.text());});
+          await page.route('https://raw.githubusercontent.com/**',route=>route.abort());
+          await page.goto('http://127.0.0.1:4173/v11-14.html?ci=v1114-local',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1114_SFX?.version==='11.14'&&!!window.__V1114_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:15000});
+          await page.evaluate(()=>window.__V1114_SFX_API.unlock());
+          await page.waitForFunction(()=>{
+            const s=window.__V1114_SFX_API?.state?.();
+            return s?.bankReady===true&&s.localLoaded+s.localFailed===s.localTotal;
+          },{timeout:12000});
+          const loaded=await page.evaluate(()=>window.__V1114_SFX_API.state());
+          if(loaded.localTotal!==7||loaded.localLoaded!==7||loaded.localFailed!==0)throw new Error('Local bank incomplete '+JSON.stringify(loaded));
+          if(loaded.sameOriginPrimary!==true||loaded.remoteRequired!==false)throw new Error('Wrong transport '+JSON.stringify(loaded));
+
+          async function measure(name){
+            return await page.evaluate(async name=>{
+              const api=window.__V1114_SFX_API,a=window.__V1114_SFX_ANALYSER;
+              const before=api.state().playResolved;
+              api.play(name);
+              let peak=0,rmsMax=0;
+              for(let i=0;i<45;i++){
+                const data=new Uint8Array(a.fftSize);a.getByteTimeDomainData(data);
+                let sum=0;
+                for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+                rmsMax=Math.max(rmsMax,Math.sqrt(sum/data.length));
+                await new Promise(r=>setTimeout(r,8));
+              }
+              return {name,peak,rmsMax,before,after:api.state().playResolved,last:api.state().lastPlayed};
+            },name);
+          }
+          const results=[];
+          for(const name of ['step','asphalt','interact','buy','door','reward','deny'])results.push(await measure(name));
+          for(const r of results){
+            if(r.after<=r.before)throw new Error('SFX did not resolve '+JSON.stringify(r));
+            if(r.last?.transport!=='same-origin-local-sample')throw new Error('Non-local transport '+JSON.stringify(r));
+            if(!String(r.last?.url||'').startsWith('audio/v11-8/'))throw new Error('Wrong local URL '+JSON.stringify(r));
+            if(r.peak<.003||r.rmsMax<.0008)throw new Error('Silent local waveform '+JSON.stringify(r));
+          }
+          const final=await page.evaluate(()=>window.__V1114_SFX_API.state());
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.14 local SFX passed',{loaded,results,final});
+          await browser.close();
+          EOF
+          node v1114-local.mjs
