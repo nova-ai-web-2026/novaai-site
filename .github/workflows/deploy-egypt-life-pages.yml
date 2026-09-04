@@ -30,11 +30,12 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Validate V11.15 sampled SFX and current world
+      - name: Validate V11.16 start scene, V11.15 sampled SFX and current world
         run: |
           test -s egypt-life-sim-v2/index.html
           test -s egypt-life-sim-v2/v11-14.html
           test -s egypt-life-sim-v2/v11-15.html
+          test -s egypt-life-sim-v2/v11-16.html
           test -s egypt-life-sim-v2/game-v7.js
           test -s egypt-life-sim-v2/game-v8-layout.js
           test -s egypt-life-sim-v2/game-v9.js
@@ -50,6 +51,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
           test -s egypt-life-sim-v2/game-v11-11-egypt-details-base.js
+          test -s egypt-life-sim-v2/game-v11-12-ui.js
           test -s egypt-life-sim-v2/game-v11-14-local-sfx.js
           test -s egypt-life-sim-v2/game-v11-15-real-sfx.js
           test -s egypt-life-sim-v2/game-v12-world.js
@@ -75,6 +77,7 @@ jobs:
           node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
           node --check egypt-life-sim-v2/game-v11-11-egypt-details-base.js
+          node --check egypt-life-sim-v2/game-v11-12-ui.js
           node --check egypt-life-sim-v2/game-v11-14-local-sfx.js
           node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
           node --check egypt-life-sim-v2/game-v12-world.js
@@ -84,6 +87,12 @@ jobs:
           grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
           grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/v11-14.html
           grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-15.html
+          grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-15.html
+          grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-16.html
+          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-16.html
+          grep -Fq "hardeningVersion:'11.16'" egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq 'dedicatedPreviewCamera:true' egypt-life-sim-v2/game-v11-12-ui.js
+          grep -Fq "previewTarget:'street--24'" egypt-life-sim-v2/game-v11-12-ui.js
           grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/game-v11-audiofix.js
           grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/game-v11-audiofix.js
