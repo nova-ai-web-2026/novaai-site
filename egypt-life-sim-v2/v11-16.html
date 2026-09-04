@@ -4,24 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <meta name="theme-color" content="#11100e" />
-  <title>حياة مصر — V11.16</title>
+  <title>حياة مصر — V11.17</title>
   <style>html,body{margin:0;width:100%;height:100%;background:#151412;color:#fff;font-family:Tahoma,Arial,sans-serif;display:grid;place-items:center}.boot{opacity:.75;font-size:14px}</style>
 </head>
 <body>
-  <div class="boot">جاري تشغيل حياة مصر V11.16…</div>
+  <div class="boot">جاري تشغيل حياة مصر V11.17…</div>
   <script>
   (async()=>{
     try{
-      const r=await fetch('index.html?bootstrap=11.16',{cache:'no-store'});
+      const r=await fetch('index.html?bootstrap=11.17',{cache:'no-store'});
       if(!r.ok)throw new Error('index '+r.status);
       let html=await r.text();
-      html=html.replace('game-v11-12-ui.js?v=11.12','game-v11-12-ui.js?v=11.16')
-               .replace('HAYAT MASR • V11.13','HAYAT MASR • V11.16')
-               .replace('V11.13 — HUD + safe street spawn','V11.16 — dedicated live start camera + V11.15 sampled SFX');
-      const inject='<scr'+'ipt src="game-v11-15-real-sfx.js?v=11.15" data-egypt-v1115-sfx="true"></scr'+'ipt>';
+      html=html.replace('game-v11-12-ui.js?v=11.12','game-v11-12-ui.js?v=11.17')
+               .replace('game-v11-6-runtime.js?v=11.10','game-v11-6-runtime.js?v=11.17')
+               .replace('game-v11-8-sfx.js?v=11.10','game-v11-8-sfx.js?v=11.17')
+               .replace('game-v11-10-actual-sfx.js?v=11.10','game-v11-10-actual-sfx.js?v=11.17')
+               .replace('game-v8-layout.js?v=11.10&visual=11.11','game-v8-layout.js?v=11.17&visual=11.17')
+               .replace('HAYAT MASR • V11.13','HAYAT MASR • V11.17')
+               .replace('V11.13 — HUD + safe street spawn','V11.17 — gameplay scene guard + V11.15 sampled SFX');
+      const inject=[
+        '<scr'+'ipt src="game-v11-15-real-sfx.js?v=11.17" data-egypt-v1115-sfx="true"></scr'+'ipt>',
+        '<scr'+'ipt src="game-v11-17-scene-guard.js?v=11.17" data-egypt-v1117-scene="true"></scr'+'ipt>'
+      ].join('');
       html=html.replace('</body>',inject+'</body>');
       document.open();document.write(html);document.close();
-    }catch(err){document.body.innerHTML='<div class="boot">تعذر تشغيل V11.16: '+String(err)+'</div>';}
+    }catch(err){document.body.innerHTML='<div class="boot">تعذر تشغيل V11.17: '+String(err)+'</div>';}
   })();
   </script>
 </body>
