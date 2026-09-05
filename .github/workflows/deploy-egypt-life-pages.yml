@@ -22,6 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  errand:
+    uses: ./.github/workflows/test-egypt-life-errand.yml
   street:
     uses: ./.github/workflows/test-egypt-life-street.yml
   validate-release:
@@ -42,7 +44,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: [validate-release, sound, start, gameplay, mobile, street]
+    needs: [validate-release, sound, start, gameplay, mobile, street, errand]
     permissions:
       contents: read
       pages: write
@@ -95,3 +97,9 @@ jobs:
             sfx-mobile.png
             sfx-desktop.png
           if-no-files-found: ignore
+
+  published-errand:
+    needs: deploy
+    uses: ./.github/workflows/test-egypt-life-errand.yml
+    with:
+      game_url: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/

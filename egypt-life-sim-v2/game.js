@@ -21,7 +21,7 @@
   const TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   const SAVE_KEY='hayat-masr-v4';
   const EYE=1.72;
-  const DEFAULT={money:300,hunger:84,energy:92,mood:76,minute:500,day:1,task:0,worked:0,savedX:-18,savedZ:-18};
+  const DEFAULT={money:300,hunger:84,energy:92,mood:76,minute:500,day:1,task:0,worked:0,breakfastBread:0,breakfastFul:false,breakfastDelivered:false,breakfastSpent:0,savedX:-18,savedZ:-18};
   const weekdays=['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
   const shopData=[
     {name:'فول وطعمية أبو علي',type:'ful',sign:'#7e3422',desc:'فول وطعمية وعيش بلدي سخن.',items:[['ساندوتش فول',14,22,3],['ساندوتش طعمية',12,18,4],['طبق فول',25,34,4]]},
@@ -48,8 +48,17 @@
   const world={size:216,roads:[-72,-24,24,72],interactables:[],people:[],vehicles:[],lights:[],market:{x:48,z:-48},home:null,job:null};
   const audio={ctx:null,master:null,enabled:true,noise:null,hum:null};
 
-  function loadState(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));}catch{return {...DEFAULT};}}
-  function saveState(){if(!camera)return;state.savedX=+camera.position.x.toFixed(2);state.savedZ=+camera.position.z.toFixed(2);localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
+  function loadState(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'),loaded=Object.assign({},DEFAULT,saved);
+      // Earlier saves that finished breakfast keep their existing task progress.
+      if(!Object.hasOwn(saved,'breakfastDelivered')&&loaded.task>0)loaded.breakfastDelivered=true;
+      loaded.breakfastBread=loaded.breakfastBread===4?4:0;
+      loaded.breakfastFul=loaded.breakfastFul===true;loaded.breakfastDelivered=loaded.breakfastDelivered===true;
+      loaded.breakfastSpent=Math.max(0,Number(loaded.breakfastSpent)||0);return loaded;
+    }catch{return {...DEFAULT};}
+  }
+  function saveState(){if(!camera||window.__V12_PROLOGUE?.running)return;state.savedX=+camera.position.x.toFixed(2);state.savedZ=+camera.position.z.toFixed(2);localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
   function hasSave(){return !!localStorage.getItem(SAVE_KEY);}
   function clamp(v,a=0,b=100){return Math.max(a,Math.min(b,v));}
   function rnd(seed){const n=Math.sin(seed*12.9898+78.233)*43758.5453;return n-Math.floor(n);}
@@ -154,9 +163,12 @@
   function buildAhwa(){
     const x=-48,z=48;sign('قهوة المعلم فتحي',x,3.65,z-13,7,.9,'#5b3923',0);for(let r=0;r<2;r++)for(let c=0;c<4;c++){const px=x-6.4+c*4.15,pz=z-6.4+r*4;cyl('table',1,.7,px,.35,pz,mat('table','#705034'),10);for(const ox of [-.88,.88])box('chair',.49,.7,.49,px+ox,.35,pz,mat('chair','#68472f'));}}
   function buildLandmarks(){
-    const h=box('homeDoor',2.1,2.8,.25,-96,1.4,-82.5,mat('door','#553622'));sign('بيت العيلة',-96,3.34,-82.68,3.2,.72,'#553622');world.home={mesh:h,kind:'home',name:'بيت العيلة',x:-96,z:-82.5};world.interactables.push(world.home);
+    const familyBuilding=scene.meshes.find(mesh=>mesh.name==='building'&&mesh.position.x===-96&&mesh.position.z===-96);
+    familyBuilding.computeWorldMatrix(true);const homeZ=familyBuilding.getBoundingInfo().boundingBox.maximumWorld.z+.15;
+    const h=box('homeDoor',2.1,2.8,.25,-96,1.4,homeZ,mat('door','#553622'));sign('بيت العيلة',-96,3.34,homeZ+.18,3.2,.72,'#553622');
+    world.home={mesh:h,kind:'home',name:'بيت العيلة',x:-96,z:homeZ};world.interactables.push(world.home);
     const j=box('jobBooth',3.7,2.25,1.9,-16,1.13,64,mat('job','#245d66'),true);sign('طلبات الحارة',-16,2.82,63,4.1,.78,'#245d66');world.job={mesh:j,kind:'job',name:'شغل التوصيل',x:-16,z:64};world.interactables.push(world.job);
-    buildFulCart(-8,-8);box('mosque',13,6,11,91,3,91,plaster('mosque','#d6ccb5',91),true);const dome=BABYLON.MeshBuilder.CreateSphere('dome',{diameter:5.4,segments:16,slice:.55},scene);dome.position.set(91,7.1,91);dome.material=mat('dome','#819781');cyl('minaret',1.55,13,97,6.5,92,plaster('minaret','#d6c8aa',92),12,true);
+    buildFulCart(-8,-18);box('mosque',13,6,11,91,3,91,plaster('mosque','#d6ccb5',91),true);const dome=BABYLON.MeshBuilder.CreateSphere('dome',{diameter:5.4,segments:16,slice:.55},scene);dome.position.set(91,7.1,91);dome.material=mat('dome','#819781');cyl('minaret',1.55,13,97,6.5,92,plaster('minaret','#d6c8aa',92),12,true);
   }
   function buildFulCart(x,z){box('cart',2.7,.82,1.45,x,.55,z,mat('cart','#407455'),true);cyl('fulPot',.92,.66,x,.85,z,mat('pot','#898881'),14);sign('فول وطعمية',x,1.74,z-.82,2.8,.58,'#407455');const hot=box('fulHot',2.9,2,2,x,1,z,mat('hot','#fff'));hot.visibility=0;world.interactables.push({mesh:hot,kind:'shop',name:'عربية فول وطعمية',x,z,data:shopData[0]});}
 
@@ -204,18 +216,94 @@
   function updateInteraction(){let best=null,bestD=3;for(const i of world.interactables){const p=itemPos(i),d=Math.hypot(p.x-camera.position.x,p.z-camera.position.z);if(d<bestD){bestD=d;best=i;}}current=best;ui.prompt.classList.toggle('show',!!best);if(best)ui.prompt.textContent=`${TOUCH?'تفاعل':'E'} — ${best.name}`;}
   function releaseMouse(){if(document.pointerLockElement)document.exitPointerLock?.();}
   function emitSfx(name){window.dispatchEvent(new CustomEvent('egypt-sfx',{detail:{name}}));}
-  function interact(){if(modal){closeModals();return;}if(!current)return;emitSfx('interact');playInteract();if(current.kind==='shop')openShop(current.data);else if(current.kind==='person')openDialog(current.data.name,current.data.line);else if(current.kind==='market'){state.mood=clamp(state.mood+3);showToast('لفّيت في سوق الحارة 👌');advanceTask('market');}else if(current.kind==='job')startJob();else if(current.kind==='home'){state.energy=100;state.hunger=Math.max(state.hunger,62);state.minute+=60;emitSfx('door');showToast('رجعت بيت العيلة وارتحت');advanceTask('home');saveState();}}
-  function openShop(data){modal=true;releaseMouse();ui.shopTitle.textContent=data.name;ui.shopDesc.textContent=data.desc;ui.shopItems.innerHTML='';for(const [name,price,hunger,mood] of data.items){const row=document.createElement('div');row.className='item';row.innerHTML=`<div><b>${name}</b><div style="font-size:11px;opacity:.66">${price} جنيه</div></div>`;const b=document.createElement('button');b.textContent='اشتري';b.onclick=()=>{if(state.money<price){emitSfx('deny');showToast('الفلوس مش مكفية');return;}state.money-=price;state.hunger=clamp(state.hunger+hunger);state.mood=clamp(state.mood+mood);state.minute+=7;emitSfx('buy');playBuy();if(['ful','bakery','koshary'].includes(data.type))advanceTask('breakfast');showToast(`اشتريت ${name}`);saveState();};row.appendChild(b);ui.shopItems.appendChild(row);}ui.shop.style.display='flex';}
+  function interact(){
+    if(ui.menu.style.display!=='none'||window.__V12_PROLOGUE?.running)return;
+    if(modal){closeModals();return;}
+    if(window.__V12_INTERACT_DOOR?.())return;
+    if(!current)return;emitSfx('interact');playInteract();
+    if(current.kind==='shop')openShop(current.data);
+    else if(current.kind==='person')openDialog(current.data.name,current.data.line);
+    else if(current.kind==='market'){state.mood=clamp(state.mood+3);showToast('لفّيت في سوق الحارة 👌');advanceTask('market');}
+    else if(current.kind==='job')startJob();
+    else if(current.kind==='home')visitHome();
+  }
+  function missingBreakfast(){return [!state.breakfastBread?'٤ أرغفة عيش':'',!state.breakfastFul?'طبق فول':''].filter(Boolean);}
+  function breakfastOffer(data){
+    if(state.breakfastDelivered)return null;
+    if(data.type==='bakery')return {key:'bread',name:'٤ أرغفة عيش للبيت',price:12,owned:state.breakfastBread===4};
+    if(data.type==='ful')return {key:'ful',name:'طبق فول للبيت',price:25,owned:state.breakfastFul};
+    return null;
+  }
+  function buyBreakfast(data){
+    const offer=breakfastOffer(data);if(!offer||offer.owned)return;
+    if(state.money<offer.price){emitSfx('deny');showToast('الفلوس مش مكفية — جرّب شغل التوصيل');return;}
+    state.money-=offer.price;state.breakfastSpent+=offer.price;state.minute+=7;
+    if(offer.key==='bread')state.breakfastBread=4;else state.breakfastFul=true;
+    emitSfx('buy');playBuy();saveState();updateHUD();openShop(data);
+    showToast(missingBreakfast().length?'اتحط في الشنطة — باقي '+missingBreakfast().join(' و'):'الفطار جاهز — ارجع بيت العيلة');
+  }
+  function openShop(data){
+    modal=true;releaseMouse();ui.shopTitle.textContent=data.name;ui.shopDesc.textContent=data.desc;ui.shopItems.innerHTML='';
+    const offer=breakfastOffer(data);
+    if(offer){
+      const row=document.createElement('div');row.className='item errand-item';row.dataset.errand=offer.key;
+      const label=document.createElement('div');label.innerHTML=`<b>${offer.name}</b><div class="errand-hint">طلب ماما · ${offer.price} جنيه · بيتحفظ في الشنطة</div>`;
+      const button=document.createElement('button');button.textContent=offer.owned?'موجود في الشنطة':'حط في الشنطة';button.disabled=offer.owned;button.onclick=()=>buyBreakfast(data);
+      row.append(label,button);ui.shopItems.appendChild(row);
+    }
+    for(const [name,price,hunger,mood] of data.items){
+      const row=document.createElement('div');row.className='item';row.innerHTML=`<div><b>${name}</b><div style="font-size:11px;opacity:.66">${price} جنيه · للأكل دلوقتي</div></div>`;
+      const button=document.createElement('button');button.textContent='اشتري';button.onclick=()=>{
+        if(state.money<price){emitSfx('deny');showToast('الفلوس مش مكفية');return;}
+        state.money-=price;state.hunger=clamp(state.hunger+hunger);state.mood=clamp(state.mood+mood);state.minute+=7;
+        emitSfx('buy');playBuy();showToast(`اشتريت ${name}`);saveState();updateHUD();
+      };row.appendChild(button);ui.shopItems.appendChild(row);
+    }
+    ui.shop.style.display='flex';
+  }
+  function visitHome(){
+    if(!state.breakfastDelivered){
+      const missing=missingBreakfast();
+      if(missing.length){openDialog('ماما','رجعت بسرعة كده؟ إنت نزلت تجيب الفطار ولا تطمّن على الشارع؟\nلسه ناقص: '+missing.join(' و')+'. الحاجات اللي جبتها محفوظة في الشنطة.');return;}
+      state.breakfastDelivered=true;state.breakfastBread=0;state.breakfastFul=false;
+      state.money+=20;state.hunger=clamp(state.hunger+30);state.mood=clamp(state.mood+10);state.minute+=15;
+      if(state.task===0)state.task=1;
+      saveState();updateHUD();emitSfx('reward');
+      openDialog('فطار العيلة','أنا: العيش والفول وصلوا… والفكة كمان، قبل ما تعملي لها نشرة مفقودين.\nماما: برافو! أول إنجاز النهارده من غير ما تقول الشبكة واقعة. خد ٢٠ جنيه، وافطر قبل ما تنزل السوق.\n\nتم تسليم الفطار · صرفت '+state.breakfastSpent+' جنيه · مكافأة ٢٠ جنيه');
+      return;
+    }
+    state.energy=100;state.hunger=Math.max(state.hunger,62);state.minute+=60;
+    showToast('رجعت بيت العيلة وارتحت');advanceTask('home');saveState();updateHUD();
+  }
   function openDialog(who,text){modal=true;releaseMouse();ui.dialogWho.textContent=who;ui.dialogText.textContent=text;ui.dialog.style.display='flex';state.mood=clamp(state.mood+1);}
   function closeModals(){modal=false;ui.shop.style.display='none';ui.dialog.style.display='none';}
   function startJob(){if(state.energy<18){showToast('طاقتك قليلة، كل أو ارجع البيت الأول');return;}const pay=48+Math.floor(Math.random()*28);state.energy=clamp(state.energy-10);state.money+=pay;state.worked++;state.minute+=35;emitSfx('reward');playBuy();showToast(`خلصت طلبية وكسبت ${pay} جنيه`);advanceTask('job');saveState();}
-  function advanceTask(action){if(state.task===0&&action==='breakfast'){state.task=1;showToast('فطار تمام 👌 روح السوق');}else if(state.task===1&&action==='market'){state.task=2;showToast('عرفت السوق — جرّب شغل التوصيل');}else if(state.task===2&&action==='job'){state.task=3;showToast('خلصت الشغل — ارجع بيت العيلة');}else if(state.task===3&&action==='home'){state.task=4;showToast('خلصت أول يوم في الحارة 🇪🇬');}}
-  function taskCopy(){switch(state.task){case 0:return['أول يوم في الحارة','اتمشّى وافطر فول وطعمية أو عيش بلدي أو كشري.'];case 1:return['لفة السوق','روح سوق الحارة واتفرج على الباعة.'];case 2:return['رزق اليوم','روح «طلبات الحارة» وخد شغلانة توصيل.'];case 3:return['ارجع للعيلة','بعد الشغل ارجع بيت العيلة وارتاح.'];default:return['عيش يومك','لف الحارة، كل، اشتغل واتكلم مع الناس.'];}}
+  function advanceTask(action){if(state.task===1&&action==='market'){state.task=2;showToast('عرفت السوق — جرّب شغل التوصيل');}else if(state.task===2&&action==='job'){state.task=3;showToast('خلصت الشغل — ارجع بيت العيلة');}else if(state.task===3&&action==='home'){state.task=4;showToast('خلصت أول يوم في الحارة 🇪🇬');}}
+  function taskCopy(){switch(state.task){case 0:return['مشوار الفطار',missingBreakfast().length?'هات '+missingBreakfast().join(' و')+' للبيت. اختار «حط في الشنطة» عند البياع.':'الفطار في الشنطة. ارجع بيت العيلة وسلّمه لماما.'];case 1:return['لفة السوق','روح سوق الحارة واتفرج على الباعة.'];case 2:return['رزق اليوم','روح «طلبات الحارة» وخد شغلانة توصيل.'];case 3:return['ارجع للعيلة','بعد الشغل ارجع بيت العيلة وارتاح.'];default:return['عيش يومك','لف الحارة، كل، اشتغل واتكلم مع الناس.'];}}
 
+  let missionTarget=null,nextTargetAt=0;
+  function refreshMissionTarget(){
+    const targets=world.interactables.filter(item=>{
+      if(state.task===0){
+        if(!missingBreakfast().length)return item.kind==='home';
+        return item.kind==='shop'&&((!state.breakfastBread&&item.data.type==='bakery')||(!state.breakfastFul&&item.data.type==='ful'));
+      }
+      return item.kind===(state.task===1?'market':state.task===2?'job':state.task===3?'home':'none');
+    });
+    const distance=item=>Math.hypot(itemPos(item).x-camera.position.x,itemPos(item).z-camera.position.z);
+    missionTarget=targets.sort((a,b)=>distance(a)-distance(b))[0]||null;
+    const bag=$('taskBag'),guide=$('taskGuide');
+    if(bag){bag.hidden=state.breakfastDelivered;bag.textContent=`الشنطة: عيش ${state.breakfastBread}/٤ · فول ${state.breakfastFul?'١':'٠'}/١`;}
+    if(guide){
+      const indoors=window.__V12_HOME&&Math.abs(camera.position.x-window.__V12_HOME.spawn.x)<15&&Math.abs(camera.position.z-window.__V12_HOME.spawn.z)<15;
+      guide.hidden=!missionTarget;
+      guide.textContent=indoors?'اخرج من باب البيت علشان تكمل المشوار':missionTarget?`● ${missionTarget.name} · ${Math.round(distance(missionTarget))} م`:'';
+    }
+  }
   function updateDayNight(){const t=state.minute/1440,a=t*Math.PI*2-Math.PI/2,light=clamp(Math.sin(a)*.78+.45,.08,1);sun.direction.set(Math.cos(a)*-.55,-Math.max(.12,Math.sin(a)),Math.sin(a)*-.35);sun.intensity=.2+light*1.15;hemi.intensity=.24+light*.48;scene.fogColor=new BABYLON.Color3(.17+.56*light,.2+.56*light,.23+.53*light);if(sky&&sky.material)sky.material.emissiveColor=new BABYLON.Color3(.07+.43*light,.09+.51*light,.13+.57*light);const night=light<.34;for(const b of world.lights)b.material.emissiveColor=night?new BABYLON.Color3(.9,.65,.22):new BABYLON.Color3(.1,.08,.04);}
-  function updateHUD(){ui.money.textContent=`${Math.round(state.money)} ج`;ui.hungerTxt.textContent=`${Math.round(state.hunger)}%`;ui.energyTxt.textContent=`${Math.round(state.energy)}%`;ui.moodTxt.textContent=`${Math.round(state.mood)}%`;ui.hungerBar.style.width=state.hunger+'%';ui.energyBar.style.width=state.energy+'%';ui.moodBar.style.width=state.mood+'%';const h=Math.floor(state.minute/60)%24,m=Math.floor(state.minute%60);ui.time.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;ui.day.textContent=`اليوم ${state.day} — ${weekdays[(state.day-1)%7]}`;const [a,b]=taskCopy();ui.taskTitle.textContent=a;ui.taskText.textContent=b;if(ui.sound)ui.sound.textContent=audio.enabled?'🔊 الصوت':'🔇 مكتوم';}
+  function updateHUD(){ui.money.textContent=`${Math.round(state.money)} ج`;ui.hungerTxt.textContent=`${Math.round(state.hunger)}%`;ui.energyTxt.textContent=`${Math.round(state.energy)}%`;ui.moodTxt.textContent=`${Math.round(state.mood)}%`;ui.hungerBar.style.width=state.hunger+'%';ui.energyBar.style.width=state.energy+'%';ui.moodBar.style.width=state.mood+'%';const h=Math.floor(state.minute/60)%24,m=Math.floor(state.minute%60);ui.time.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;ui.day.textContent=`اليوم ${state.day} — ${weekdays[(state.day-1)%7]}`;if(performance.now()>nextTargetAt){refreshMissionTarget();nextTargetAt=performance.now()+500;}const [a,b]=taskCopy();ui.taskTitle.textContent=a;ui.taskText.textContent=b;if(ui.sound)ui.sound.textContent=audio.enabled?'🔊 الصوت':'🔇 مكتوم';}
   function showToast(text){ui.toast.textContent=text;ui.toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),2300);}
-  function drawMap(){const c=ui.map,ctx=c.getContext('2d'),s=c.width,scale=s/world.size;ctx.clearRect(0,0,s,s);ctx.fillStyle='#6f6853';ctx.fillRect(0,0,s,s);ctx.fillStyle='#3f4240';for(const r of world.roads){ctx.fillRect((r+world.size/2-4.75)*scale,0,9.5*scale,s);ctx.fillRect(0,(r+world.size/2-4.75)*scale,s,9.5*scale);}ctx.fillStyle='#d3b85e';ctx.fillRect((world.market.x+world.size/2-15)*scale,(world.market.z+world.size/2-11)*scale,30*scale,22*scale);ctx.save();ctx.translate((camera.position.x+world.size/2)*scale,(camera.position.z+world.size/2)*scale);ctx.rotate(-yaw);ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(4,5);ctx.lineTo(-4,5);ctx.closePath();ctx.fill();ctx.restore();}
+  function drawMap(){const c=ui.map,ctx=c.getContext('2d'),s=c.width,scale=s/world.size;ctx.clearRect(0,0,s,s);ctx.fillStyle='#6f6853';ctx.fillRect(0,0,s,s);ctx.fillStyle='#3f4240';for(const r of world.roads){ctx.fillRect((r+world.size/2-4.75)*scale,0,9.5*scale,s);ctx.fillRect(0,(r+world.size/2-4.75)*scale,s,9.5*scale);}ctx.fillStyle='#d3b85e';ctx.fillRect((world.market.x+world.size/2-15)*scale,(world.market.z+world.size/2-11)*scale,30*scale,22*scale);ctx.save();ctx.translate((camera.position.x+world.size/2)*scale,(camera.position.z+world.size/2)*scale);ctx.rotate(-yaw);ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(4,5);ctx.lineTo(-4,5);ctx.closePath();ctx.fill();ctx.restore();if(missionTarget){const p=itemPos(missionTarget);ctx.beginPath();ctx.arc((p.x+world.size/2)*scale,(p.z+world.size/2)*scale,7,0,Math.PI*2);ctx.fillStyle='#f0c875';ctx.fill();ctx.strokeStyle='#31281a';ctx.lineWidth=3;ctx.stroke();}}
 
   function applyLook(dx,dy){yaw+=dx*.00225;pitch=clamp(pitch+dy*.0019,-1.15,1.15);}
   function setupInput(){
@@ -226,9 +314,16 @@
   }
   function setJoy(e){const r=ui.joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=40,len=Math.hypot(dx,dy)||1,k=Math.min(1,max/len),nx=dx*k,ny=dy*k;joyX=nx/max;joyY=-ny/max;ui.knob.style.transform=`translate(${nx}px,${ny}px)`;}
 
-  function resetState(){state={...DEFAULT};yaw=0;pitch=0;if(camera){camera.position.set(DEFAULT.savedX,EYE,DEFAULT.savedZ);camera.rotation.set(0,0,0);}updateHUD();}
+  function resetState(){state={...DEFAULT};nextTargetAt=0;yaw=0;pitch=0;if(camera){camera.position.set(DEFAULT.savedX,EYE,DEFAULT.savedZ);camera.rotation.set(0,0,0);}updateHUD();}
   function enterGame(newGame){if(newGame){localStorage.removeItem(SAVE_KEY);resetState();}else{state=loadState();camera.position.set(state.savedX,EYE,state.savedZ);yaw=0;pitch=0;camera.rotation.set(0,0,0);updateHUD();}ui.menu.style.display='none';ui.menuStatus.textContent='';startAudio();if(!TOUCH&&navigator.userActivation?.isActive)canvas.requestPointerLock?.()?.catch?.(()=>{});showToast(newGame?'بدأت يوم جديد في الحارة 🇪🇬':'رجعت لآخر مكان محفوظ');}
   function setupMenu(){ui.cont.disabled=!hasSave();ui.cont.style.opacity=hasSave()?'1':'.45';ui.cont.onclick=()=>{if(hasSave())enterGame(false);};ui.newGame.onclick=()=>enterGame(true);ui.reset.onclick=()=>{localStorage.removeItem(SAVE_KEY);ui.cont.disabled=true;ui.cont.style.opacity='.45';ui.menuStatus.textContent='تم مسح الحفظ. تقدر تبدأ يوم جديد.';resetState();};if(!hasSave())ui.menuStatus.textContent='مفيش حفظ قديم لسه — ابدأ يوم جديد.';}
+
+  window.EgyptLife={
+    visitHome,
+    doorSound:()=>emitSfx('door'),
+    modalOpen:()=>modal,
+    snapshot:()=>({state:{...state},target:missionTarget?{kind:missionTarget.kind,name:missionTarget.name,type:missionTarget.data?.type,x:itemPos(missionTarget).x,z:itemPos(missionTarget).z}:null})
+  };
 
   function startAudio(){if(!audio.enabled)return;try{if(!audio.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;audio.ctx=new AC();audio.master=audio.ctx.createGain();audio.master.gain.value=.42;audio.master.connect(audio.ctx.destination);const len=audio.ctx.sampleRate*2,buf=audio.ctx.createBuffer(1,len,audio.ctx.sampleRate),data=buf.getChannelData(0);for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*.23;const noise=audio.ctx.createBufferSource(),lp=audio.ctx.createBiquadFilter(),g=audio.ctx.createGain();noise.buffer=buf;noise.loop=true;lp.type='lowpass';lp.frequency.value=520;g.gain.value=.05;noise.connect(lp);lp.connect(g);g.connect(audio.master);noise.start();audio.noise=noise;const hum=audio.ctx.createOscillator(),hg=audio.ctx.createGain();hum.type='sine';hum.frequency.value=58;hg.gain.value=.017;hum.connect(hg);hg.connect(audio.master);hum.start();audio.hum=hum;}audio.ctx.resume();nextHorn=performance.now()+1800;}catch(e){console.warn('Audio unavailable',e);}}
   function toggleAudio(){audio.enabled=!audio.enabled;if(audio.master)audio.master.gain.value=audio.enabled?.42:0;if(audio.enabled)startAudio();updateHUD();showToast(audio.enabled?'الصوت اشتغل 🔊':'الصوت اتكتم 🔇');}

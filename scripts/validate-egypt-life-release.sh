@@ -76,8 +76,8 @@ grep -Fq 'CC0 1.0' egypt-life-sim-v2/AUDIO-CREDITS.md
 if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi
 # The active release uses one same-origin HTMLAudio layer. Its recorded output is
 # verified by the reusable SFX workflow before deployment.
-grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=3' egypt-life-sim-v2/index.html
-grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=3' egypt-life-sim-v2/game-v11-audiofix.js
+grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=4' egypt-life-sim-v2/index.html
+grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=4' egypt-life-sim-v2/game-v11-audiofix.js
 grep -Fq "release:'11.16'" egypt-life-sim-v2/game-v11-audiofix.js
 grep -Fq "primary:'html-audio-same-origin'" egypt-life-sim-v2/game-v11-15-real-sfx.js
 ! grep -Eq '<script[^>]+src="game-v11-(8-sfx|10-actual-sfx|14-local-sfx)' egypt-life-sim-v2/index.html
@@ -86,7 +86,7 @@ node --input-type=module - <<'JS'
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const release=JSON.parse(readFileSync('egypt-life-sim-v2/release.json','utf8'));
-assert.equal(release.version,'11.18.0');
+assert.equal(release.version,'11.19.0');
 assert.equal(release.audioRevision,release.version);
 assert.ok(readFileSync('egypt-life-sim-v2/index.html','utf8').includes(`data-release="${release.version}"`));
 JS

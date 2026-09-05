@@ -3,15 +3,15 @@
   // Old entry wrappers can request this file a second time.
   if (window.__V1116_SFX_API) return;
 
-  const VERSION='11.16', REVISION='11.18.0';
+  const VERSION='11.16', REVISION='11.19.0';
   const localFiles={
-    step_pavement:'audio/v11-8/step_pavement.wav?v=11.18.0',
-    step_asphalt:'audio/v11-8/step_asphalt.wav?v=11.18.0',
-    interact:'audio/v11-8/interact.wav?v=11.18.0',
-    buy:'audio/v11-8/buy_coin.wav?v=11.18.0',
-    door:'audio/v11-8/door.wav?v=11.18.0',
-    reward:'audio/v11-8/reward.wav?v=11.18.0',
-    deny:'audio/v11-8/deny.wav?v=11.18.0'
+    step_pavement:'audio/v11-8/step_pavement.wav?v=11.19.0',
+    step_asphalt:'audio/v11-8/step_asphalt.wav?v=11.19.0',
+    interact:'audio/v11-8/interact.wav?v=11.19.0',
+    buy:'audio/v11-8/buy_coin.wav?v=11.19.0',
+    door:'audio/v11-8/door.wav?v=11.19.0',
+    reward:'audio/v11-8/reward.wav?v=11.19.0',
+    deny:'audio/v11-8/deny.wav?v=11.19.0'
   };
   const events={typing:0,step:0,interact:0,buy:0,reward:0,door:0,open:0,close:0,deny:0,start:0,ui:0};
   const pools={},lastEventAt={};

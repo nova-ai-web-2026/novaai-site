@@ -124,10 +124,21 @@
   function distanceTo(p){camera=scene.activeCamera;return camera?Math.hypot(camera.position.x-p.x,camera.position.z-p.z):999;}
   function teleport(x,z,msg){camera=scene.activeCamera;if(!camera)return;camera.position.x=x;camera.position.y=1.72;camera.position.z=z;camera.rotation.x=0;camera.rotation.z=0;insideHome=(Math.abs(x-HOME.x)<15&&Math.abs(z-HOME.z)<15);toast(msg);}
   function installDoorInteractions(){
+    const entrance=scene.getMeshByName('homeDoor');
+    STREET_DOOR.x=entrance.position.x;STREET_DOOR.z=entrance.position.z+1.1;
+    window.__V12_HOME.streetDoor={...STREET_DOOR};
     const prompt=document.createElement('div');prompt.id='v12DoorPrompt';prompt.textContent='E — افتح الباب';prompt.style.cssText='position:fixed;z-index:25;left:50%;bottom:12%;transform:translateX(-50%);padding:9px 13px;border-radius:10px;background:rgba(17,16,14,.82);border:1px solid rgba(255,255,255,.16);color:#fff;font:700 13px Tahoma;display:none;pointer-events:none';document.body.appendChild(prompt);
-    const interact=()=>{if(distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4){teleport(STREET_DOOR.x,STREET_DOOR.z,'نزلت للشارع 🇪🇬');return true;}if(distanceTo(STREET_DOOR)<2.7){teleport(HOME.spawnX,HOME.spawnZ,'رجعت البيت');return true;}return false;};
-    window.addEventListener('keydown',e=>{if((e.key==='e'||e.key==='E')&&document.body.classList.contains('game-started'))interact();});document.getElementById('act')?.addEventListener('click',()=>interact(),true);
-    scene.onBeforeRenderObservable.add(()=>{const near=distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4||distanceTo(STREET_DOOR)<2.7;prompt.style.display=near&&document.body.classList.contains('game-started')?'block':'none';});
+    const interact=()=>{
+      if(window.EgyptLife?.modalOpen()||window.__V12_PROLOGUE?.running)return false;
+      if(distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4){teleport(STREET_DOOR.x,STREET_DOOR.z,'نزلت للشارع 🇪🇬');window.EgyptLife?.doorSound();return true;}
+      if(distanceTo(STREET_DOOR)<2.7){teleport(HOME.spawnX,HOME.spawnZ,'رجعت البيت');window.EgyptLife?.doorSound();window.EgyptLife?.visitHome();return true;}
+      return false;
+    };
+    scene.onBeforeRenderObservable.add(()=>{
+      const near=distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4||distanceTo(STREET_DOOR)<2.7;
+      prompt.textContent=('ontouchstart' in window?'تفاعل':'E')+' — افتح الباب';
+      prompt.style.display=near&&!window.EgyptLife?.modalOpen()&&document.body.classList.contains('game-started')?'block':'none';
+    });
     window.__V12_INTERACT_DOOR=interact;
   }
 

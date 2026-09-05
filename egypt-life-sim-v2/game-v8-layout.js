@@ -33,7 +33,7 @@
   function markReady(){(window.__V119_MARK_READY||window.__V118_MARK_READY||window.__V117_MARK_READY)?.();}
   function loadV11AudioFix(){
     if(document.querySelector('script[data-egypt-v11-audiofix]')){if(window.__V11_AUDIOFIX?.v119QualitySfx)markReady();return;}
-    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.9&visual=11.11&sfx=11.18.0';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v11-audiofix.js?v=11.9&visual=11.11&sfx=11.19.0';s.dataset.egyptV11Audiofix='true';s.async=false;s.onload=markReady;s.onerror=()=>fail('V11 audio fix failed to load');document.body.appendChild(s);
   }
   function loadV111(){
     if(document.querySelector('script[data-egypt-v111]')){if(window.__V111_PATCH?.version==='11.1')loadV11AudioFix();return;}
@@ -41,7 +41,7 @@
   }
   function loadV11(){
     if(document.querySelector('script[data-egypt-v11]')){if(window.__V11_PATCH?.version===11)loadV111();return;}
-    const s=document.createElement('script');s.src='game-v11.js?v=11&release=11.18.0';s.dataset.egyptV11='true';s.async=false;s.onload=loadV111;s.onerror=()=>fail('V11 script failed to load');document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v11.js?v=11&release=11.19.0';s.dataset.egyptV11='true';s.async=false;s.onload=loadV111;s.onerror=()=>fail('V11 script failed to load');document.body.appendChild(s);
   }
   function loadV10(){
     if(document.querySelector('script[data-egypt-v10]')){loadV11();return;}
