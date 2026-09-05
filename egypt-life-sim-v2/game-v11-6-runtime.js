@@ -18,7 +18,7 @@
     if(kicker&&kicker.textContent!==`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`;
     const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.18.0'} — تحسين أصوات اللعب`)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — تحسين أصوات اللعب`;
+    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`;
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 

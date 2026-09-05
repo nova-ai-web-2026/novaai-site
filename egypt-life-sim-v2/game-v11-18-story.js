@@ -35,7 +35,7 @@
         if(shown<letters.length){
           const expected=Math.min(letters.length,Math.floor((performance.now()-beatStarted)/42));
           if(expected<=shown)return;shown=expected;text.textContent=letters.slice(0,shown).join('');status.typed=shown;
-          if(shown%3===0&&letters[shown-1].trim())window.__V1116_SFX_API?.play('typing');
+          if(letters[shown-1]?.trim())window.__V1116_SFX_API?.play('typing');
           if(shown===letters.length){fullyTypedAt=beatStarted+letters.length*42;next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}
         }else if(!manual&&performance.now()-fullyTypedAt>2600)advance();
       },42);
@@ -45,7 +45,7 @@
       scene.activeCamera=gameCamera;introCamera.dispose();introCamera=null;
       overlay.hidden=true;overlay.classList.remove('active');document.getElementById('menu').style.display='';
       bypass=true;button.click();bypass=false;
-      window.__egyptDebug?.resetPose?.();window.__egyptDebug?.v12Teleport?.(-24,-24);
+      window.__egyptDebug?.resetPose?.();gameCamera.position.set(-24,1.72,-24);
       status.running=false;status.played=true;document.body.classList.add('game-started');
       window.dispatchEvent(new CustomEvent('egypt-story-finished'));
     }

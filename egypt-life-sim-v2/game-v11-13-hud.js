@@ -10,7 +10,7 @@
   function syncCopy(){
     const kicker=document.querySelector('.kicker'),foot=document.querySelector('.menuFoot');
     if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.13'}`;
-    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — تحسين أصوات اللعب`;
+    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`;
   }
 
   function installStyle(){
