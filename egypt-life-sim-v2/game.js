@@ -163,7 +163,10 @@
   function buildAhwa(){
     const x=-48,z=48;sign('قهوة المعلم فتحي',x,3.65,z-13,7,.9,'#5b3923',0);for(let r=0;r<2;r++)for(let c=0;c<4;c++){const px=x-6.4+c*4.15,pz=z-6.4+r*4;cyl('table',1,.7,px,.35,pz,mat('table','#705034'),10);for(const ox of [-.88,.88])box('chair',.49,.7,.49,px+ox,.35,pz,mat('chair','#68472f'));}}
   function buildLandmarks(){
-    const h=box('homeDoor',2.1,2.8,.25,-96,1.4,-82.5,mat('door','#553622'));sign('بيت العيلة',-96,3.34,-82.68,3.2,.72,'#553622');world.home={mesh:h,kind:'home',name:'بيت العيلة',x:-96,z:-82.5};world.interactables.push(world.home);
+    const familyBuilding=scene.meshes.find(mesh=>mesh.name==='building'&&mesh.position.x===-96&&mesh.position.z===-96);
+    familyBuilding.computeWorldMatrix(true);const homeZ=familyBuilding.getBoundingInfo().boundingBox.maximumWorld.z+.15;
+    const h=box('homeDoor',2.1,2.8,.25,-96,1.4,homeZ,mat('door','#553622'));sign('بيت العيلة',-96,3.34,homeZ+.18,3.2,.72,'#553622');
+    world.home={mesh:h,kind:'home',name:'بيت العيلة',x:-96,z:homeZ};world.interactables.push(world.home);
     const j=box('jobBooth',3.7,2.25,1.9,-16,1.13,64,mat('job','#245d66'),true);sign('طلبات الحارة',-16,2.82,63,4.1,.78,'#245d66');world.job={mesh:j,kind:'job',name:'شغل التوصيل',x:-16,z:64};world.interactables.push(world.job);
     buildFulCart(-8,-18);box('mosque',13,6,11,91,3,91,plaster('mosque','#d6ccb5',91),true);const dome=BABYLON.MeshBuilder.CreateSphere('dome',{diameter:5.4,segments:16,slice:.55},scene);dome.position.set(91,7.1,91);dome.material=mat('dome','#819781');cyl('minaret',1.55,13,97,6.5,92,plaster('minaret','#d6c8aa',92),12,true);
   }

@@ -38,7 +38,7 @@ try{
     await click('#v12Skip');
     await page.waitForFunction(()=>window.__V12_PROLOGUE.played&&document.body.classList.contains('game-started'));
   };
-  const home=async()=>{await teleport(-96,-82.2);await interact();};
+  const home=async()=>{const p=await page.evaluate(()=>window.__V12_HOME.streetDoor);await teleport(p.x,p.z);await interact();};
   const exitHome=async()=>{await teleport(-150,-144);await interact();};
   const closeDialog=async()=>{
     const before=await sounds();
