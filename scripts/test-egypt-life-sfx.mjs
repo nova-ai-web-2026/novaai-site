@@ -6,6 +6,10 @@ const executablePath=process.env.CHROME_PATH||'/usr/bin/google-chrome';
 const base=process.env.GAME_TEST_URL||'http://127.0.0.1:4173/';
 // Headless Playwright otherwise launches Chrome with --mute-audio.
 const browser=await chromium.launch({headless:true,executablePath,ignoreDefaultArgs:['--mute-audio']});
+const deadline=setTimeout(()=>{
+  console.error('Gameplay SFX verification exceeded its six-minute deadline');
+  void browser.close().finally(()=>process.exit(1));
+},360000);
 const report=[];
 try {
   for(const mobile of [true,false]){
@@ -25,9 +29,17 @@ try {
     });
     await page.goto(base+'?v=11.6',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready,null,{timeout:60000});
+    await page.evaluate(()=>{
+      window.__testAudioContext=new window.__testNativeAC();
+      document.addEventListener('pointerdown',()=>window.__testAudioContext.resume(),{capture:true});
+    });
+    if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
+    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
+    await page.waitForFunction(()=>window.__testAudioContext.state==='running',null,{timeout:10000});
+    console.log('Installing audio meter after user gesture',JSON.stringify({mobile}));
     await page.evaluate(async()=>{
       // Measure on the audio thread: slow WebGL frames cannot miss a short click.
-      const ctx=new window.__testNativeAC();
+      const ctx=window.__testAudioContext;
       const moduleURL=URL.createObjectURL(new Blob([`
         class Meter extends AudioWorkletProcessor {
           constructor(){super();this.epoch=0;this.peak=0;this.port.onmessage=({data})=>{
@@ -45,7 +57,10 @@ try {
         }
         registerProcessor('sfx-test-meter',Meter);
       `],{type:'text/javascript'}));
-      await ctx.audioWorklet.addModule(moduleURL);URL.revokeObjectURL(moduleURL);
+      await Promise.race([
+        ctx.audioWorklet.addModule(moduleURL),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Audio meter installation timed out')),15000))
+      ]);URL.revokeObjectURL(moduleURL);
       const meter=new AudioWorkletNode(ctx,'sfx-test-meter');meter.connect(ctx.destination);
       for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(meter);
       window.__testMeter={peak:0,ctx,epoch:0,ack:0,meter};
@@ -53,14 +68,12 @@ try {
         const state=window.__testMeter;if(data.epoch!==state.epoch)return;
         if(data.reset)state.ack=data.epoch;else state.peak=Math.max(state.peak,data.peak);
       };
-      document.addEventListener('pointerdown',()=>ctx.resume(),{capture:true});
     });
-    if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
-    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
+    console.log('Audio meter ready',JSON.stringify({mobile}));
     const state=()=>page.evaluate(()=>window.__V1116_SFX_API.state());
     const resetMeter=async()=>{
       await page.evaluate(()=>{const s=window.__testMeter;s.peak=0;s.epoch++;s.meter.port.postMessage({epoch:s.epoch});});
-      await page.waitForFunction(()=>window.__testMeter.ack===window.__testMeter.epoch);
+      await page.waitForFunction(()=>window.__testMeter.ack===window.__testMeter.epoch,null,{timeout:10000});
     };
     const peak=()=>page.evaluate(()=>window.__testMeter.peak);
 
@@ -138,4 +151,4 @@ try {
   }
   fs.writeFileSync('sfx-verification.json',JSON.stringify(report,null,2));
   console.log('Gameplay SFX passed on mobile and desktop',report);
-} finally {await browser.close();}
+} finally {clearTimeout(deadline);await browser.close();}
