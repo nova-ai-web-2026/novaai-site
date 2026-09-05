@@ -60,6 +60,7 @@
       if(female){sphere('people_expLongHair_'+i,root,0,1.77,.15,mat('expandedHair','#352820'),.43,.48,.22);const coat=mesh('people_expTunic_'+i,{height:.5,diameterTop:.49,diameterBottom:.68,tessellation:12},root,0,.9,0,cloth,'cylinder');coat.scaling.z=.65;}
       root.metadata={...root.metadata,identity:{presentation:female?'woman':'man',outfit:female?'long-hair-and-tunic':'shirt-and-trousers'}};
     });
+    window.EgyptStory.prepareCast();
     window.__EGYPT_PEOPLE={ready:true,identities,expanded:expanded.length};
   }
   install().catch(console.error);

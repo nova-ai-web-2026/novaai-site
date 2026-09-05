@@ -53,6 +53,14 @@
       if(['kiosk','produce','grocery'].includes(type)){
         const colors=['#a26442','#b79543','#657b48','#b6ab83','#6f8b8b'];
         for(let r=0;r<3;r++){for(let col=0;col<11;col++){c.fillStyle=colors[(r+col)%5];c.fillRect(39+col*40,38+r*46,21,30);c.fillStyle='#d1c2a0';c.fillRect(41+col*40,45+r*46,17,6);}c.fillStyle='#3d342b';c.fillRect(30,70+r*46,452,7);}
+      }else if(type==='ahwa'||type==='koshary'||type==='ful'){
+        c.fillStyle='#473327';c.fillRect(30,52,452,9);
+        for(let i=0;i<5;i++){
+          const x=46+i*88;c.fillStyle='#a9aba1';c.fillRect(x,104,60,57);
+          c.fillStyle='#d6d3ba';c.beginPath();c.ellipse(x+30,104,30,8,0,0,Math.PI*2);c.fill();
+          c.fillStyle='#55483a';c.fillRect(x+25,88,10,9);
+        }
+        c.fillStyle='#806345';c.fillRect(31,165,450,62);
       }else{
         c.fillStyle='#b9aa88';c.fillRect(40,46,150,6);c.fillRect(300,46,160,6);
         for(let i=0;i<7;i++){c.fillStyle=type==='bakery'?'#c59b58':'#8f988d';c.beginPath();c.ellipse(56+i*64,144,23,12,0,0,Math.PI*2);c.fill();}

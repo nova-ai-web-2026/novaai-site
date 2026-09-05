@@ -55,9 +55,21 @@
       const mesh=B.MeshBuilder.CreateBox('street_'+name,{width:w,height:h,depth:d},scene);
       mesh.position.set(x,y,z);mesh.material=m;mesh.isPickable=false;mesh.checkCollisions=false;details++;return mesh;
     };
+    const brick=material('exposedBrick','#ffffff'),bt=new B.DynamicTexture('street_brick',512,scene,false),bc=bt.getContext();
+    bc.fillStyle='#b49b84';bc.fillRect(0,0,512,512);
+    for(let row=0;row<32;row++)for(let col=-1;col<17;col++){
+      bc.fillStyle=['#a96043','#b87551','#92543e','#bb7956'][(row+col+17)%4];
+      bc.fillRect(col*32+(row%2)*16,row*16,30,14);
+    }
+    bt.update();bt.uScale=3;bt.vScale=2;brick.diffuseTexture=bt;
+    // Crossings belong at approaches, not superimposed across the junction.
+    for(const mesh of scene.meshes){
+      if(mesh.name==='crossV')mesh.position.z-=7.3;
+      if(mesh.name==='crossH')mesh.position.x+=7.3;
+    }
     const buildings=scene.meshes.filter(m=>m.name==='building');
     buildings.forEach((building,index)=>{
-      building.material=plaster[index%plaster.length];building.computeWorldMatrix(true);
+      building.material=index%4===1?brick:plaster[index%plaster.length];building.computeWorldMatrix(true);
       const {minimumWorld:min,maximumWorld:max}=building.getBoundingInfo().boundingBox;
       const x=building.position.x,z=min.z-.08,width=max.x-min.x;
       for(let y=3.3;y<max.y-.5;y+=3.1)box('floorBand',width+.12,.10,.18,x,y,z,trim);
@@ -85,7 +97,7 @@
     for(const road of [-72,-24,24,72])for(let i=0;i<3;i++){
       const p=box('roadRepair',1.1+random(),.006,2+random()*2,road-2+random()*4,.018,-65+i*52+random()*8,asphalt);p.rotation.y=random()*.18;
     }
-    window.__EGYPT_STREET_FIX={ready:true,version:'11.19.0',signs,buildings:buildings.length,details};
+    window.__EGYPT_STREET_FIX={ready:true,version:'11.20.0',signs,buildings:buildings.length,details};
   }
   install().catch(error=>{window.__EGYPT_STREET_FIX.error=String(error);console.error(error);});
 })();

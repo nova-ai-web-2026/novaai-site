@@ -33,6 +33,7 @@
     try{
       const engine=getEngine(),scene=getScene();
       if(!engine||!scene)return publish({reason,waiting:true});
+      if(window.__V12_PROLOGUE?.running)return;
       const gameplay=playerCamera(scene);
       const active=scene.activeCamera;
       if(gameplay&&(!active||active.name==='v1116PreviewCamera'||active.isDisposed?.()))scene.activeCamera=gameplay;
@@ -42,7 +43,7 @@
       }
       engine.resize?.();
       if(scene.activeCamera&&canvas&&isMenuHidden()){
-        try{scene.activeCamera.attachControl?.(canvas,true);}catch(_){}
+        try{scene.activeCamera.detachControl?.();}catch(_){}
       }
       repairs++;
       publish({reason,waiting:false,playerCamera:gameplay?.name||null});
