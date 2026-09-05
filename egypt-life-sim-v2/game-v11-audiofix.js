@@ -21,7 +21,7 @@
   window.__V11_AUDIOFIX={
     version:17,release:'11.16',visualRelease:'11.13',singleAudioEngine:true,startupGuard:false,
     oneGameplaySfxLayer:true,v1116LocalPrimary:true,sameOriginPrimary:true,networkIndependentSfx:true,
-    olderSfxLayersSkipped:true,gameMasterMuted:true,v1111EgyptDetails:true,additiveVisualLayer:true
+    olderSfxLayersSkipped:true,gameMasterMuted:true,v119QualitySfx:true,v1111EgyptDetails:true,additiveVisualLayer:true
   };
   if(window.__egyptDebug)window.__egyptDebug.v11AudioFixState=()=>({...window.__V11_AUDIOFIX});
   loadV1111Details();
