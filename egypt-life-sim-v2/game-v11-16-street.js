@@ -20,7 +20,9 @@
       if(!(texture instanceof B.DynamicTexture)||mesh.getTotalVertices()!==4||mesh.getTotalIndices()!==6)continue;
       texture.uScale=1;texture.uOffset=0;
       const material=mesh.material.clone(mesh.name+'_readable');
-      material.backFaceCulling=true;mesh.material=material;
+      // Material.clone also clones DynamicTexture into an empty canvas. Reuse the
+      // painted texture explicitly so both faces retain the Arabic lettering.
+      material.diffuseTexture=texture;material.backFaceCulling=true;mesh.material=material;
       const back=mesh.clone(mesh.name+'_readableBack',mesh,true);
       back.position.set(0,0,.002);back.rotation.set(0,Math.PI,0);
       back.rotationQuaternion=null;back.scaling.set(1,1,1);
