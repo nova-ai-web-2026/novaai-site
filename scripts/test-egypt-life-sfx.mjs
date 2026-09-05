@@ -27,9 +27,9 @@ try {
       window.Audio=function(...args){const media=new NativeAudio(...args);window.__testMedia.push(media);return media;};
       window.Audio.prototype=NativeAudio.prototype;
     });
-    await page.goto(base+'?v=11.16.1',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready,null,{timeout:60000});
-    assert.equal(await page.locator('html').getAttribute('data-release'),'11.16.1','wrong game release');
+    await page.goto(base+'?v=11.16.2',{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready&&window.__EGYPT_STREET_FIX?.ready,null,{timeout:60000});
+    assert.equal(await page.locator('html').getAttribute('data-release'),'11.16.2','wrong game release');
     await page.evaluate(()=>{
       window.__testAudioContext=new window.__testNativeAC();
       document.addEventListener('pointerdown',()=>window.__testAudioContext.resume(),{capture:true});
@@ -120,8 +120,62 @@ try {
     await page.waitForTimeout(350);assert.equal((await state()).events.step,frozen,'footsteps while shop is open');
     await page.locator('#shopClose').click();
 
+    // Finish an actual NPC conversation using each available close control.
+    for(const closeControl of (mobile?['button']:['button','escape','interact'])){
+      await page.evaluate(()=>{
+        const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+        const person=scene.transformNodes.find(n=>n.name==='personRoot');
+        window.__egyptDebug.v12Teleport(person.position.x,person.position.z-.6);
+      });
+      await page.waitForTimeout(150);
+      if(mobile)await page.tap('#act');else await page.keyboard.press('e');
+      await page.locator('#dialog').waitFor({state:'visible'});
+      assert.match(await page.locator('#dialogText').innerText(),/[\u0600-\u06ff]/);
+      await page.waitForTimeout(500);
+      const beforeClose=await state();await resetMeter();
+      if(closeControl==='button')await page.locator('#dialogClose').click();
+      else await page.keyboard.press(closeControl==='escape'?'Escape':'e');
+      await page.locator('#dialog').waitFor({state:'hidden'});
+      await page.waitForTimeout(300);
+      const afterClose=await state();
+      assert.equal(afterClose.playCalls,beforeClose.playCalls,'closing NPC dialog triggered a sound');
+      assert.equal(afterClose.events.door,beforeClose.events.door,'NPC dialog emitted a door event');
+      assert.ok(await peak()<.001,'NPC dialog close was audible');
+    }
+    console.log('NPC dialogue closes silently',JSON.stringify({mobile}));
+    const visuals=await page.evaluate(()=>{
+      const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+      const signs=scene.meshes.filter(m=>m.metadata?.readableArabic&&!m.name.endsWith('_readableBack'));
+      return {state:window.__EGYPT_STREET_FIX,signs:signs.length,invalid:signs.filter(m=>m.material.diffuseTexture.uScale!==1||!m.material.backFaceCulling||!scene.getMeshByName(m.name+'_readableBack')).map(m=>m.name)};
+    });
+    assert.ok(visuals.signs>20,'Arabic sign repair did not run');assert.deepEqual(visuals.invalid,[]);
+    assert.ok(visuals.state.buildings>10,'street facades missing');
+    if(!mobile){
+      await page.evaluate(()=>{
+        const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];window.__testOldCamera=scene.activeCamera;
+        const camera=new BABYLON.FreeCamera('testStreetView',new BABYLON.Vector3(-18,2.2,-26),scene);
+        camera.setTarget(new BABYLON.Vector3(0,5,-13));camera.fov=1.15;scene.activeCamera=camera;
+      });
+      await page.waitForTimeout(250);
+      console.log('VISUAL_EVIDENCE_street:'+(await page.screenshot({type:'jpeg',quality:45})).toString('base64'));
+      for(const side of [-1,1]){
+        await page.evaluate(side=>{
+          const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+          const sign=scene.meshes.find(m=>m.name.startsWith('v11_legacyShop_')&&m.metadata?.readableArabic&&!m.name.endsWith('_readableBack')&&m.isEnabled());
+          if(!sign)throw new Error('No visible shop sign');
+          sign.computeWorldMatrix(true);const target=sign.getAbsolutePosition();
+          const normal=BABYLON.Vector3.TransformNormal(new BABYLON.Vector3(0,0,side),sign.getWorldMatrix()).normalize();
+          scene.activeCamera.position.copyFrom(target.add(normal.scale(5)));scene.activeCamera.setTarget(target);
+        },side);
+        await page.waitForTimeout(200);
+        console.log('VISUAL_EVIDENCE_sign'+(side===1?'Back':'Front')+':'+(await page.screenshot({type:'jpeg',quality:55})).toString('base64'));
+      }
+      await page.evaluate(()=>{const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],camera=scene.activeCamera;scene.activeCamera=window.__testOldCamera;camera.dispose();});
+    }
+
     // Kills current playback as well as blocking future SFX.
     await page.evaluate(()=>window.__V1116_SFX_API.probe('door'));
+    assert.equal((await state()).lastPlayed.key,'door','real door sound was removed');
     await page.locator('#soundToggle').click();
     await page.waitForFunction(()=>window.__V1116_SFX_API.state().muted);
     await page.waitForTimeout(150);await resetMeter();

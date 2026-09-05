@@ -3,15 +3,15 @@
   // Old entry wrappers can request this file a second time.
   if (window.__V1116_SFX_API) return;
 
-  const VERSION='11.16', REVISION='11.16.1';
+  const VERSION='11.16', REVISION='11.16.2';
   const localFiles={
-    step_pavement:'audio/v11-8/step_pavement.wav?v=11.16.1',
-    step_asphalt:'audio/v11-8/step_asphalt.wav?v=11.16.1',
-    interact:'audio/v11-8/interact.wav?v=11.16.1',
-    buy:'audio/v11-8/buy_coin.wav?v=11.16.1',
-    door:'audio/v11-8/door.wav?v=11.16.1',
-    reward:'audio/v11-8/reward.wav?v=11.16.1',
-    deny:'audio/v11-8/deny.wav?v=11.16.1'
+    step_pavement:'audio/v11-8/step_pavement.wav?v=11.16.2',
+    step_asphalt:'audio/v11-8/step_asphalt.wav?v=11.16.2',
+    interact:'audio/v11-8/interact.wav?v=11.16.2',
+    buy:'audio/v11-8/buy_coin.wav?v=11.16.2',
+    door:'audio/v11-8/door.wav?v=11.16.2',
+    reward:'audio/v11-8/reward.wav?v=11.16.2',
+    deny:'audio/v11-8/deny.wav?v=11.16.2'
   };
   const events={step:0,interact:0,buy:0,reward:0,door:0,open:0,close:0,deny:0,start:0,ui:0};
   const pools={},lastEventAt={};
@@ -113,7 +113,7 @@
   async function unlock(){primeMedia();await preloadLocal();return unlocked;}
   function play(name){
     const spec={interact:['interact',.72],buy:['buy',.82],reward:['reward',.78],door:['door',.75],
-      open:['interact',.60],close:['door',.68],deny:['deny',.60],start:['interact',.60],ui:['interact',.55]};
+      open:['interact',.60],deny:['deny',.60],start:['interact',.60],ui:['interact',.55]};
     if(name==='step'||name==='asphalt')return step(name==='asphalt'?'asphalt':'pavement');
     if(!spec[name])return false;
     const t=now();if(t-(lastEventAt[name]??-Infinity)<80)return false;

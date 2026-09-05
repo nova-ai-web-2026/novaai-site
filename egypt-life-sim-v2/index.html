@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ar" dir="rtl" data-release="11.16.1">
+<html lang="ar" dir="rtl" data-release="11.16.2">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <meta name="theme-color" content="#11100e" />
-  <title>حياة مصر — 11.16.1</title>
+  <title>حياة مصر — 11.16.2</title>
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <style>
     :root{--gold:#e9b84b;--cream:#f6ead2;--glass:rgba(19,18,16,.76);--line:rgba(255,255,255,.12)}
@@ -44,14 +44,15 @@
     <div id="top"><div id="stats" class="glass"><div class="stat"><div class="lab">الفلوس</div><div id="money" class="val">300 ج</div></div><div class="stat"><div class="lab">الجوع</div><div id="hungerTxt" class="val">84%</div><div class="meter"><div id="hungerBar" class="fill"></div></div></div><div class="stat"><div class="lab">الطاقة</div><div id="energyTxt" class="val">92%</div><div class="meter"><div id="energyBar" class="fill"></div></div></div><div class="stat"><div class="lab">المزاج</div><div id="moodTxt" class="val">76%</div><div class="meter"><div id="moodBar" class="fill"></div></div></div></div><div id="clock" class="glass"><div id="time" class="clockMain">08:20</div><div id="day" class="clockSub">اليوم 1 — السبت</div></div></div>
     <button id="soundToggle">🔊 الصوت</button><div id="mission" class="glass"><div id="taskTitle" class="mTitle">أول يوم في الحارة</div><div id="taskText" class="mText">انزل وافطر ولف السوق.</div></div><div id="prompt" class="glass">E — تفاعل</div><div id="toast" class="glass"></div><div id="mapWrap" class="glass"><canvas id="minimap" width="300" height="300"></canvas></div><div id="cross"></div><div id="mobile"><div id="joy"><div id="knob"></div></div><button id="run">جري</button><button id="act">تفاعل</button></div>
   </div>
-  <div id="menu"><div id="menuScene"></div><div id="menuContent"><div class="menuTopline"><span class="kicker">HAYAT MASR • V11.16.1</span><span class="menuLocation">القاهرة • يوم جديد</span></div><h1 class="logo">حياة <span>مصر</span></h1><div class="tagline">حياة مصر — شوف الشارع قدامك واختار تبدأ يوم جديد أو تكمل حفظك.</div><div class="menuRule"></div><div class="menuButtons"><button id="newGameBtn" class="menuBtn primary">ابدأ يوم جديد&nbsp;&nbsp;←</button><button id="continueBtn" class="menuBtn">كمّل من آخر حفظ</button><button id="resetBtn" class="menuBtn danger">مسح الحفظ</button></div><div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">الماوس نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">M صوت</span></div><div id="menuStatus">جاري تجهيز اللعبة…</div><div class="menuFoot">V11.16.1 — تحسين أصوات اللعب</div></div></div>
+  <div id="menu"><div id="menuScene"></div><div id="menuContent"><div class="menuTopline"><span class="kicker">HAYAT MASR • V11.16.2</span><span class="menuLocation">القاهرة • يوم جديد</span></div><h1 class="logo">حياة <span>مصر</span></h1><div class="tagline">حياة مصر — شوف الشارع قدامك واختار تبدأ يوم جديد أو تكمل حفظك.</div><div class="menuRule"></div><div class="menuButtons"><button id="newGameBtn" class="menuBtn primary">ابدأ يوم جديد&nbsp;&nbsp;←</button><button id="continueBtn" class="menuBtn">كمّل من آخر حفظ</button><button id="resetBtn" class="menuBtn danger">مسح الحفظ</button></div><div class="menuMeta"><span class="pill">WASD حركة</span><span class="pill">الماوس نظر</span><span class="pill">E تفاعل</span><span class="pill">Shift جري</span><span class="pill">M صوت</span></div><div id="menuStatus">جاري تجهيز اللعبة…</div><div class="menuFoot">V11.16.2 — تحسين أصوات اللعب</div></div></div>
   <div id="shop"><div class="modal"><h2 id="shopTitle"></h2><div id="shopDesc" class="desc"></div><div id="shopItems"></div><button id="shopClose" class="closeBtn">اقفل وارجع للشارع</button></div></div><div id="dialog"><div class="modal"><div id="dialogWho" class="who"></div><div id="dialogText"></div><button id="dialogClose" class="closeBtn">تمام يا معلم</button></div></div><div id="errorBox"></div>
   <script>(()=>{const proto=window.BABYLON?.UniversalCamera?.prototype;if(!proto||typeof proto.moveWithCollisions==='function')return;proto.moveWithCollisions=function(delta){const scene=this.getScene(),radius=.38;const blocked=(x,z)=>{if(Math.abs(x)>105.5||Math.abs(z)>105.5)return true;for(const mesh of scene.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.08||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;};})();</script>
   <script src="game-v11-12-ui.js?v=11.12" data-egypt-v1112-ui="true"></script>
-  <script src="game-v11-13-hud.js?v=11.13&release=11.16.1" data-egypt-v1113-hud="true"></script>
-  <script src="game-v11-6-runtime.js?v=11.10&sfx=11.16.1" data-egypt-v119-runtime="true"></script>
-  <script src="game-v11-15-real-sfx.js?v=11.16&fix=1" data-egypt-v1116-sfx="true"></script>
+  <script src="game-v11-13-hud.js?v=11.13&release=11.16.2" data-egypt-v1113-hud="true"></script>
+  <script src="game-v11-6-runtime.js?v=11.10&sfx=11.16.2" data-egypt-v119-runtime="true"></script>
+  <script src="game-v11-15-real-sfx.js?v=11.16&fix=2" data-egypt-v1116-sfx="true"></script>
   <script src="game-v7.js?v=8"></script>
-  <script src="game-v8-layout.js?v=11.10&visual=11.11&sfx=11.16.1"></script>
+  <script src="game-v8-layout.js?v=11.10&visual=11.11&sfx=11.16.2"></script>
+<script src="game-v11-16-street.js?v=11.16.2"></script>
 </body>
 </html>
