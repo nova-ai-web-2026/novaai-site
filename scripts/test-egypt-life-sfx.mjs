@@ -81,13 +81,23 @@ try {
     const idle=(await state()).events.step;
     await page.waitForTimeout(500);
     assert.equal((await state()).events.step,idle,'footsteps while idle');
+    const movementStart=await page.evaluate(()=>({camera:window.__egyptDebug.getCamera(),fps:BABYLON.Engine.LastCreatedEngine.getFps(),at:performance.now()}));
     await resetMeter();
     if(mobile){
       const joy=await page.locator('#joy').boundingBox();
       await page.mouse.move(joy.x+joy.width/2,joy.y+joy.height/2);await page.mouse.down();
       await page.mouse.move(joy.x+joy.width/2,joy.y+10);
     }else await page.keyboard.down('w');
-    await page.waitForFunction(n=>window.__V1116_SFX_API.state().events.step>n,idle,{timeout:6000});
+    // Software WebGL can render fewer than three frames per second. Require
+    // real displacement and an emitted step, with a bounded wall-clock budget.
+    try {
+      await page.waitForFunction(n=>window.__V1116_SFX_API.state().events.step>n,idle,{timeout:20000});
+    } finally {
+      const movementEnd=await page.evaluate(()=>({camera:window.__egyptDebug.getCamera(),fps:BABYLON.Engine.LastCreatedEngine.getFps(),at:performance.now(),activeCamera:BABYLON.Engine.LastCreatedEngine.scenes[0].activeCamera.name,story:window.__V12_PROLOGUE.running,focus:document.activeElement?.id,events:window.__V1116_SFX_API.state().events}));
+      console.log('Movement timing evidence',JSON.stringify({mobile,start:movementStart,end:movementEnd}));
+    }
+    const movementEnd=await page.evaluate(()=>window.__egyptDebug.getCamera());
+    assert.ok(Math.hypot(movementEnd.x-movementStart.camera.x,movementEnd.z-movementStart.camera.z)>=1.8,'step without actual walking');
     await page.waitForTimeout(400);
     if(mobile)await page.mouse.up();else await page.keyboard.up('w');
     const stepPeak=await peak();
