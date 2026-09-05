@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1000,height:700}});
- const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('BROWSER_ERROR',e.message);});page.on('console',m=>{if(m.type()==='error')console.log('BROWSER_CONSOLE',m.text());});
  await page.route('**/game-v12-world.js*',async route=>{await new Promise(r=>setTimeout(r,1500));await route.continue();});
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');

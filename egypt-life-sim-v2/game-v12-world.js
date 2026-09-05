@@ -44,6 +44,15 @@
     box('homeWallW',.22,3.1,14,HOME.x-9,1.55,HOME.z,wall,true);box('homeWallE',.22,3.1,14,HOME.x+9,1.55,HOME.z,wall,true);box('homeWallN',18,3.1,.22,HOME.x,1.55,HOME.z-7,wall,true);
     box('homeWallS1',7.2,3.1,.22,HOME.x-5.4,1.55,HOME.z+7,wall,true);box('homeWallS2',7.2,3.1,.22,HOME.x+5.4,1.55,HOME.z+7,wall,true);
     box('homeDoor',2.25,2.65,.12,HOME.doorX,1.33,HOME.doorZ,wood,false);
+    box('homeCeiling',18,.18,14,HOME.x,3.22,HOME.z,mat('ceiling','#ddd6c6'));
+    box('bedHeadboard',4.4,.95,.16,HOME.x-4, .78,HOME.z-6.18,wood);
+    box('bedQuilt',3.96,.12,1.38,HOME.x-4,.98,HOME.z-4.58,mat('quilt','#936252'));
+    box('bedQuiltFold',3.96,.15,.24,HOME.x-4,1.05,HOME.z-5.14,mat('quiltFold','#bf9d77'));
+    box('bedsideTable',.75,.65,.62,HOME.x-6.8,.36,HOME.z-5.35,wood);
+    box('alarmClock',.34,.25,.13,HOME.x-6.8,.84,HOME.z-5.36,metal);
+    box('alarmClockFace',.29,.19,.02,HOME.x-6.8,.84,HOME.z-5.28,white);
+    cyl('ceilingLamp',.55,.12,HOME.x-3,3.08,HOME.z-3,white);
+    const roomLight=new BABYLON.PointLight('v12_roomLight',new BABYLON.Vector3(HOME.x-3,2.85,HOME.z-3),scene);roomLight.diffuse=new BABYLON.Color3(1,.87,.68);roomLight.intensity=.48;roomLight.range=20;
     // Living room.
     box('rug',5.2,.035,3.4,HOME.x-2.2,.12,HOME.z-1.0,mat('rug','#8e5648'));
     box('sofaSeat',4.4,.55,1.15,HOME.x-4.5,.48,HOME.z-1.2,fabric);box('sofaBack',4.4,1.1,.35,HOME.x-4.5,1.12,HOME.z-1.68,fabric);counters.homeProps+=2;

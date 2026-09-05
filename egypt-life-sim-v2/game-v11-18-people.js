@@ -24,6 +24,7 @@
         const fore=scene.getMeshByName('v9p_foreArm'+side+'_'+i);if(fore&&female)fore.material=cloth;
       }
       if(female){
+        scene.getMeshByName('v9p_pelvis_'+i)?.setEnabled(false);scene.getMeshByName('v9p_waist_'+i)?.setEnabled(false);
         const tunic=mesh('people_tunic_'+i,{height:.60,diameterTop:.43,diameterBottom:.66,tessellation:16},pelvis,0,.08,0,cloth,'cylinder');tunic.scaling.z=.68;
         const oldHair=scene.getMeshByName('v9_hair_'+i);oldHair?.setEnabled(false);
         if(scarf){

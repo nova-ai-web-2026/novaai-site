@@ -3,8 +3,8 @@
   window.EgyptStory={install(scene,home){
     const B=BABYLON,button=document.getElementById('newGameBtn');
     const beats=[
-      {who:'المنبّه',line:'قوم يا بطل… دي تالت «خمس دقايق»!',from:[-155.0,1.04,-155.5],to:[-154.4,1.65,-153.3],look:[-148,1.5,-151]},
-      {who:'أنا',line:'حاضر… بس المخ لسه بيفتح. محدّش يدوس عليه.',from:[-154.4,1.65,-153.3],to:[-152,1.72,-151],look:[-145,1.5,-145]},
+      {who:'المنبّه',line:'قوم يا بطل… دي تالت «خمس دقايق»!',from:[-155.0,1.04,-155.5],to:[-155,1.60,-154.9],look:[-153,1.0,-153.9]},
+      {who:'أنا',line:'حاضر… بس المخ لسه بيفتح. محدّش يدوس عليه.',from:[-155,1.60,-154.9],to:[-152,1.72,-151],look:[-145,1.5,-145]},
       {who:'ماما من الصالة',line:'هات عيش وفول يا حبيبي… والفكة ترجع، مش تتبنّاها!',from:[-152,1.72,-151],to:[-150,1.72,-148],look:[-145,1.1,-145]},
       {who:'أنا',line:'نازل أبدأ مستقبلي… بس أفطر الأول. محدّش بيعمل إنجازات على الريق!',from:[-150,1.72,-148],to:[-150,1.72,-144.8],look:[-150,1.5,-142]}
     ];
@@ -28,14 +28,15 @@
       letters=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter('ar',{granularity:'grapheme'}).segment(beat.line)].map(s=>s.segment):Array.from(beat.line);
       text.textContent='';document.getElementById('storySpeaker').textContent=beat.who;
       document.getElementById('storyAccessible').textContent=beat.who+': '+beat.line;
-      document.getElementById('storyCount').textContent=`${index+1} / ${beats.length}`;
+      document.getElementById('storyCount').textContent=`مشهد ${index+1} من ${beats.length}`;
       next.textContent='إظهار الكلام كاملًا';status.beat=index;status.typed=0;
       timer=setInterval(()=>{
         if(document.hidden)return;
         if(shown<letters.length){
-          text.textContent=letters.slice(0,++shown).join('');status.typed=shown;
+          const expected=Math.min(letters.length,Math.floor((performance.now()-beatStarted)/42));
+          if(expected<=shown)return;shown=expected;text.textContent=letters.slice(0,shown).join('');status.typed=shown;
           if(shown%3===0&&letters[shown-1].trim())window.__V1116_SFX_API?.play('typing');
-          if(shown===letters.length){fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}
+          if(shown===letters.length){fullyTypedAt=beatStarted+letters.length*42;next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}
         }else if(performance.now()-fullyTypedAt>2600)advance();
       },42);
     }
