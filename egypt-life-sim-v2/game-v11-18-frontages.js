@@ -86,7 +86,7 @@
       glass.metadata={...glass.metadata,shopfrontDetailed:true};
     });
     // Compact wooden cafe seating sits beside the door, within the pavement.
-    for(const [i,glass] of shops.filter(g=>g.metadata?.shopType==='ahwa').slice(0,2).entries()){
+    for(const [i,glass] of shops.filter(g=>g.metadata?.shopType==='ahwa').sort((a,b)=>Math.hypot(a.position.x+12,a.position.z+16)-Math.hypot(b.position.x+12,b.position.z+16)).slice(0,2).entries()){
       const pieces=[],w=glass.getBoundingInfo().boundingBox.extendSize.x*2,x=-w*.28;
       const add=(name,a,b,c,px,py,pz)=>{const m=box(name,a,b,c,glass,px,py,pz,wood);pieces.push(m);return m;};
       const top=B.MeshBuilder.CreateCylinder('frontage_cafeTable_'+i,{diameter:.8,height:.055,tessellation:12},scene);

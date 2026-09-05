@@ -69,7 +69,7 @@
     }
     const buildings=scene.meshes.filter(m=>m.name==='building');
     buildings.forEach((building,index)=>{
-      building.material=index%4===0?brick:plaster[index%plaster.length];building.computeWorldMatrix(true);
+      building.material=(index%4===0||(building.position.x===0&&building.position.z===0))?brick:plaster[index%plaster.length];building.computeWorldMatrix(true);
       const {minimumWorld:min,maximumWorld:max}=building.getBoundingInfo().boundingBox;
       const x=building.position.x,z=min.z-.08,width=max.x-min.x;
       for(let y=3.3;y<max.y-.5;y+=3.1)box('floorBand',width+.12,.10,.18,x,y,z,trim);
