@@ -69,7 +69,7 @@ jobs:
           async function pulse(name,waitMs=280){
             const before=await page.evaluate(()=>window.__V1116_SFX_API.state().playResolved);
             await page.evaluate(n=>window.__V1116_SFX_API.probe(n),name);
-            await page.waitForTimeout(waitMs);
+            await page.waitForFunction(before=>{const s=window.__V1116_SFX_API.state();return s.playResolved>before&&s.media.lastTime>.01;},before,{timeout:10000});
             const state=await page.evaluate(()=>window.__V1116_SFX_API.state());
             return {name,before,after:state.playResolved,media:state.media,lastPlayed:state.lastPlayed,rejected:state.playRejected};
           }
