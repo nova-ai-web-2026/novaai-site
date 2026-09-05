@@ -1,0 +1,19 @@
+name: Verify Egyptian street visuals
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - 'scripts/test-egypt-life-street.mjs'
+      - '.github/workflows/test-egypt-life-street.yml'
+permissions:
+  contents: read
+jobs:
+  street:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0
+      - run: python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/street-server.log 2>&1 &
+      - run: node scripts/test-egypt-life-street.mjs
