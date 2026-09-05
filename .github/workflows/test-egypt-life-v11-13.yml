@@ -1,6 +1,7 @@
 name: Test Egyptian Life Simulator V11.13 HUD
 
 on:
+  workflow_call:
   pull_request:
     paths:
       - 'egypt-life-sim-v2/**'
@@ -18,7 +19,7 @@ jobs:
           test -s egypt-life-sim-v2/game-v11-13-hud.js
           node --check egypt-life-sim-v2/game-v11-13-hud.js
           grep -Fq 'game-v11-13-hud.js?v=11.13' egypt-life-sim-v2/index.html
-          grep -Fq 'HAYAT MASR • V11.13' egypt-life-sim-v2/index.html
+          grep -Fq 'HAYAT MASR • V11.16.1' egypt-life-sim-v2/index.html
           grep -Fq "body.game-started #hud" egypt-life-sim-v2/game-v11-13-hud.js
           grep -Fq "spawnRepaired" egypt-life-sim-v2/game-v11-13-hud.js
       - name: Install Chromium

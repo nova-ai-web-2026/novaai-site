@@ -15,10 +15,10 @@
 
   const stableMenu=()=>{
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
-    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.10')kicker.textContent='HAYAT MASR • V11.10';
+    if(kicker&&kicker.textContent!==`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`;
     const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.10 — actual CC0 sampled SFX')foot.textContent='V11.10 — actual CC0 sampled SFX';
+    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`)foot.textContent=`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`;
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 
@@ -74,7 +74,7 @@
     const air=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),airGain=originalCreateGain();air.buffer=makeNoise(8,.055);air.loop=true;bp.type='bandpass';bp.frequency.value=760;bp.Q.value=.35;airGain.gain.value=.007;air.connect(bp);bp.connect(airGain);airGain.connect(master);air.start();
 
     timer=setInterval(()=>{
-      if(ctx?.state==='suspended')ctx.resume().catch(()=>{});const cam=window.__egyptDebug?.getCamera?.();if(!cam||!roadBed)return;
+      if(ctx?.state==='suspended')ctx.resume().catch(()=>{});let cam;try{cam=window.__egyptDebug?.getCamera?.();}catch(_){return;}if(!cam||!roadBed)return;
       const d=Math.min(...[-72,-24,24,72].map(r=>Math.min(Math.abs(cam.x-r),Math.abs(cam.z-r))));roadBed.gain.setTargetAtTime(d<10?.085:.048,ctx.currentTime,.35);
     },160);
   }
