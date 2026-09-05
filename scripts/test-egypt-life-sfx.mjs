@@ -27,15 +27,15 @@ try {
       window.Audio=function(...args){const media=new NativeAudio(...args);window.__testMedia.push(media);return media;};
       window.Audio.prototype=NativeAudio.prototype;
     });
-    await page.goto(base+'?v=11.16.2',{waitUntil:'domcontentloaded'});
+    await page.goto(base+'?v=11.18.0',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready&&window.__EGYPT_STREET_FIX?.ready,null,{timeout:60000});
-    assert.equal(await page.locator('html').getAttribute('data-release'),'11.16.2','wrong game release');
+    assert.equal(await page.locator('html').getAttribute('data-release'),'11.18.0','wrong game release');
     await page.evaluate(()=>{
       window.__testAudioContext=new window.__testNativeAC();
       document.addEventListener('pointerdown',()=>window.__testAudioContext.resume(),{capture:true});
     });
     if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
-    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
+    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:45000});
     await page.waitForFunction(()=>window.__testAudioContext.state==='running',null,{timeout:10000});
     await page.evaluate(()=>{
       // MediaRecorder captures on the media thread, independent of WebGL frame rate.

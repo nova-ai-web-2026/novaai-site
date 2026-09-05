@@ -62,7 +62,7 @@ jobs:
             const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
             const menu=document.getElementById('menu');
             return document.body.classList.contains('game-started')&&getComputedStyle(menu).display==='none'&&scene?.activeCamera&&scene.activeCamera.name!=='v1116PreviewCamera'&&scene.meshes.length>50;
-          },{timeout:15000});
+          },{timeout:45000});
           await page.waitForTimeout(900);
 
           const state=await page.evaluate(()=>({

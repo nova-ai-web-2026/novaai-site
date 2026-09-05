@@ -121,21 +121,7 @@
     window.__V12_INTERACT_DOOR=interact;
   }
 
-  function createPrologueUI(){
-    let el=document.getElementById('v12Prologue');if(el)return el;el=document.createElement('div');el.id='v12Prologue';el.innerHTML='<div class="v12shade"></div><div class="v12copy"><div class="v12place">القاهرة • ٨:١٠ صباحًا</div><div class="v12title">يوم جديد</div><div class="v12line">صحيت في بيتك… والحي كله قدامك.</div></div><button id="v12Skip">تخطي</button>';
-    const st=document.createElement('style');st.textContent='#v12Prologue{position:fixed;inset:0;z-index:80;display:none;overflow:hidden;background:#050505;color:#fff;font-family:Tahoma,Arial}#v12Prologue.active{display:block;background:transparent}.v12shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.82),rgba(0,0,0,.05) 58%,rgba(0,0,0,.42));pointer-events:none}.v12copy{position:absolute;right:6vw;bottom:10vh;text-align:right;text-shadow:0 2px 14px #000}.v12place{font-size:12px;letter-spacing:1px;color:#e9c77d}.v12title{font-size:clamp(42px,8vw,76px);font-weight:950;margin-top:7px}.v12line{font-size:15px;margin-top:7px;color:#f0e8da}#v12Skip{position:absolute;left:18px;top:max(18px,env(safe-area-inset-top));border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.42);color:white;border-radius:10px;padding:9px 13px;font-weight:800}';document.head.appendChild(st);document.body.appendChild(el);return el;
-  }
-  async function runPrologue(btn){
-    if(prologueRunning)return;prologueRunning=true;const overlay=createPrologueUI();document.getElementById('menu').style.display='none';document.body.classList.remove('game-started');overlay.classList.add('active');
-    camera=scene.activeCamera;const old={x:camera.position.x,y:camera.position.y,z:camera.position.z,rx:camera.rotation.x,ry:camera.rotation.y,rz:camera.rotation.z};camera.position.set(HOME.x-5.5,2.15,HOME.z+4.7);camera.rotation.set(.04,.93,0);
-    let done=false;const finish=()=>{if(done)return;done=true;overlay.classList.remove('active');const menu=document.getElementById('menu');menu.style.display='';bypassStart=true;btn.click();bypassStart=false;setTimeout(()=>{camera=scene.activeCamera;teleport(HOME.spawnX,HOME.spawnZ,'ابدأ يومك من البيت');document.body.classList.add('game-started');insideHome=true;prologueRunning=false;window.__V12_PROLOGUE.played=true;},80);};
-    document.getElementById('v12Skip').onclick=finish;const start=performance.now();await new Promise(resolve=>{const obs=scene.onBeforeRenderObservable.add(()=>{const t=Math.min(1,(performance.now()-start)/4200);camera.position.x=HOME.x-5.5+t*3.9;camera.position.z=HOME.z+4.7-t*3.3;camera.rotation.y=.93-t*.34;if(t>=1){scene.onBeforeRenderObservable.remove(obs);resolve();}});});finish();
-  }
-  function installPrologue(){
-    window.__V12_PROLOGUE={ready:true,played:false,durationMs:4200,startsAtHome:true};createPrologueUI();
-    const btn=document.getElementById('newGameBtn');if(btn)btn.addEventListener('click',e=>{if(bypassStart||prologueRunning)return;e.preventDefault();e.stopImmediatePropagation();runPrologue(btn);},{capture:true});
-    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'12'}`;const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='ابدأ من بيتك، انزل الحارة، وبعدها اتحرك بحرية بين الشوارع والسوق والورش والمناطق الجديدة.';const foot=document.querySelector('.menuFoot');if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`;
-  }
+  function installPrologue(){window.EgyptStory.install(scene,HOME);}
 
   function authenticity(){
     const checks={mixedUse:counters.mixedUse>=12,arabicSigns:counters.arabicSigns>=14,microbuses:counters.microbuses>=5,balconies:counters.balconies>=55,laundry:counters.laundry>=30,satelliteDishes:counters.satelliteDishes>=10,acUnits:counters.acUnits>=35,utilityWires:counters.utilityWires>=15,narrowLanes:counters.narrowLanes>=8,buildingScale:counters.buildings>=24,streetLife:counters.pedestrians>=12,home:counters.homeProps>=20};

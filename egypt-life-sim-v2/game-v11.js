@@ -70,7 +70,7 @@
     let made=0;
     glass.forEach((g,i)=>{
       g.computeWorldMatrix(true);const p=g.getAbsolutePosition();
-      planeSign(scene,'legacyShop_'+i,names[i%names.length],p.x,3.18,p.z-.08,Math.max(3.2,Math.min(6.8,g.getBoundingInfo().boundingBox.extendSizeWorld.x*1.9)),.72,['#74432f','#925634','#5e4632','#38604d'][i%4],Math.PI);made++;
+      planeSign(scene,'legacyShop_'+i,g.metadata?.shopName||names[i%names.length],p.x,3.18,p.z-.08,Math.max(3.2,Math.min(6.8,g.getBoundingInfo().boundingBox.extendSizeWorld.x*1.9)),.72,['#74432f','#925634','#5e4632','#38604d'][i%4],Math.PI);made++;
     });
     planeSign(scene,'marketLabel','سوق الحارة',48,4,-34,7.2,.92,'#854b2d',0);
     planeSign(scene,'ahwaLabel','قهوة المعلم فتحي',-48,3.65,35,7,.86,'#5b3923',0);

@@ -19,8 +19,8 @@ while(Date.now()<deadline){
   await delay(10000);
 }
 assert.ok(manifest,'The expected version did not become available on GitHub Pages');
-assert.equal(manifest.version,'11.16.2');
-assert.equal(manifest.audioRevision,'11.16.2');
+assert.equal(manifest.version,'11.18.0');
+assert.equal(manifest.audioRevision,'11.18.0');
 assert.ok(Object.keys(manifest.files).length>=40,'Incomplete asset manifest');
 for(const [file,hash] of Object.entries(manifest.files)){
   assert.ok(!file.startsWith('/')&&!file.split('/').includes('..'),'Unsafe asset path');

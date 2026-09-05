@@ -19,10 +19,7 @@
       const texture=mesh.material?.diffuseTexture;
       if(!(texture instanceof B.DynamicTexture)||mesh.getTotalVertices()!==4||mesh.getTotalIndices()!==6)continue;
       texture.uScale=1;texture.uOffset=0;
-      const material=mesh.material.clone(mesh.name+'_readable');
-      // Material.clone also clones DynamicTexture into an empty canvas. Reuse the
-      // painted texture explicitly so both faces retain the Arabic lettering.
-      material.diffuseTexture=texture;material.backFaceCulling=true;mesh.material=material;
+      const material=mesh.material;material.backFaceCulling=true;
       const back=mesh.clone(mesh.name+'_readableBack',mesh,true);
       back.position.set(0,0,.002);back.rotation.set(0,Math.PI,0);
       back.rotationQuaternion=null;back.scaling.set(1,1,1);
@@ -88,7 +85,7 @@
     for(const road of [-72,-24,24,72])for(let i=0;i<3;i++){
       const p=box('roadRepair',1.1+random(),.006,2+random()*2,road-2+random()*4,.018,-65+i*52+random()*8,asphalt);p.rotation.y=random()*.18;
     }
-    window.__EGYPT_STREET_FIX={ready:true,version:'11.16.2',signs,buildings:buildings.length,details};
+    window.__EGYPT_STREET_FIX={ready:true,version:'11.18.0',signs,buildings:buildings.length,details};
   }
   install().catch(error=>{window.__EGYPT_STREET_FIX.error=String(error);console.error(error);});
 })();
