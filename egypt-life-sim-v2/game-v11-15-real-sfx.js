@@ -28,7 +28,7 @@
 
   function muteOlderSfx(){
     const ctx=window.__V119_CONTEXT||window.__V118_CONTEXT;
-    for(const old of [window.__V1114_SFX_BUS,window.__V1110_SFX_BUS,window.__V119_SFX_BUS,window.__V118_SFX_BUS]){
+    for(const old of [window.__V119_GAME_MASTER,window.__V1114_SFX_BUS,window.__V1110_SFX_BUS,window.__V119_SFX_BUS,window.__V118_SFX_BUS]){
       if(!old)continue;
       try{old.gain.setTargetAtTime(0,ctx?.currentTime||0,.02);}catch(_){try{old.gain.value=0;}catch(__){}}
     }
@@ -44,6 +44,7 @@
     const next=isMuted();if(next===muted)return;muted=next;
     if(muted)stopAll();
     for(const voice of voices())voice.muted=muted||voice._egyptPriming;
+    muteOlderSfx();
     publish();
   }
   function makeVoice(url,key,index){

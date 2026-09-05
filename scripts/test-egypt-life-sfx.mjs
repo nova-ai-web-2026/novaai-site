@@ -28,7 +28,7 @@ try {
       const ctx=new window.__testNativeAC(),analyser=ctx.createAnalyser();analyser.fftSize=256;
       analyser.connect(ctx.destination);
       for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(analyser);
-      window.__testMeter={peak:0};
+      window.__testMeter={peak:0,ctx};
       const values=new Float32Array(256);
       setInterval(()=>{analyser.getFloatTimeDomainData(values);for(const v of values)window.__testMeter.peak=Math.max(window.__testMeter.peak,Math.abs(v));},8);
       document.addEventListener('pointerdown',()=>ctx.resume(),{capture:true});
@@ -59,7 +59,11 @@ try {
     await page.waitForFunction(n=>window.__V1116_SFX_API.state().events.step>n,idle,{timeout:6000});
     await page.waitForTimeout(400);
     if(mobile)await page.mouse.up();else await page.keyboard.up('w');
-    const stepPeak=await peak();assert.ok(stepPeak>.001,'silent footsteps');
+    const stepPeak=await peak();
+    const soundDebug=await page.evaluate(()=>({state:window.__V1116_SFX_API.state(),meterContext:window.__testMeter.ctx.state,
+      media:window.__testMedia.map(m=>({key:m.dataset.v1116Sfx,muted:m.muted,paused:m.paused,time:m.currentTime,ready:m.readyState}))}));
+    console.log('Walking audio evidence',JSON.stringify({mobile,stepPeak,...soundDebug}));
+    assert.ok(stepPeak>.001,'silent footsteps '+JSON.stringify(soundDebug));
 
     // A real shop interaction and purchase must produce one event each.
     await page.evaluate(()=>{
