@@ -61,7 +61,7 @@
       bc.fillStyle=['#a96043','#b87551','#92543e','#bb7956'][(row+col+17)%4];
       bc.fillRect(col*32+(row%2)*16,row*16,30,14);
     }
-    bt.update();bt.uScale=3;bt.vScale=2;brick.diffuseTexture=bt;
+    bt.update();bt.wrapU=bt.wrapV=B.Texture.WRAP_ADDRESSMODE;bt.uScale=3;bt.vScale=2;brick.diffuseTexture=bt;
     // Crossings belong at approaches, not superimposed across the junction.
     for(const mesh of scene.meshes){
       if(mesh.name==='crossV')mesh.position.z-=7.3;
