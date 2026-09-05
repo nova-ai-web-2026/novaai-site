@@ -47,6 +47,7 @@
     box('homeCeiling',18,.18,14,HOME.x,3.22,HOME.z,mat('ceiling','#ddd6c6'));
     box('bedHeadboard',4.4,.95,.16,HOME.x-4, .78,HOME.z-6.18,wood);
     box('bedQuilt',3.96,.12,1.38,HOME.x-4,.98,HOME.z-4.58,mat('quilt','#936252'));
+    const quiltTexture=new BABYLON.DynamicTexture('v12_quiltPattern',256,scene,false),quiltCanvas=quiltTexture.getContext();quiltCanvas.fillStyle='#936252';quiltCanvas.fillRect(0,0,256,256);for(let y=20;y<256;y+=64){quiltCanvas.fillStyle='#c8b18c';quiltCanvas.fillRect(0,y,256,12);quiltCanvas.fillStyle='#75483e';quiltCanvas.fillRect(0,y+17,256,3);}quiltTexture.update();mat('quilt','#936252').diffuseTexture=quiltTexture;mat('quilt','#936252').diffuseColor=BABYLON.Color3.White();
     box('bedQuiltFold',3.96,.15,.24,HOME.x-4,1.05,HOME.z-5.14,mat('quiltFold','#bf9d77'));
     box('bedsideTable',.75,.65,.62,HOME.x-6.8,.36,HOME.z-5.35,wood);
     box('alarmClock',.34,.25,.13,HOME.x-6.8,.84,HOME.z-5.36,metal);

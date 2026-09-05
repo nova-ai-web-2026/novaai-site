@@ -15,6 +15,7 @@ try{
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
  await page.waitForFunction(()=>window.__V12_PROLOGUE.typed>12);
+ assert.ok(await page.evaluate(()=>{const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];return scene.pickWithRay(scene.activeCamera.getForwardRay(10),m=>m.name==='v12_bedQuilt')?.hit;}),'waking camera does not face the bed');
  console.log('VISUAL_EVIDENCE_waking:'+(await page.screenshot({type:'jpeg',quality:55})).toString('base64'));
  assert.ok(await page.evaluate(()=>window.__V1116_SFX_API.state().events.typing)>0,'no typing sound events');
  await page.click('#storyMute');await page.waitForFunction(()=>window.__V1116_SFX_API.state().muted);
