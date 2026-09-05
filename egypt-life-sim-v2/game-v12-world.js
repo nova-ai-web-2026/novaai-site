@@ -120,8 +120,8 @@
     sign('northStreet','شارع المحطة الجديدة',0,3.1,114.8,5.4,.72,'#245f82',0);sign('eastStreet','شارع السوق',114.8,3.1,0,4.5,.72,'#245f82',Math.PI/2);
   }
 
-  function distanceTo(p){return camera?Math.hypot(camera.position.x-p.x,camera.position.z-p.z):999;}
-  function teleport(x,z,msg){if(!camera)return;camera.position.x=x;camera.position.y=1.72;camera.position.z=z;camera.rotation.x=0;camera.rotation.z=0;insideHome=(Math.abs(x-HOME.x)<15&&Math.abs(z-HOME.z)<15);toast(msg);}
+  function distanceTo(p){camera=scene.activeCamera;return camera?Math.hypot(camera.position.x-p.x,camera.position.z-p.z):999;}
+  function teleport(x,z,msg){camera=scene.activeCamera;if(!camera)return;camera.position.x=x;camera.position.y=1.72;camera.position.z=z;camera.rotation.x=0;camera.rotation.z=0;insideHome=(Math.abs(x-HOME.x)<15&&Math.abs(z-HOME.z)<15);toast(msg);}
   function installDoorInteractions(){
     const prompt=document.createElement('div');prompt.id='v12DoorPrompt';prompt.textContent='E — افتح الباب';prompt.style.cssText='position:fixed;z-index:25;left:50%;bottom:12%;transform:translateX(-50%);padding:9px 13px;border-radius:10px;background:rgba(17,16,14,.82);border:1px solid rgba(255,255,255,.16);color:#fff;font:700 13px Tahoma;display:none;pointer-events:none';document.body.appendChild(prompt);
     const interact=()=>{if(distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4){teleport(STREET_DOOR.x,STREET_DOOR.z,'نزلت للشارع 🇪🇬');return true;}if(distanceTo(STREET_DOOR)<2.7){teleport(HOME.spawnX,HOME.spawnZ,'رجعت البيت');return true;}return false;};

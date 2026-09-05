@@ -4,12 +4,14 @@ const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',hea
 try{
  const page=await browser.newPage({viewport:{width:1000,height:700}});
  const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('BROWSER_ERROR',e.message);});page.on('console',m=>{if(m.type()==='error')console.log('BROWSER_CONSOLE',m.text());});
+ // Select the real pacing control immediately when the overlay opens: software
+ // WebGL can take several seconds per automation round-trip. No game-state hooks.
+ await page.addInitScript(()=>{let selected=false;new MutationObserver(()=>{const overlay=document.getElementById('v12Prologue'),pace=document.getElementById('storyPace');if(!selected&&overlay?.classList.contains('active')&&pace){selected=true;pace.click();}}).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});});
  await page.route('**/game-v12-world.js*',async route=>{await new Promise(r=>setTimeout(r,1500));await route.continue();});
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');
  await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready,null,{timeout:60000});
  await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
- await page.click('#storyNext'); // Opt into manual reading before inspecting the shot.
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
  await page.waitForFunction(()=>window.__V12_PROLOGUE.typed>12);
@@ -79,7 +81,6 @@ try{
  await page.waitForFunction(()=>document.body.classList.contains('game-started'));
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.running),false);
  await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
- await page.click('#storyNext'); // Opt into manual reading before inspecting the shot.
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),0);
  console.log('Story, characters, mounted signs, skip and continue verified');
 }finally{await browser.close();}

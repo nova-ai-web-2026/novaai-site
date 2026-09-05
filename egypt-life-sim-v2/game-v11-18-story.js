@@ -9,7 +9,7 @@
       {who:'أنا',line:'نازل أبدأ مستقبلي… بس أفطر الأول. محدّش بيعمل إنجازات على الريق!',from:[-150,1.72,-148],to:[-150,1.72,-144.8],look:[-150,1.5,-142]}
     ];
     const overlay=document.createElement('section');overlay.id='v12Prologue';overlay.hidden=true;
-    overlay.setAttribute('aria-label','افتتاحية يوم جديد');overlay.innerHTML='<div class="story-eyelids"></div><div class="story-top"><span>القاهرة · بدري على الإنجازات</span><button id="storyMute" type="button">كتم صوت الكتابة</button><button id="v12Skip" type="button">تخطي المقدمة</button></div><div class="story-caption" dir="rtl"><div id="storySpeaker"></div><p id="storyText" aria-hidden="true"></p><p id="storyAccessible" class="story-sr" aria-live="polite"></p><div class="story-bottom"><span id="storyCount"></span><button id="storyNext" type="button">إظهار الكلام كاملًا</button></div></div>';
+    overlay.setAttribute('aria-label','افتتاحية يوم جديد');overlay.innerHTML='<div class="story-eyelids"></div><div class="story-top"><span>القاهرة · بدري على الإنجازات</span><button id="storyPace" type="button">قراءة على مهلك</button><button id="storyMute" type="button">كتم صوت الكتابة</button><button id="v12Skip" type="button">تخطي المقدمة</button></div><div class="story-caption" dir="rtl"><div id="storySpeaker"></div><p id="storyText" aria-hidden="true"></p><p id="storyAccessible" class="story-sr" aria-live="polite"></p><div class="story-bottom"><span id="storyCount"></span><button id="storyNext" type="button">إظهار الكلام كاملًا</button></div></div>';
     document.body.appendChild(overlay);
     const style=document.createElement('style');style.textContent=`
       #v12Prologue[hidden]{display:none!important}#v12Prologue.active{display:block;position:fixed;inset:0;z-index:90;color:#fff;background:linear-gradient(0deg,rgba(12,10,8,.70),transparent 65%);font-family:Tahoma,Arial,sans-serif}
@@ -50,6 +50,7 @@
       window.dispatchEvent(new CustomEvent('egypt-story-finished'));
     }
     function advance(){if(index<beats.length-1){index++;writeBeat();}else finish();}
+    document.getElementById('storyPace').onclick=()=>{manual=!manual;document.getElementById('storyPace').textContent=manual?'تشغيل تلقائي':'قراءة على مهلك';};
     next.onclick=()=>{manual=true;if(shown<letters.length){shown=letters.length;text.textContent=letters.join('');status.typed=shown;fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}else advance();};
     document.getElementById('v12Skip').onclick=finish;
     document.getElementById('storyMute').onclick=()=>{document.getElementById('soundToggle').click();setTimeout(()=>{document.getElementById('storyMute').textContent=window.__V1116_SFX_API?.state().muted?'تشغيل صوت الكتابة':'كتم صوت الكتابة';},50);};
