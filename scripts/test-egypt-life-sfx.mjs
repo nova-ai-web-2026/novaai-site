@@ -26,18 +26,20 @@ try {
     await page.goto(base+'?v=11.6',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready,null,{timeout:60000});
     await page.evaluate(()=>{
-      const ctx=new window.__testNativeAC(),analyser=ctx.createAnalyser();analyser.fftSize=256;
+      // Retain short clicks across expensive WebGL frames on the CI runner.
+      const ctx=new window.__testNativeAC(),analyser=ctx.createAnalyser();analyser.fftSize=32768;
       analyser.connect(ctx.destination);
       for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(analyser);
       window.__testMeter={peak:0,ctx};
-      const values=new Float32Array(256);
-      setInterval(()=>{analyser.getFloatTimeDomainData(values);for(const v of values)window.__testMeter.peak=Math.max(window.__testMeter.peak,Math.abs(v));},8);
+      const values=new Float32Array(analyser.fftSize);
+      setInterval(()=>{analyser.getFloatTimeDomainData(values);for(const v of values)window.__testMeter.peak=Math.max(window.__testMeter.peak,Math.abs(v));},30);
       document.addEventListener('pointerdown',()=>ctx.resume(),{capture:true});
     });
     if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
     await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
     const state=()=>page.evaluate(()=>window.__V1116_SFX_API.state());
-    const resetMeter=()=>page.evaluate(()=>{window.__testMeter.peak=0;});
+    // Flush the analyser's history so the previous effect cannot pass this check.
+    const resetMeter=async()=>{await page.waitForTimeout(800);await page.evaluate(()=>{window.__testMeter.peak=0;});};
     const peak=()=>page.evaluate(()=>window.__testMeter.peak);
 
     // Re-loading a legacy entry layer must not create a second pool or listeners.
@@ -77,14 +79,14 @@ try {
     await page.locator('#shop').waitFor({state:'visible'});
     await page.waitForTimeout(300);
     assert.equal((await state()).events.interact,beforeInteract+1,'duplicate or missing interaction');
-    const interactPeak=await peak();assert.ok(interactPeak>.001,'silent interaction');
+    const interactPeak=await peak();assert.ok(interactPeak>.001,'silent interaction '+JSON.stringify(await state()));
     const money=await page.locator('#money').innerText(),beforeBuy=(await state()).events.buy;
     await resetMeter();
     await page.locator('#shopItems button').first().click();
     await page.waitForTimeout(500);
     assert.equal((await state()).events.buy,beforeBuy+1,'duplicate or missing purchase');
     assert.notEqual(await page.locator('#money').innerText(),money,'purchase did not affect money');
-    const buyPeak=await peak();assert.ok(buyPeak>.001,'silent purchase');
+    const buyPeak=await peak();assert.ok(buyPeak>.001,'silent purchase '+JSON.stringify(await state()));
     const frozen=(await state()).events.step;
     await page.waitForTimeout(350);assert.equal((await state()).events.step,frozen,'footsteps while shop is open');
     await page.locator('#shopClose').click();
