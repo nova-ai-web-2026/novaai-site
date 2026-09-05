@@ -1,0 +1,102 @@
+name: Test Egyptian Life Simulator V11.16 Local SFX
+
+on:
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - '.github/workflows/test-egypt-life-v11-16-sfx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v1116-local-sfx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V11.16 SFX files
+        run: |
+          test -s egypt-life-sim-v2/game-v11-15-real-sfx.js
+          test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
+          test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
+          test -s egypt-life-sim-v2/audio/v11-8/interact.wav
+          test -s egypt-life-sim-v2/audio/v11-8/buy_coin.wav
+          test -s egypt-life-sim-v2/audio/v11-8/door.wav
+          test -s egypt-life-sim-v2/audio/v11-8/reward.wav
+          node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
+          node --check egypt-life-sim-v2/game-v11-audiofix.js
+          grep -Fq "VERSION='11.16'" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "primary:'same-origin-wav'" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "networkIndependent:true" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          grep -Fq "game-v11-15-real-sfx.js?v=11.16" egypt-life-sim-v2/game-v11-audiofix.js
+          ! grep -Fq "cdn.jsdelivr.net" egypt-life-sim-v2/game-v11-15-real-sfx.js
+          ! grep -Fq "raw.githubusercontent.com" egypt-life-sim-v2/game-v11-15-real-sfx.js
+      - name: Prepare runner Chrome
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright-core@1.55.0
+          test -x /usr/bin/google-chrome || test -x /usr/bin/google-chrome-stable
+      - name: Start game server
+        run: |
+          python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/v1116-server.log 2>&1 &
+          sleep 2
+      - name: Verify every gameplay SFX produces waveform
+        run: |
+          cat > v1116-sfx-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright-core';
+          import fs from 'node:fs';
+          const executablePath=fs.existsSync('/usr/bin/google-chrome')?'/usr/bin/google-chrome':'/usr/bin/google-chrome-stable';
+          const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
+          const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[],remoteSfx=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('Failed to load resource'))errors.push('console: '+m.text());});
+          page.on('request',r=>{const u=r.url();if(u.includes('cdn.jsdelivr.net/gh/ETdoFresh')||u.includes('raw.githubusercontent.com/ETdoFresh'))remoteSfx.push(u);});
+          page.on('response',r=>{if(r.status()===404&&r.url().includes('/audio/v11-8/'))errors.push('404 local SFX: '+r.url());});
+
+          await page.goto('http://127.0.0.1:4173/?ci=v1116-sfx',{waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.__V1116_SFX?.version==='11.16'&&!!window.__V1116_SFX_API,{timeout:55000});
+          await page.tap('#newGameBtn');
+          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:15000});
+          await page.evaluate(()=>window.__V1116_SFX_API.unlock());
+          await page.waitForFunction(()=>window.__V1116_SFX_API.state().localReady===true,{timeout:12000});
+
+          const initial=await page.evaluate(()=>window.__V1116_SFX_API.state());
+          if(initial.localLoaded<7||initial.localFailed!==0)throw new Error('Local SFX bank incomplete '+JSON.stringify(initial));
+          if(initial.primary!=='same-origin-wav'||initial.networkIndependent!==true)throw new Error('V11.16 not local-primary '+JSON.stringify(initial));
+          if(initial.busGain<.9)throw new Error('SFX bus unexpectedly quiet '+JSON.stringify(initial));
+
+          async function pulse(name,windowMs=240){
+            return await page.evaluate(async ({name,windowMs})=>{
+              const api=window.__V1116_SFX_API,a=window.__V1116_SFX_ANALYSER;
+              if(!a)throw new Error('V11.16 SFX analyser missing');
+              api.play(name);
+              let maxRms=0,maxPeak=0;const end=performance.now()+windowMs;
+              while(performance.now()<end){
+                const data=new Uint8Array(a.fftSize);a.getByteTimeDomainData(data);let sum=0,peak=0;
+                for(const v of data){const x=(v-128)/128;sum+=x*x;peak=Math.max(peak,Math.abs(x));}
+                maxRms=Math.max(maxRms,Math.sqrt(sum/data.length));maxPeak=Math.max(maxPeak,peak);
+                await new Promise(r=>setTimeout(r,4));
+              }
+              return {name,maxRms,maxPeak,state:api.state()};
+            },{name,windowMs});
+          }
+
+          const results={};
+          for(const name of ['interact','buy','door','step','asphalt','reward']){
+            results[name]=await pulse(name,name==='door'?340:260);
+            const r=results[name];
+            if(r.maxRms<.0015||r.maxPeak<.006)throw new Error('No audible waveform for '+name+' '+JSON.stringify(r));
+            if(r.state.lastPlayed?.transport!=='same-origin-primary')throw new Error('Wrong transport for '+name+' '+JSON.stringify(r.state.lastPlayed));
+          }
+          const finalState=await page.evaluate(()=>window.__V1116_SFX_API.state());
+          if(finalState.playResolved<6||finalState.playRejected!==0)throw new Error('SFX playback failures '+JSON.stringify(finalState));
+          if(remoteSfx.length)throw new Error('V11.16 unexpectedly requested remote SFX '+JSON.stringify(remoteSfx));
+          if(await page.isVisible('#errorBox'))throw new Error('Runtime errorBox: '+await page.textContent('#errorBox'));
+          if(errors.length)throw new Error(errors.join('\n'));
+          console.log('V11.16 per-effect waveform passed',{initial,results,finalState});
+          await browser.close();
+          EOF
+          node v1116-sfx-smoke.mjs
