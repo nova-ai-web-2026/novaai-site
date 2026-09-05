@@ -4,7 +4,8 @@ import { chromium } from 'playwright-core';
 
 const executablePath=process.env.CHROME_PATH||'/usr/bin/google-chrome';
 const base=process.env.GAME_TEST_URL||'http://127.0.0.1:4173/';
-const browser=await chromium.launch({headless:true,executablePath});
+// Headless Playwright otherwise launches Chrome with --mute-audio.
+const browser=await chromium.launch({headless:true,executablePath,ignoreDefaultArgs:['--mute-audio']});
 const report=[];
 try {
   for(const mobile of [true,false]){
