@@ -25,21 +25,43 @@ try {
     });
     await page.goto(base+'?v=11.6',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready,null,{timeout:60000});
-    await page.evaluate(()=>{
-      // Retain short clicks across expensive WebGL frames on the CI runner.
-      const ctx=new window.__testNativeAC(),analyser=ctx.createAnalyser();analyser.fftSize=32768;
-      analyser.connect(ctx.destination);
-      for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(analyser);
-      window.__testMeter={peak:0,ctx};
-      const values=new Float32Array(analyser.fftSize);
-      setInterval(()=>{analyser.getFloatTimeDomainData(values);for(const v of values)window.__testMeter.peak=Math.max(window.__testMeter.peak,Math.abs(v));},30);
+    await page.evaluate(async()=>{
+      // Measure on the audio thread: slow WebGL frames cannot miss a short click.
+      const ctx=new window.__testNativeAC();
+      const moduleURL=URL.createObjectURL(new Blob([`
+        class Meter extends AudioWorkletProcessor {
+          constructor(){super();this.epoch=0;this.peak=0;this.port.onmessage=({data})=>{
+            this.epoch=data.epoch;this.peak=0;this.port.postMessage({reset:true,epoch:this.epoch});
+          };}
+          process(inputs,outputs){
+            const channels=inputs[0]||[];let peak=this.peak;
+            for(let c=0;c<outputs[0].length;c++){
+              const source=channels[c]||channels[0];if(source)outputs[0][c].set(source);
+            }
+            for(const channel of channels)for(const v of channel)peak=Math.max(peak,Math.abs(v));
+            if(peak>this.peak){this.peak=peak;this.port.postMessage({peak,epoch:this.epoch});}
+            return true;
+          }
+        }
+        registerProcessor('sfx-test-meter',Meter);
+      `],{type:'text/javascript'}));
+      await ctx.audioWorklet.addModule(moduleURL);URL.revokeObjectURL(moduleURL);
+      const meter=new AudioWorkletNode(ctx,'sfx-test-meter');meter.connect(ctx.destination);
+      for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(meter);
+      window.__testMeter={peak:0,ctx,epoch:0,ack:0,meter};
+      meter.port.onmessage=({data})=>{
+        const state=window.__testMeter;if(data.epoch!==state.epoch)return;
+        if(data.reset)state.ack=data.epoch;else state.peak=Math.max(state.peak,data.peak);
+      };
       document.addEventListener('pointerdown',()=>ctx.resume(),{capture:true});
     });
     if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
     await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
     const state=()=>page.evaluate(()=>window.__V1116_SFX_API.state());
-    // Flush the analyser's history so the previous effect cannot pass this check.
-    const resetMeter=async()=>{await page.waitForTimeout(800);await page.evaluate(()=>{window.__testMeter.peak=0;});};
+    const resetMeter=async()=>{
+      await page.evaluate(()=>{const s=window.__testMeter;s.peak=0;s.epoch++;s.meter.port.postMessage({epoch:s.epoch});});
+      await page.waitForFunction(()=>window.__testMeter.ack===window.__testMeter.epoch);
+    };
     const peak=()=>page.evaluate(()=>window.__testMeter.peak);
 
     // Re-loading a legacy entry layer must not create a second pool or listeners.
