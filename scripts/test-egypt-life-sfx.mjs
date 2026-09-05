@@ -36,46 +36,38 @@ try {
     if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
     await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
     await page.waitForFunction(()=>window.__testAudioContext.state==='running',null,{timeout:10000});
-    console.log('Installing audio meter after user gesture',JSON.stringify({mobile}));
-    await page.evaluate(async()=>{
-      // Measure on the audio thread: slow WebGL frames cannot miss a short click.
-      const ctx=window.__testAudioContext;
-      const moduleURL=URL.createObjectURL(new Blob([`
-        class Meter extends AudioWorkletProcessor {
-          constructor(){super();this.epoch=0;this.peak=0;this.port.onmessage=({data})=>{
-            this.epoch=data.epoch;this.peak=0;this.port.postMessage({reset:true,epoch:this.epoch});
-          };}
-          process(inputs,outputs){
-            const channels=inputs[0]||[];let peak=this.peak;
-            for(let c=0;c<outputs[0].length;c++){
-              const source=channels[c]||channels[0];if(source)outputs[0][c].set(source);
-            }
-            for(const channel of channels)for(const v of channel)peak=Math.max(peak,Math.abs(v));
-            if(peak>this.peak){this.peak=peak;this.port.postMessage({peak,epoch:this.epoch});}
-            return true;
-          }
-        }
-        registerProcessor('sfx-test-meter',Meter);
-      `],{type:'text/javascript'}));
-      await Promise.race([
-        ctx.audioWorklet.addModule(moduleURL),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Audio meter installation timed out')),15000))
-      ]);URL.revokeObjectURL(moduleURL);
-      const meter=new AudioWorkletNode(ctx,'sfx-test-meter');meter.connect(ctx.destination);
-      for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(meter);
-      window.__testMeter={peak:0,ctx,epoch:0,ack:0,meter};
-      meter.port.onmessage=({data})=>{
-        const state=window.__testMeter;if(data.epoch!==state.epoch)return;
-        if(data.reset)state.ack=data.epoch;else state.peak=Math.max(state.peak,data.peak);
-      };
+    await page.evaluate(()=>{
+      // MediaRecorder captures on the media thread, independent of WebGL frame rate.
+      const ctx=window.__testAudioContext,stream=ctx.createMediaStreamDestination();
+      const mix=ctx.createGain();mix.connect(ctx.destination);mix.connect(stream);
+      for(const media of window.__testMedia)ctx.createMediaElementSource(media).connect(mix);
+      window.__testMeter={ctx,stream,recorder:null,chunks:[]};
     });
-    console.log('Audio meter ready',JSON.stringify({mobile}));
+    console.log('Audio capture ready',JSON.stringify({mobile}));
     const state=()=>page.evaluate(()=>window.__V1116_SFX_API.state());
-    const resetMeter=async()=>{
-      await page.evaluate(()=>{const s=window.__testMeter;s.peak=0;s.epoch++;s.meter.port.postMessage({epoch:s.epoch});});
-      await page.waitForFunction(()=>window.__testMeter.ack===window.__testMeter.epoch,null,{timeout:10000});
-    };
-    const peak=()=>page.evaluate(()=>window.__testMeter.peak);
+    const resetMeter=()=>page.evaluate(()=>{
+      const s=window.__testMeter;
+      if(s.recorder?.state==='recording')throw new Error('Previous recording was not measured');
+      s.chunks=[];s.recorder=new MediaRecorder(s.stream.stream,{mimeType:'audio/webm;codecs=opus'});
+      s.recorder.ondataavailable=event=>{if(event.data.size)s.chunks.push(event.data);};
+      s.recorder.start();
+    });
+    const peak=()=>page.evaluate(async()=>{
+      const s=window.__testMeter;
+      await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>reject(new Error('Audio recording did not finish')),10000);
+        s.recorder.onstop=()=>{clearTimeout(timeout);resolve();};
+        s.recorder.onerror=event=>{clearTimeout(timeout);reject(new Error(String(event.error)));};
+        s.recorder.stop();
+      });
+      const bytes=await new Blob(s.chunks,{type:s.recorder.mimeType}).arrayBuffer();
+      const decoded=await s.ctx.decodeAudioData(bytes);
+      let maximum=0;
+      for(let channel=0;channel<decoded.numberOfChannels;channel++){
+        for(const value of decoded.getChannelData(channel))maximum=Math.max(maximum,Math.abs(value));
+      }
+      return maximum;
+    });
 
     // Re-loading a legacy entry layer must not create a second pool or listeners.
     const beforeReload=await state();

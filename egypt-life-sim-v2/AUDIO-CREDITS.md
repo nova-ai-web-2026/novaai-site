@@ -31,5 +31,5 @@ and no automatic gain boost. Source archives are identified by SHA-256:
 `node scripts/test-egypt-life-sfx-assets.mjs` checks complete RIFF/chunk lengths,
 PCM format, sample duration, and non-silent, unclipped audio.
 The browser regression checks real walking, interaction, purchase, muting and
-unmuting on mobile and desktop, measuring gameplay media output through an
-analyser while external audio hosts are blocked.
+unmuting on mobile and desktop, recording and measuring gameplay media output while external audio hosts are
+blocked.
