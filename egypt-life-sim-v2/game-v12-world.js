@@ -134,7 +134,7 @@
   function installPrologue(){
     window.__V12_PROLOGUE={ready:true,played:false,durationMs:4200,startsAtHome:true};createPrologueUI();
     const btn=document.getElementById('newGameBtn');if(btn)btn.addEventListener('click',e=>{if(bypassStart||prologueRunning)return;e.preventDefault();e.stopImmediatePropagation();runPrologue(btn);},{capture:true});
-    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'12'}`;const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='ابدأ من بيتك، انزل الحارة، وبعدها اتحرك بحرية بين الشوارع والسوق والورش والمناطق الجديدة.';const foot=document.querySelector('.menuFoot');if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`;
+    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'12'}`;const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='ابدأ من بيتك، انزل الحارة، وبعدها اتحرك بحرية بين الشوارع والسوق والورش والمناطق الجديدة.';const foot=document.querySelector('.menuFoot');if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`;
   }
 
   function authenticity(){

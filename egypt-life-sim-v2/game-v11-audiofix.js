@@ -8,12 +8,12 @@
 
   function loadV1116Sfx(){
     if(document.querySelector('script[data-egypt-v1116-sfx]'))return;
-    const s=document.createElement('script');s.src='game-v11-15-real-sfx.js?v=11.16&fix=1';s.dataset.egyptV1116Sfx='true';s.async=false;s.onerror=()=>console.error('V11.16 local SFX failed to load');document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v11-15-real-sfx.js?v=11.16&fix=2';s.dataset.egyptV1116Sfx='true';s.async=false;s.onerror=()=>console.error('V11.16 local SFX failed to load');document.body.appendChild(s);
   }
 
   function loadRuntime(){
     if(document.querySelector('script[data-egypt-v119-runtime],script[data-egypt-v116-runtime]')){loadV1116Sfx();return;}
-    const s=document.createElement('script');s.src='game-v11-6-runtime.js?v=11.10&sfx=11.16.1';s.dataset.egyptV119Runtime='true';s.async=false;s.onload=loadV1116Sfx;s.onerror=()=>{console.error('V11.10 runtime failed to load');loadV1116Sfx();};document.body.appendChild(s);
+    const s=document.createElement('script');s.src='game-v11-6-runtime.js?v=11.10&sfx=11.16.2';s.dataset.egyptV119Runtime='true';s.async=false;s.onload=loadV1116Sfx;s.onerror=()=>{console.error('V11.10 runtime failed to load');loadV1116Sfx();};document.body.appendChild(s);
   }
 
   document.getElementById('v113-startup-style')?.remove();document.body.classList.remove('v113-menu-open');document.getElementById('v115SoundTest')?.remove();
