@@ -1,33 +1,35 @@
-# Audio sources — V11.15
+# Audio sources — V11.16, sound revision 11.16.1
 
-V11.15 uses actual sampled sound effects from Kenney asset packs under Creative Commons Zero (CC0 1.0). The mix prefers the pinned samples through jsDelivr, falls back to the same pinned GitHub mirror, and keeps the existing same-origin local bank only as an emergency fallback.
+Gameplay sound effects are served from the game's own `audio/v11-8/` directory.
+They require no external audio host while playing. The historical directory name
+is retained for existing links. This does not make the entire game offline ready.
 
-## Kenney RPG Audio
+Original sound packs by Kenney, released under Creative Commons CC0 1.0:
 
-Used for footsteps, door effects and coin handling.
+- RPG Audio: https://kenney.nl/assets/rpg-audio
+- Interface Sounds: https://kenney.nl/assets/interface-sounds
 
-- Creator: Kenney Vleugels / Kenney.nl
-- License: CC0 1.0
-- Source mirror: `ETdoFresh/kenney.nl`
-- Pinned mirror commit: `45df48c4d45f8716216b1a9e22df0b69cd9f5932`
-- Original pack: Kenney RPG Audio
-- Files used: `footstep00.ogg` through `footstep07.ogg`, `doorClose_1.ogg`, `doorClose_3.ogg`, `handleCoins.ogg`, `handleCoins2.ogg`
+The original license texts are included beside the audio as `LICENSE-rpg.txt`
+and `LICENSE-interface.txt`. Packs were downloaded from Kenney on 2026-09-05.
 
-## Kenney Interface Sounds
+| Local file | Original pack | Original file |
+| --- | --- | --- |
+| step_pavement.wav | RPG Audio | footstep00.ogg |
+| step_asphalt.wav | RPG Audio | footstep04.ogg |
+| buy_coin.wav | RPG Audio | handleCoins.ogg |
+| door.wav | RPG Audio | doorClose_1.ogg |
+| interact.wav | Interface Sounds | click_001.ogg |
+| reward.wav | Interface Sounds | confirmation_001.ogg |
+| deny.wav | Interface Sounds | error_001.ogg |
 
-Used for interaction clicks, confirmations and denial/error feedback.
+Converted to mono, 22050 Hz, 16-bit PCM WAV with FFmpeg, with a 0.85 peak limiter
+and no automatic gain boost. Source archives are identified by SHA-256:
 
-- Creator/distributor: Kenney / Kenney.nl
-- License: CC0 1.0
-- Source mirror: `ETdoFresh/kenney.nl`
-- Pinned mirror commit: `45df48c4d45f8716216b1a9e22df0b69cd9f5932`
-- Original pack: Kenney Interface Sounds
-- Files used: `click_001.ogg`, `click_003.ogg`, `confirmation_001.ogg`, `confirmation_003.ogg`, `error_001.ogg`
+- RPG Audio: `6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b`
+- Interface Sounds: `f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232`
 
-## V11.15 mix changes
-
-- Four variants per walking surface instead of one repeated file.
-- Separate samples for interaction, purchase, door, confirmation and denial.
-- Lower SFX bus gain and gentler dynamics processing.
-- Short event cooldowns prevent accidental double-triggering.
-- Subtle pitch/pan variation only; no heavily pitched-down denial sound.
+`node scripts/test-egypt-life-sfx-assets.mjs` checks complete RIFF/chunk lengths,
+PCM format, sample duration, and non-silent, unclipped audio.
+The browser regression checks real walking, interaction, purchase, muting and
+unmuting on mobile and desktop, measuring gameplay media output through an
+analyser while external audio hosts are blocked.

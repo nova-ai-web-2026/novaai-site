@@ -49,9 +49,9 @@
   <script>(()=>{const proto=window.BABYLON?.UniversalCamera?.prototype;if(!proto||typeof proto.moveWithCollisions==='function')return;proto.moveWithCollisions=function(delta){const scene=this.getScene(),radius=.38;const blocked=(x,z)=>{if(Math.abs(x)>105.5||Math.abs(z)>105.5)return true;for(const mesh of scene.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.08||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;};})();</script>
   <script src="game-v11-12-ui.js?v=11.12" data-egypt-v1112-ui="true"></script>
   <script src="game-v11-13-hud.js?v=11.13" data-egypt-v1113-hud="true"></script>
-  <script src="game-v11-6-runtime.js?v=11.10" data-egypt-v119-runtime="true"></script>
-  <script src="game-v11-15-real-sfx.js?v=11.16" data-egypt-v1116-sfx="true"></script>
+  <script src="game-v11-6-runtime.js?v=11.10&sfx=11.16.1" data-egypt-v119-runtime="true"></script>
+  <script src="game-v11-15-real-sfx.js?v=11.16&fix=1" data-egypt-v1116-sfx="true"></script>
   <script src="game-v7.js?v=8"></script>
-  <script src="game-v8-layout.js?v=11.10&visual=11.11"></script>
+  <script src="game-v8-layout.js?v=11.10&visual=11.11&sfx=11.16.1"></script>
 </body>
 </html>

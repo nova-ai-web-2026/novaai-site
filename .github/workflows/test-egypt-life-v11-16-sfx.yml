@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'egypt-life-sim-v2/**'
+      - 'scripts/test-egypt-life-sfx*.mjs'
       - '.github/workflows/test-egypt-life-v11-16-sfx.yml'
   workflow_dispatch:
 
@@ -22,6 +23,7 @@ jobs:
           for f in step_pavement step_asphalt interact buy_coin door reward; do test -s "egypt-life-sim-v2/audio/v11-8/$f.wav"; done
           node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
           node --check egypt-life-sim-v2/game-v11-audiofix.js
+          node scripts/test-egypt-life-sfx-assets.mjs
           grep -Fq "VERSION='11.16'" egypt-life-sim-v2/game-v11-15-real-sfx.js
           grep -Fq "primary:'html-audio-same-origin'" egypt-life-sim-v2/game-v11-15-real-sfx.js
           grep -Fq "webAudioBypassedForSfx:true" egypt-life-sim-v2/game-v11-15-real-sfx.js
@@ -88,3 +90,16 @@ jobs:
           await browser.close();
           EOF
           node v1116-sfx-smoke.mjs
+
+      - name: Verify gameplay events and audible output on mobile and desktop
+        run: node scripts/test-egypt-life-sfx.mjs
+      - name: Upload gameplay sound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1116-gameplay-sfx
+          path: |
+            sfx-verification.json
+            sfx-mobile.png
+            sfx-desktop.png
+          if-no-files-found: ignore
