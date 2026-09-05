@@ -104,6 +104,7 @@ try {
     const beforeInteract=(await state()).events.interact;await resetMeter();
     if(mobile)await page.tap('#act');else await page.keyboard.press('e');
     await page.locator('#shop').waitFor({state:'visible'});
+    if(!mobile)await page.waitForFunction(()=>document.pointerLockElement===null,null,{timeout:3000});
     await page.waitForTimeout(300);
     assert.equal((await state()).events.interact,beforeInteract+1,'duplicate or missing interaction');
     const interactPeak=await peak();assert.ok(interactPeak>.001,'silent interaction '+JSON.stringify(await state()));
