@@ -18,7 +18,7 @@
     if(kicker&&kicker.textContent!==`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`;
     const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`)foot.textContent=`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`;
+    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`;
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 
@@ -98,7 +98,8 @@
   }
 
   function markReady(){
-    if(ready)return;ready=true;window.__V119_READY=true;window.__V118_READY=true;window.__V117_READY=true;window.__V116_READY=true;menuObserver?.disconnect();stableMenu();attachDebug();setTimeout(attachDebug,0);setTimeout(attachDebug,500);
+    if(ready)return;
+    if(!window.__V12_PROLOGUE?.ready||!window.__EGYPT_PEOPLE?.ready||!window.__EGYPT_FRONTAGES?.ready){setTimeout(markReady,100);return;}ready=true;window.__V119_READY=true;window.__V118_READY=true;window.__V117_READY=true;window.__V116_READY=true;menuObserver?.disconnect();stableMenu();attachDebug();setTimeout(attachDebug,0);setTimeout(attachDebug,500);
     const status=document.getElementById('menuStatus');if(status)status.textContent='جاهز — ابدأ يوم جديد.';
     window.__V119_STARTUP={version:VERSION,ready:true,queuedStartSupported:true,audioArmedBeforeCore:true,stableMenu:true};window.__V118_STARTUP=window.__V119_STARTUP;window.__V117_STARTUP=window.__V119_STARTUP;window.__V116_STARTUP=window.__V119_STARTUP;
     if(queuedStart){const id=queuedStart;queuedStart=null;setTimeout(()=>document.getElementById(id)?.click(),0);}

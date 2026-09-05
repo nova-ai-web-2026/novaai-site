@@ -63,7 +63,7 @@ grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audio
 grep -Fq 'game-v11-11-egypt-details-base.js?v=11.11' egypt-life-sim-v2/game-v11-11-egypt-details.js
 grep -Fq 'game-v12-world.js?v=12' egypt-life-sim-v2/game-v11-11-egypt-details.js
 grep -Fq 'openWorld:true' egypt-life-sim-v2/game-v12-world.js
-grep -Fq 'startsAtHome:true' egypt-life-sim-v2/game-v12-world.js
+grep -Fq 'startsAtHome:true' egypt-life-sim-v2/game-v11-18-story.js
 grep -Fq 'Greater Cairo mixed-use residential street cues' egypt-life-sim-v2/game-v12-world.js
 grep -Fq '#v12Skip{display:none!important}' egypt-life-sim-v2/game-v11-11-egypt-details.js
 grep -Fq 'same-origin-local-sfx' egypt-life-sim-v2/game-v11-14-local-sfx.js
@@ -76,8 +76,8 @@ grep -Fq 'CC0 1.0' egypt-life-sim-v2/AUDIO-CREDITS.md
 if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi
 # The active release uses one same-origin HTMLAudio layer. Its recorded output is
 # verified by the reusable SFX workflow before deployment.
-grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=2' egypt-life-sim-v2/index.html
-grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=2' egypt-life-sim-v2/game-v11-audiofix.js
+grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=3' egypt-life-sim-v2/index.html
+grep -Fq 'game-v11-15-real-sfx.js?v=11.16&fix=3' egypt-life-sim-v2/game-v11-audiofix.js
 grep -Fq "release:'11.16'" egypt-life-sim-v2/game-v11-audiofix.js
 grep -Fq "primary:'html-audio-same-origin'" egypt-life-sim-v2/game-v11-15-real-sfx.js
 ! grep -Eq '<script[^>]+src="game-v11-(8-sfx|10-actual-sfx|14-local-sfx)' egypt-life-sim-v2/index.html
@@ -86,9 +86,13 @@ node --input-type=module - <<'JS'
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const release=JSON.parse(readFileSync('egypt-life-sim-v2/release.json','utf8'));
-assert.equal(release.version,'11.16.2');
+assert.equal(release.version,'11.18.0');
 assert.equal(release.audioRevision,release.version);
 assert.ok(readFileSync('egypt-life-sim-v2/index.html','utf8').includes(`data-release="${release.version}"`));
 JS
 
 node --check egypt-life-sim-v2/game-v11-16-street.js
+
+node --check egypt-life-sim-v2/game-v11-18-story.js
+node --check egypt-life-sim-v2/game-v11-18-people.js
+node --check egypt-life-sim-v2/game-v11-18-frontages.js

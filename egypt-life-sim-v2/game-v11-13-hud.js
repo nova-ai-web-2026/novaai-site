@@ -10,7 +10,7 @@
   function syncCopy(){
     const kicker=document.querySelector('.kicker'),foot=document.querySelector('.menuFoot');
     if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.13'}`;
-    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`;
+    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.18.0'} — صحوة مصرية وشخصيات وحارة بتفاصيل جديدة`;
   }
 
   function installStyle(){
@@ -72,6 +72,7 @@
   }
 
   function repairSpawn(reason='sync'){
+    if(window.__V12_PROLOGUE?.running)return false;
     if(!document.body.classList.contains('game-started'))return false;
     const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0],cam=scene?.activeCamera;
     if(!scene||!cam)return false;
@@ -111,6 +112,7 @@
   }
 
   function syncHud(reason='sync'){
+    if(window.__V12_PROLOGUE?.running){document.body.classList.remove('game-started');if(hud)hud.style.visibility='hidden';return;}
     const hidden=menuHidden();
     if(hidden){
       document.body.classList.add('game-started');

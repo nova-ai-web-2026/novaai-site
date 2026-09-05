@@ -57,7 +57,7 @@ jobs:
           await page.goto('http://127.0.0.1:4173/?ci=v1116-direct-media',{waitUntil:'networkidle'});
           await page.waitForFunction(()=>window.__V1116_SFX?.version==='11.16'&&!!window.__V1116_SFX_API,{timeout:55000});
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:15000});
+          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:45000});
           await page.waitForFunction(()=>window.__V1116_SFX_API.state().localReady===true,{timeout:12000});
           await page.waitForTimeout(250);
 

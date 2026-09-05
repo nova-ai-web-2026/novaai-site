@@ -44,6 +44,16 @@
     box('homeWallW',.22,3.1,14,HOME.x-9,1.55,HOME.z,wall,true);box('homeWallE',.22,3.1,14,HOME.x+9,1.55,HOME.z,wall,true);box('homeWallN',18,3.1,.22,HOME.x,1.55,HOME.z-7,wall,true);
     box('homeWallS1',7.2,3.1,.22,HOME.x-5.4,1.55,HOME.z+7,wall,true);box('homeWallS2',7.2,3.1,.22,HOME.x+5.4,1.55,HOME.z+7,wall,true);
     box('homeDoor',2.25,2.65,.12,HOME.doorX,1.33,HOME.doorZ,wood,false);
+    box('homeCeiling',18,.18,14,HOME.x,3.22,HOME.z,mat('ceiling','#ddd6c6'));
+    box('bedHeadboard',4.4,.95,.16,HOME.x-4, .78,HOME.z-6.18,wood);
+    box('bedQuilt',3.96,.12,1.38,HOME.x-4,.98,HOME.z-4.58,mat('quilt','#936252'));
+    const quiltTexture=new BABYLON.DynamicTexture('v12_quiltPattern',256,scene,false),quiltCanvas=quiltTexture.getContext();quiltCanvas.fillStyle='#936252';quiltCanvas.fillRect(0,0,256,256);for(let y=20;y<256;y+=64){quiltCanvas.fillStyle='#c8b18c';quiltCanvas.fillRect(0,y,256,12);quiltCanvas.fillStyle='#75483e';quiltCanvas.fillRect(0,y+17,256,3);}quiltTexture.update();mat('quilt','#936252').diffuseTexture=quiltTexture;mat('quilt','#936252').diffuseColor=BABYLON.Color3.White();
+    box('bedQuiltFold',3.96,.15,.24,HOME.x-4,1.05,HOME.z-5.14,mat('quiltFold','#bf9d77'));
+    box('bedsideTable',.75,.65,.62,HOME.x-6.8,.36,HOME.z-5.35,wood);
+    box('alarmClock',.34,.25,.13,HOME.x-6.8,.84,HOME.z-5.36,metal);
+    box('alarmClockFace',.29,.19,.02,HOME.x-6.8,.84,HOME.z-5.28,white);
+    cyl('ceilingLamp',.55,.12,HOME.x-3,3.08,HOME.z-3,white);
+    const roomLight=new BABYLON.PointLight('v12_roomLight',new BABYLON.Vector3(HOME.x-3,2.85,HOME.z-3),scene);roomLight.diffuse=new BABYLON.Color3(1,.87,.68);roomLight.intensity=.48;roomLight.range=20;
     // Living room.
     box('rug',5.2,.035,3.4,HOME.x-2.2,.12,HOME.z-1.0,mat('rug','#8e5648'));
     box('sofaSeat',4.4,.55,1.15,HOME.x-4.5,.48,HOME.z-1.2,fabric);box('sofaBack',4.4,1.1,.35,HOME.x-4.5,1.12,HOME.z-1.68,fabric);counters.homeProps+=2;
@@ -111,8 +121,8 @@
     sign('northStreet','شارع المحطة الجديدة',0,3.1,114.8,5.4,.72,'#245f82',0);sign('eastStreet','شارع السوق',114.8,3.1,0,4.5,.72,'#245f82',Math.PI/2);
   }
 
-  function distanceTo(p){return camera?Math.hypot(camera.position.x-p.x,camera.position.z-p.z):999;}
-  function teleport(x,z,msg){if(!camera)return;camera.position.x=x;camera.position.y=1.72;camera.position.z=z;camera.rotation.x=0;camera.rotation.z=0;insideHome=(Math.abs(x-HOME.x)<15&&Math.abs(z-HOME.z)<15);toast(msg);}
+  function distanceTo(p){camera=scene.activeCamera;return camera?Math.hypot(camera.position.x-p.x,camera.position.z-p.z):999;}
+  function teleport(x,z,msg){camera=scene.activeCamera;if(!camera)return;camera.position.x=x;camera.position.y=1.72;camera.position.z=z;camera.rotation.x=0;camera.rotation.z=0;insideHome=(Math.abs(x-HOME.x)<15&&Math.abs(z-HOME.z)<15);toast(msg);}
   function installDoorInteractions(){
     const prompt=document.createElement('div');prompt.id='v12DoorPrompt';prompt.textContent='E — افتح الباب';prompt.style.cssText='position:fixed;z-index:25;left:50%;bottom:12%;transform:translateX(-50%);padding:9px 13px;border-radius:10px;background:rgba(17,16,14,.82);border:1px solid rgba(255,255,255,.16);color:#fff;font:700 13px Tahoma;display:none;pointer-events:none';document.body.appendChild(prompt);
     const interact=()=>{if(distanceTo({x:HOME.doorX,z:HOME.doorZ})<2.4){teleport(STREET_DOOR.x,STREET_DOOR.z,'نزلت للشارع 🇪🇬');return true;}if(distanceTo(STREET_DOOR)<2.7){teleport(HOME.spawnX,HOME.spawnZ,'رجعت البيت');return true;}return false;};
@@ -121,21 +131,7 @@
     window.__V12_INTERACT_DOOR=interact;
   }
 
-  function createPrologueUI(){
-    let el=document.getElementById('v12Prologue');if(el)return el;el=document.createElement('div');el.id='v12Prologue';el.innerHTML='<div class="v12shade"></div><div class="v12copy"><div class="v12place">القاهرة • ٨:١٠ صباحًا</div><div class="v12title">يوم جديد</div><div class="v12line">صحيت في بيتك… والحي كله قدامك.</div></div><button id="v12Skip">تخطي</button>';
-    const st=document.createElement('style');st.textContent='#v12Prologue{position:fixed;inset:0;z-index:80;display:none;overflow:hidden;background:#050505;color:#fff;font-family:Tahoma,Arial}#v12Prologue.active{display:block;background:transparent}.v12shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.82),rgba(0,0,0,.05) 58%,rgba(0,0,0,.42));pointer-events:none}.v12copy{position:absolute;right:6vw;bottom:10vh;text-align:right;text-shadow:0 2px 14px #000}.v12place{font-size:12px;letter-spacing:1px;color:#e9c77d}.v12title{font-size:clamp(42px,8vw,76px);font-weight:950;margin-top:7px}.v12line{font-size:15px;margin-top:7px;color:#f0e8da}#v12Skip{position:absolute;left:18px;top:max(18px,env(safe-area-inset-top));border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.42);color:white;border-radius:10px;padding:9px 13px;font-weight:800}';document.head.appendChild(st);document.body.appendChild(el);return el;
-  }
-  async function runPrologue(btn){
-    if(prologueRunning)return;prologueRunning=true;const overlay=createPrologueUI();document.getElementById('menu').style.display='none';document.body.classList.remove('game-started');overlay.classList.add('active');
-    camera=scene.activeCamera;const old={x:camera.position.x,y:camera.position.y,z:camera.position.z,rx:camera.rotation.x,ry:camera.rotation.y,rz:camera.rotation.z};camera.position.set(HOME.x-5.5,2.15,HOME.z+4.7);camera.rotation.set(.04,.93,0);
-    let done=false;const finish=()=>{if(done)return;done=true;overlay.classList.remove('active');const menu=document.getElementById('menu');menu.style.display='';bypassStart=true;btn.click();bypassStart=false;setTimeout(()=>{camera=scene.activeCamera;teleport(HOME.spawnX,HOME.spawnZ,'ابدأ يومك من البيت');document.body.classList.add('game-started');insideHome=true;prologueRunning=false;window.__V12_PROLOGUE.played=true;},80);};
-    document.getElementById('v12Skip').onclick=finish;const start=performance.now();await new Promise(resolve=>{const obs=scene.onBeforeRenderObservable.add(()=>{const t=Math.min(1,(performance.now()-start)/4200);camera.position.x=HOME.x-5.5+t*3.9;camera.position.z=HOME.z+4.7-t*3.3;camera.rotation.y=.93-t*.34;if(t>=1){scene.onBeforeRenderObservable.remove(obs);resolve();}});});finish();
-  }
-  function installPrologue(){
-    window.__V12_PROLOGUE={ready:true,played:false,durationMs:4200,startsAtHome:true};createPrologueUI();
-    const btn=document.getElementById('newGameBtn');if(btn)btn.addEventListener('click',e=>{if(bypassStart||prologueRunning)return;e.preventDefault();e.stopImmediatePropagation();runPrologue(btn);},{capture:true});
-    const kicker=document.querySelector('.kicker');if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'12'}`;const tagline=document.querySelector('.tagline');if(tagline)tagline.textContent='ابدأ من بيتك، انزل الحارة، وبعدها اتحرك بحرية بين الشوارع والسوق والورش والمناطق الجديدة.';const foot=document.querySelector('.menuFoot');if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.2'} — تحسين أصوات اللعب`;
-  }
+  function installPrologue(){window.EgyptStory.install(scene,HOME);}
 
   function authenticity(){
     const checks={mixedUse:counters.mixedUse>=12,arabicSigns:counters.arabicSigns>=14,microbuses:counters.microbuses>=5,balconies:counters.balconies>=55,laundry:counters.laundry>=30,satelliteDishes:counters.satelliteDishes>=10,acUnits:counters.acUnits>=35,utilityWires:counters.utilityWires>=15,narrowLanes:counters.narrowLanes>=8,buildingScale:counters.buildings>=24,streetLife:counters.pedestrians>=12,home:counters.homeProps>=20};

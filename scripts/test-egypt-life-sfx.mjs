@@ -7,9 +7,9 @@ const base=process.env.GAME_TEST_URL||'http://127.0.0.1:4173/';
 // Headless Playwright otherwise launches Chrome with --mute-audio.
 const browser=await chromium.launch({headless:true,executablePath,ignoreDefaultArgs:['--mute-audio']});
 const deadline=setTimeout(()=>{
-  console.error('Gameplay SFX verification exceeded its six-minute deadline');
+  console.error('Gameplay SFX verification exceeded its eight-minute deadline');
   void browser.close().finally(()=>process.exit(1));
-},360000);
+},480000);
 const report=[];
 try {
   for(const mobile of [true,false]){
@@ -27,15 +27,15 @@ try {
       window.Audio=function(...args){const media=new NativeAudio(...args);window.__testMedia.push(media);return media;};
       window.Audio.prototype=NativeAudio.prototype;
     });
-    await page.goto(base+'?v=11.16.2',{waitUntil:'domcontentloaded'});
+    await page.goto(base+'?v=11.18.0',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.__V1116_SFX_API?.state().localReady&&window.__V119_READY&&window.__V12_WORLD?.ready&&window.__EGYPT_STREET_FIX?.ready,null,{timeout:60000});
-    assert.equal(await page.locator('html').getAttribute('data-release'),'11.16.2','wrong game release');
+    assert.equal(await page.locator('html').getAttribute('data-release'),'11.18.0','wrong game release');
     await page.evaluate(()=>{
       window.__testAudioContext=new window.__testNativeAC();
       document.addEventListener('pointerdown',()=>window.__testAudioContext.resume(),{capture:true});
     });
     if(mobile)await page.tap('#newGameBtn');else await page.click('#newGameBtn');
-    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:20000});
+    await page.waitForFunction(()=>window.__V12_PROLOGUE?.played&&document.body.classList.contains('game-started'),null,{timeout:45000});
     await page.waitForFunction(()=>window.__testAudioContext.state==='running',null,{timeout:10000});
     await page.evaluate(()=>{
       // MediaRecorder captures on the media thread, independent of WebGL frame rate.
@@ -81,13 +81,23 @@ try {
     const idle=(await state()).events.step;
     await page.waitForTimeout(500);
     assert.equal((await state()).events.step,idle,'footsteps while idle');
+    const movementStart=await page.evaluate(()=>({camera:window.__egyptDebug.getCamera(),fps:BABYLON.Engine.LastCreatedEngine.getFps(),at:performance.now()}));
     await resetMeter();
     if(mobile){
       const joy=await page.locator('#joy').boundingBox();
       await page.mouse.move(joy.x+joy.width/2,joy.y+joy.height/2);await page.mouse.down();
       await page.mouse.move(joy.x+joy.width/2,joy.y+10);
     }else await page.keyboard.down('w');
-    await page.waitForFunction(n=>window.__V1116_SFX_API.state().events.step>n,idle,{timeout:6000});
+    // Software WebGL can render fewer than three frames per second. Require
+    // real displacement and an emitted step, with a bounded wall-clock budget.
+    try {
+      await page.waitForFunction(n=>window.__V1116_SFX_API.state().events.step>n,idle,{timeout:20000});
+    } finally {
+      const movementEnd=await page.evaluate(()=>({camera:window.__egyptDebug.getCamera(),fps:BABYLON.Engine.LastCreatedEngine.getFps(),at:performance.now(),activeCamera:BABYLON.Engine.LastCreatedEngine.scenes[0].activeCamera.name,story:window.__V12_PROLOGUE.running,focus:document.activeElement?.id,events:window.__V1116_SFX_API.state().events}));
+      console.log('Movement timing evidence',JSON.stringify({mobile,start:movementStart,end:movementEnd}));
+    }
+    const movementEnd=await page.evaluate(()=>window.__egyptDebug.getCamera());
+    assert.ok(Math.hypot(movementEnd.x-movementStart.camera.x,movementEnd.z-movementStart.camera.z)>=1.8,'step without actual walking');
     await page.waitForTimeout(400);
     if(mobile)await page.mouse.up();else await page.keyboard.up('w');
     const stepPeak=await peak();
@@ -150,28 +160,7 @@ try {
     });
     assert.ok(visuals.signs>20,'Arabic sign repair did not run');assert.deepEqual(visuals.invalid,[]);
     assert.ok(visuals.state.buildings>10,'street facades missing');
-    if(!mobile){
-      await page.evaluate(()=>{
-        const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];window.__testOldCamera=scene.activeCamera;
-        const camera=new BABYLON.FreeCamera('testStreetView',new BABYLON.Vector3(-18,2.2,-26),scene);
-        camera.setTarget(new BABYLON.Vector3(0,5,-13));camera.fov=1.15;scene.activeCamera=camera;
-      });
-      await page.waitForTimeout(250);
-      console.log('VISUAL_EVIDENCE_street:'+(await page.screenshot({type:'jpeg',quality:45})).toString('base64'));
-      for(const side of [-1,1]){
-        await page.evaluate(side=>{
-          const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
-          const sign=scene.meshes.find(m=>m.name.startsWith('v11_legacyShop_')&&m.metadata?.readableArabic&&!m.name.endsWith('_readableBack')&&m.isEnabled());
-          if(!sign)throw new Error('No visible shop sign');
-          sign.computeWorldMatrix(true);const target=sign.getAbsolutePosition();
-          const normal=BABYLON.Vector3.TransformNormal(new BABYLON.Vector3(0,0,side),sign.getWorldMatrix()).normalize();
-          scene.activeCamera.position.copyFrom(target.add(normal.scale(5)));scene.activeCamera.setTarget(target);
-        },side);
-        await page.waitForTimeout(200);
-        console.log('VISUAL_EVIDENCE_sign'+(side===1?'Back':'Front')+':'+(await page.screenshot({type:'jpeg',quality:55})).toString('base64'));
-      }
-      await page.evaluate(()=>{const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],camera=scene.activeCamera;scene.activeCamera=window.__testOldCamera;camera.dispose();});
-    }
+    // Detailed world screenshots are verified separately by the street release gate.
 
     // Kills current playback as well as blocking future SFX.
     await page.evaluate(()=>window.__V1116_SFX_API.probe('door'));
