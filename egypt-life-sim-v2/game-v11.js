@@ -76,7 +76,8 @@
     planeSign(scene,'ahwaLabel','قهوة المعلم فتحي',-48,3.65,35,7,.86,'#5b3923',0);
     planeSign(scene,'homeLabel','بيت العيلة',-96,3.34,-82.68,3.2,.7,'#553622',Math.PI);
     planeSign(scene,'jobLabel','طلبات الحارة',-16,2.82,63,4.1,.76,'#245d66',0);
-    planeSign(scene,'fulLabel','فول وطعمية',-8,1.74,-8.82,2.8,.58,'#407455',Math.PI);
+    const ful=scene.getMeshByName('fulHot');
+    planeSign(scene,'fulLabel','فول وطعمية',ful.position.x,1.74,ful.position.z-.82,2.8,.58,'#407455',Math.PI);
     return {hidden:generic.length,made:made+5};
   }
 

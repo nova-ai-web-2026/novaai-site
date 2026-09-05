@@ -165,7 +165,7 @@
   function buildLandmarks(){
     const h=box('homeDoor',2.1,2.8,.25,-96,1.4,-82.5,mat('door','#553622'));sign('بيت العيلة',-96,3.34,-82.68,3.2,.72,'#553622');world.home={mesh:h,kind:'home',name:'بيت العيلة',x:-96,z:-82.5};world.interactables.push(world.home);
     const j=box('jobBooth',3.7,2.25,1.9,-16,1.13,64,mat('job','#245d66'),true);sign('طلبات الحارة',-16,2.82,63,4.1,.78,'#245d66');world.job={mesh:j,kind:'job',name:'شغل التوصيل',x:-16,z:64};world.interactables.push(world.job);
-    buildFulCart(-8,-8);box('mosque',13,6,11,91,3,91,plaster('mosque','#d6ccb5',91),true);const dome=BABYLON.MeshBuilder.CreateSphere('dome',{diameter:5.4,segments:16,slice:.55},scene);dome.position.set(91,7.1,91);dome.material=mat('dome','#819781');cyl('minaret',1.55,13,97,6.5,92,plaster('minaret','#d6c8aa',92),12,true);
+    buildFulCart(-8,-18);box('mosque',13,6,11,91,3,91,plaster('mosque','#d6ccb5',91),true);const dome=BABYLON.MeshBuilder.CreateSphere('dome',{diameter:5.4,segments:16,slice:.55},scene);dome.position.set(91,7.1,91);dome.material=mat('dome','#819781');cyl('minaret',1.55,13,97,6.5,92,plaster('minaret','#d6c8aa',92),12,true);
   }
   function buildFulCart(x,z){box('cart',2.7,.82,1.45,x,.55,z,mat('cart','#407455'),true);cyl('fulPot',.92,.66,x,.85,z,mat('pot','#898881'),14);sign('فول وطعمية',x,1.74,z-.82,2.8,.58,'#407455');const hot=box('fulHot',2.9,2,2,x,1,z,mat('hot','#fff'));hot.visibility=0;world.interactables.push({mesh:hot,kind:'shop',name:'عربية فول وطعمية',x,z,data:shopData[0]});}
 

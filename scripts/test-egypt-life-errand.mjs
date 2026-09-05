@@ -17,6 +17,21 @@ try{
     await page.evaluate(([x,z])=>window.__egyptDebug.v12Teleport(x,z),[x,z]);
     await page.waitForTimeout(200);
   };
+  const approachFul=async()=>{
+    const point=await page.evaluate(()=>{
+      const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],cart=scene.getMeshByName('fulHot');
+      const point={x:cart.position.x,z:cart.position.z-2};
+      const blockers=scene.meshes.filter(m=>{
+        if(!m.checkCollisions||!m.isEnabled())return false;
+        m.computeWorldMatrix(true);const bounds=m.getBoundingInfo().boundingBox,min=bounds.minimumWorld,max=bounds.maximumWorld;
+        return max.y>=.12&&min.y<=2.45&&point.x+.52>min.x&&point.x-.52<max.x&&point.z+.52>min.z&&point.z-.52<max.z;
+      }).map(m=>m.name);
+      return {...point,blockers};
+    });
+    assert.deepEqual(point.blockers,[],'ful cart interaction position is obstructed');
+    await teleport(point.x,point.z);
+    await page.waitForFunction(()=>document.getElementById('prompt').classList.contains('show')&&document.getElementById('prompt').textContent.includes('فول'));
+  };
   const newDay=async()=>{
     await click('#newGameBtn');
     await page.waitForFunction(()=>window.__V12_PROLOGUE.running,null,{timeout:15000});
@@ -36,8 +51,7 @@ try{
   await page.goto(base+'?v=11.19.0',{waitUntil:'domcontentloaded'});await ready();await newDay();
   assert.equal((await state()).money,300);assert.equal((await state()).task,0);
   await page.waitForFunction(()=>document.getElementById('taskGuide').textContent.includes('م'));
-  await teleport(-8,-10);
-  await page.waitForFunction(()=>document.getElementById('prompt').classList.contains('show')&&document.getElementById('prompt').textContent.includes('فول'));
+  await approachFul();
   await interact();await page.locator('#shop').waitFor({state:'visible'});
   await page.getByRole('button',{name:'اشتري',exact:true}).first().click();
   assert.equal((await state()).task,0,'personal food wrongly completes the family errand');
@@ -93,8 +107,7 @@ try{
     assert.equal((await state()).money,120);
     await page.addInitScript(()=>localStorage.setItem('hayat-masr-v4',JSON.stringify({money:0,task:0,savedX:-24,savedZ:-24})));
     await page.reload({waitUntil:'domcontentloaded'});await ready();await click('#continueBtn');
-    await teleport(-8,-10);
-    await page.waitForFunction(()=>document.getElementById('prompt').classList.contains('show')&&document.getElementById('prompt').textContent.includes('فول'));
+    await approachFul();
     await interact();await page.locator('#shop').waitFor({state:'visible'});
     const denied=(await sounds()).events.deny;
     await click('[data-errand="ful"] button');
