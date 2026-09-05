@@ -88,22 +88,20 @@
     if(!scene||!active||!window.BABYLON?.UniversalCamera||!window.BABYLON?.Vector3||scene.meshes.length<40)return false;
 
     previewScene=scene;gameCamera=active;
-    previewCamera=new BABYLON.UniversalCamera('v1116PreviewCamera',new BABYLON.Vector3(-24,2.55,-7),scene);
+    previewCamera=new BABYLON.UniversalCamera('v1116PreviewCamera',new BABYLON.Vector3(-24,2.1,-29),scene);
     previewCamera.minZ=.05;previewCamera.fov=.84;previewCamera.inertia=0;
+    previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));previewCamera.inputs.clear();
     scene.activeCamera=previewCamera;
 
     previewHandle=scene.onBeforeRenderObservable.add(()=>{
       if(document.body.classList.contains('game-started')||!menuVisible()){stopPreview();return;}
-      const t=performance.now()*.00018;
-      previewCamera.position.x=-24+Math.sin(t)*1.25;
-      previewCamera.position.z=-7+Math.cos(t*.72)*1.55;
-      previewCamera.position.y=2.52+Math.sin(t*.45)*.10;
-      previewCamera.setTarget(new BABYLON.Vector3(-24+Math.sin(t*.38)*1.1,1.42,-31));
+      previewCamera.position.set(-24,2.1,-29);
+      previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));
       if(scene.activeCamera!==previewCamera)scene.activeCamera=previewCamera;
-      publish({previewTarget:'street--24',cameraMoving:true});
+      publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});
     });
 
-    previewActive=true;publish({previewTarget:'street--24',cameraMoving:true});
+    previewActive=true;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});
     return true;
   }
 
