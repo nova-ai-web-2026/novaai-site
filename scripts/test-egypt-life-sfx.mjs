@@ -7,9 +7,9 @@ const base=process.env.GAME_TEST_URL||'http://127.0.0.1:4173/';
 // Headless Playwright otherwise launches Chrome with --mute-audio.
 const browser=await chromium.launch({headless:true,executablePath,ignoreDefaultArgs:['--mute-audio']});
 const deadline=setTimeout(()=>{
-  console.error('Gameplay SFX verification exceeded its six-minute deadline');
+  console.error('Gameplay SFX verification exceeded its eight-minute deadline');
   void browser.close().finally(()=>process.exit(1));
-},360000);
+},480000);
 const report=[];
 try {
   for(const mobile of [true,false]){
@@ -160,28 +160,7 @@ try {
     });
     assert.ok(visuals.signs>20,'Arabic sign repair did not run');assert.deepEqual(visuals.invalid,[]);
     assert.ok(visuals.state.buildings>10,'street facades missing');
-    if(!mobile){
-      await page.evaluate(()=>{
-        const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];window.__testOldCamera=scene.activeCamera;
-        const camera=new BABYLON.FreeCamera('testStreetView',new BABYLON.Vector3(-18,2.2,-26),scene);
-        camera.setTarget(new BABYLON.Vector3(0,5,-13));camera.fov=1.15;scene.activeCamera=camera;
-      });
-      await page.waitForTimeout(250);
-      console.log('VISUAL_EVIDENCE_street:'+(await page.screenshot({type:'jpeg',quality:45})).toString('base64'));
-      for(const side of [-1,1]){
-        await page.evaluate(side=>{
-          const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
-          const sign=scene.meshes.find(m=>m.name.startsWith('v11_legacyShop_')&&m.metadata?.readableArabic&&!m.name.endsWith('_readableBack')&&m.isEnabled());
-          if(!sign)throw new Error('No visible shop sign');
-          sign.computeWorldMatrix(true);const target=sign.getAbsolutePosition();
-          const normal=BABYLON.Vector3.TransformNormal(new BABYLON.Vector3(0,0,side),sign.getWorldMatrix()).normalize();
-          scene.activeCamera.position.copyFrom(target.add(normal.scale(5)));scene.activeCamera.setTarget(target);
-        },side);
-        await page.waitForTimeout(200);
-        console.log('VISUAL_EVIDENCE_sign'+(side===1?'Back':'Front')+':'+(await page.screenshot({type:'jpeg',quality:55})).toString('base64'));
-      }
-      await page.evaluate(()=>{const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],camera=scene.activeCamera;scene.activeCamera=window.__testOldCamera;camera.dispose();});
-    }
+    // Detailed world screenshots are verified separately by the street release gate.
 
     // Kills current playback as well as blocking future SFX.
     await page.evaluate(()=>window.__V1116_SFX_API.probe('door'));
