@@ -19,7 +19,7 @@
       .story-eyelids{position:absolute;inset:0;background:#080706;pointer-events:none;animation:storyWake 1.7s ease-out forwards}@keyframes storyWake{0%{opacity:1}35%{opacity:.8}60%{opacity:.15}75%{opacity:.65}100%{opacity:0}}@media(prefers-reduced-motion:reduce){.story-eyelids{animation:none;opacity:0}}@media(max-width:500px){.story-caption{padding:15px 17px;right:12px;left:12px}.story-top{left:12px;right:12px;gap:6px}.story-top span{width:100%}#v12Prologue button{padding:9px 11px}}
     `;document.head.appendChild(style);
     const status=window.__V12_PROLOGUE={ready:true,played:false,running:false,startsAtHome:true,version:'11.18',beat:0,typed:0,starts:0};
-    let gameCamera,introCamera,observer,timer,bypass=false,index=0,letters=[],shown=0,beatStarted=0,fullyTypedAt=0,pausedAt=0;
+    let gameCamera,introCamera,observer,timer,bypass=false,manual=false,index=0,letters=[],shown=0,beatStarted=0,fullyTypedAt=0,pausedAt=0;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const text=document.getElementById('storyText'),next=document.getElementById('storyNext');
     function stopTimer(){clearInterval(timer);timer=null;}
@@ -37,7 +37,7 @@
           if(expected<=shown)return;shown=expected;text.textContent=letters.slice(0,shown).join('');status.typed=shown;
           if(shown%3===0&&letters[shown-1].trim())window.__V1116_SFX_API?.play('typing');
           if(shown===letters.length){fullyTypedAt=beatStarted+letters.length*42;next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}
-        }else if(performance.now()-fullyTypedAt>2600)advance();
+        }else if(!manual&&performance.now()-fullyTypedAt>2600)advance();
       },42);
     }
     function finish(){
@@ -50,14 +50,14 @@
       window.dispatchEvent(new CustomEvent('egypt-story-finished'));
     }
     function advance(){if(index<beats.length-1){index++;writeBeat();}else finish();}
-    next.onclick=()=>{if(shown<letters.length){shown=letters.length;text.textContent=letters.join('');status.typed=shown;fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}else advance();};
+    next.onclick=()=>{manual=true;if(shown<letters.length){shown=letters.length;text.textContent=letters.join('');status.typed=shown;fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}else advance();};
     document.getElementById('v12Skip').onclick=finish;
     document.getElementById('storyMute').onclick=()=>{document.getElementById('soundToggle').click();setTimeout(()=>{document.getElementById('storyMute').textContent=window.__V1116_SFX_API?.state().muted?'تشغيل صوت الكتابة':'كتم صوت الكتابة';},50);};
     document.addEventListener('visibilitychange',()=>{if(!status.running)return;if(document.hidden)pausedAt=performance.now();else if(pausedAt){const delay=performance.now()-pausedAt;beatStarted+=delay;if(fullyTypedAt)fullyTypedAt+=delay;pausedAt=0;}});
     document.addEventListener('keydown',event=>{if(status.running&&['KeyW','KeyA','KeyS','KeyD','KeyE','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(event.code)){event.preventDefault();event.stopImmediatePropagation();}},true);
     button.addEventListener('click',event=>{
       if(bypass)return;event.preventDefault();event.stopImmediatePropagation();if(status.running)return;
-      status.running=true;status.played=false;status.starts++;index=0;document.body.classList.remove('game-started');
+      status.running=true;status.played=false;status.starts++;index=0;manual=false;document.body.classList.remove('game-started');
       gameCamera=scene.activeCamera;document.getElementById('menu').style.display='none';document.exitPointerLock?.();
       introCamera=new B.FreeCamera('egyptWakeCamera',new B.Vector3(...beats[0].from),scene);introCamera.minZ=.05;introCamera.fov=.95;scene.activeCamera=introCamera;
       overlay.hidden=false;overlay.classList.add('active');writeBeat();next.focus();

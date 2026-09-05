@@ -8,6 +8,7 @@ try{
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');
  await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready,null,{timeout:60000});
+ await page.click('#storyNext'); // Opt into manual reading before inspecting the shot.
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
  await page.waitForFunction(()=>window.__V12_PROLOGUE.typed>12);
@@ -15,6 +16,7 @@ try{
  assert.ok(await page.evaluate(()=>window.__V1116_SFX_API.state().events.typing)>0,'no typing sound events');
  await page.click('#storyMute');await page.waitForFunction(()=>window.__V1116_SFX_API.state().muted);
  const muted=await page.evaluate(()=>window.__V1116_SFX_API.state().playCalls);
+ await page.click('#storyNext'); // Let the next line type while muted.
  await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>window.__V1116_SFX_API.state().playCalls),muted,'typing ignored mute');
  await page.click('#storyMute');await page.waitForFunction(()=>!window.__V1116_SFX_API.state().muted);
  await page.click('#storyNext');
@@ -75,6 +77,7 @@ try{
  await page.click('#continueBtn');
  await page.waitForFunction(()=>document.body.classList.contains('game-started'));
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.running),false);
+ await page.click('#storyNext'); // Opt into manual reading before inspecting the shot.
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),0);
  console.log('Story, characters, mounted signs, skip and continue verified');
 }finally{await browser.close();}
