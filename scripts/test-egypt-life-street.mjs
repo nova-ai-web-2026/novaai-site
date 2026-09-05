@@ -80,7 +80,7 @@ try{
  await page.click('#continueBtn');
  await page.waitForFunction(()=>document.body.classList.contains('game-started'));
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.running),false);
- await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
+ assert.equal(await page.evaluate(()=>window.__V1116_SFX_API.state().events.typing),0,'Continue replayed typing sounds');
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),0);
  console.log('Story, characters, mounted signs, skip and continue verified');
 }finally{await browser.close();}

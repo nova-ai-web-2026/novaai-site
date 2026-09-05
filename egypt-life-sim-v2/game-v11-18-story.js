@@ -3,8 +3,8 @@
   window.EgyptStory={install(scene,home){
     const B=BABYLON,button=document.getElementById('newGameBtn');
     const beats=[
-      {who:'المنبّه',line:'قوم يا بطل… دي تالت «خمس دقايق»!',from:[-155.0,1.04,-155.5],to:[-155,1.60,-154.9],look:[-153,1.0,-153.9]},
-      {who:'أنا',line:'حاضر… بس المخ لسه بيفتح. محدّش يدوس عليه.',from:[-155,1.60,-154.9],to:[-152,1.72,-151],look:[-145,1.5,-145]},
+      {who:'المنبّه',line:'قوم يا بطل… دي تالت «خمس دقايق»!',from:[-154,1.07,-155.6],to:[-154,1.65,-155.1],look:[-154,.88,-153.8]},
+      {who:'أنا',line:'حاضر… بس المخ لسه بيفتح. محدّش يدوس عليه.',from:[-154,1.65,-155.1],to:[-152,1.72,-151],look:[-145,1.5,-145]},
       {who:'ماما من الصالة',line:'هات عيش وفول يا حبيبي… والفكة ترجع، مش تتبنّاها!',from:[-152,1.72,-151],to:[-150,1.72,-148],look:[-145,1.1,-145]},
       {who:'أنا',line:'نازل أبدأ مستقبلي… بس أفطر الأول. محدّش بيعمل إنجازات على الريق!',from:[-150,1.72,-148],to:[-150,1.72,-144.8],look:[-150,1.5,-142]}
     ];
@@ -51,14 +51,14 @@
     }
     function advance(){if(index<beats.length-1){index++;writeBeat();}else finish();}
     document.getElementById('storyPace').onclick=()=>{manual=!manual;document.getElementById('storyPace').textContent=manual?'تشغيل تلقائي':'قراءة على مهلك';};
-    next.onclick=()=>{manual=true;if(shown<letters.length){shown=letters.length;text.textContent=letters.join('');status.typed=shown;fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}else advance();};
+    next.onclick=()=>{manual=true;document.getElementById('storyPace').textContent='تشغيل تلقائي';if(shown<letters.length){shown=letters.length;text.textContent=letters.join('');status.typed=shown;fullyTypedAt=performance.now();next.textContent=index===beats.length-1?'يلا على الشارع':'كمّل';}else advance();};
     document.getElementById('v12Skip').onclick=finish;
     document.getElementById('storyMute').onclick=()=>{document.getElementById('soundToggle').click();setTimeout(()=>{document.getElementById('storyMute').textContent=window.__V1116_SFX_API?.state().muted?'تشغيل صوت الكتابة':'كتم صوت الكتابة';},50);};
     document.addEventListener('visibilitychange',()=>{if(!status.running)return;if(document.hidden)pausedAt=performance.now();else if(pausedAt){const delay=performance.now()-pausedAt;beatStarted+=delay;if(fullyTypedAt)fullyTypedAt+=delay;pausedAt=0;}});
     document.addEventListener('keydown',event=>{if(status.running&&['KeyW','KeyA','KeyS','KeyD','KeyE','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(event.code)){event.preventDefault();event.stopImmediatePropagation();}},true);
     button.addEventListener('click',event=>{
       if(bypass)return;event.preventDefault();event.stopImmediatePropagation();if(status.running)return;
-      status.running=true;status.played=false;status.starts++;index=0;manual=false;document.body.classList.remove('game-started');
+      status.running=true;status.played=false;status.starts++;index=0;manual=false;document.getElementById('storyPace').textContent='قراءة على مهلك';document.body.classList.remove('game-started');
       gameCamera=scene.activeCamera;document.getElementById('menu').style.display='none';document.exitPointerLock?.();
       introCamera=new B.FreeCamera('egyptWakeCamera',new B.Vector3(...beats[0].from),scene);introCamera.minZ=.05;introCamera.fov=.95;scene.activeCamera=introCamera;
       overlay.hidden=false;overlay.classList.add('active');writeBeat();next.focus();
