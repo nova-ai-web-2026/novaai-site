@@ -15,10 +15,10 @@
 
   const stableMenu=()=>{
     const kicker=document.querySelector('.kicker'),tagline=document.querySelector('.tagline'),foot=document.querySelector('.menuFoot'),status=document.getElementById('menuStatus');
-    if(kicker&&kicker.textContent!=='HAYAT MASR • V11.10')kicker.textContent='HAYAT MASR • V11.10';
+    if(kicker&&kicker.textContent!==`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`;
     const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!=='V11.10 — actual CC0 sampled SFX')foot.textContent='V11.10 — actual CC0 sampled SFX';
+    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`)foot.textContent=`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`;
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 

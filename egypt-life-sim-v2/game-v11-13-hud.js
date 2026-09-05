@@ -9,8 +9,8 @@
 
   function syncCopy(){
     const kicker=document.querySelector('.kicker'),foot=document.querySelector('.menuFoot');
-    if(kicker)kicker.textContent='HAYAT MASR • V11.13';
-    if(foot)foot.textContent='V11.13 — HUD + safe street spawn';
+    if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.13'}`;
+    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.16.1'} — تحسين أصوات اللعب`;
   }
 
   function installStyle(){

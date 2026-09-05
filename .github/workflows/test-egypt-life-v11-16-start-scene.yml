@@ -1,6 +1,7 @@
 name: Test Egyptian Life Simulator V11.16 Start Scene
 
 on:
+  workflow_call:
   pull_request:
     paths:
       - 'egypt-life-sim-v2/**'

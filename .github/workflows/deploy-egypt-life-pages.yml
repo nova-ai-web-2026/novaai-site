@@ -1,120 +1,65 @@
-name: Deploy Egyptian Life Simulator
+name: Verify and deploy Egyptian Life
 
 on:
   push:
     branches: [main]
     paths:
       - 'egypt-life-sim-v2/**'
-      - '.github/workflows/deploy-egypt-life-pages.yml'
+      - 'scripts/*egypt-life*'
+      - '.github/workflows/*egypt-life*'
+  pull_request:
+    paths:
+      - 'egypt-life-sim-v2/**'
+      - 'scripts/*egypt-life*'
+      - '.github/workflows/*egypt-life*'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: egypt-life-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release assets and active entry points
+        run: bash scripts/validate-egypt-life-release.sh
+
+  sound:
+    uses: ./.github/workflows/test-egypt-life-v11-16-sfx.yml
+  start:
+    uses: ./.github/workflows/test-egypt-life-v11-16-start-scene.yml
+  gameplay:
+    uses: ./.github/workflows/test-egypt-life-v11-17-scene.yml
+  mobile:
+    uses: ./.github/workflows/test-egypt-life-v11-13.yml
+
   deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [validate-release, sound, start, gameplay, mobile]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Stamp exact source and asset hashes
+        run: node scripts/stamp-egypt-life-release.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Validate V11.16 start scene, V11.15 sampled SFX and current world
-        run: |
-          test -s egypt-life-sim-v2/index.html
-          test -s egypt-life-sim-v2/v11-14.html
-          test -s egypt-life-sim-v2/v11-15.html
-          test -s egypt-life-sim-v2/v11-16.html
-          test -s egypt-life-sim-v2/game-v7.js
-          test -s egypt-life-sim-v2/game-v8-layout.js
-          test -s egypt-life-sim-v2/game-v9.js
-          test -s egypt-life-sim-v2/game-v9-gaitfix.js
-          test -s egypt-life-sim-v2/game-v9-character-polish.js
-          test -s egypt-life-sim-v2/game-v9-facades.js
-          test -s egypt-life-sim-v2/game-v10.js
-          test -s egypt-life-sim-v2/game-v11.js
-          test -s egypt-life-sim-v2/game-v11-1.js
-          test -s egypt-life-sim-v2/game-v11-audiofix.js
-          test -s egypt-life-sim-v2/game-v11-6-runtime.js
-          test -s egypt-life-sim-v2/game-v11-8-sfx.js
-          test -s egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          test -s egypt-life-sim-v2/game-v11-11-egypt-details.js
-          test -s egypt-life-sim-v2/game-v11-11-egypt-details-base.js
-          test -s egypt-life-sim-v2/game-v11-12-ui.js
-          test -s egypt-life-sim-v2/game-v11-14-local-sfx.js
-          test -s egypt-life-sim-v2/game-v11-15-real-sfx.js
-          test -s egypt-life-sim-v2/game-v12-world.js
-          test -s egypt-life-sim-v2/AUDIO-CREDITS.md
-          test -s egypt-life-sim-v2/audio/v11-8/step_pavement.wav
-          test -s egypt-life-sim-v2/audio/v11-8/step_asphalt.wav
-          test -s egypt-life-sim-v2/audio/v11-8/interact.wav
-          test -s egypt-life-sim-v2/audio/v11-8/buy_coin.wav
-          test -s egypt-life-sim-v2/audio/v11-8/door.wav
-          test -s egypt-life-sim-v2/audio/v11-8/reward.wav
-          node --check egypt-life-sim-v2/game-v7.js
-          node --check egypt-life-sim-v2/game-v8-layout.js
-          node --check egypt-life-sim-v2/game-v9.js
-          node --check egypt-life-sim-v2/game-v9-gaitfix.js
-          node --check egypt-life-sim-v2/game-v9-character-polish.js
-          node --check egypt-life-sim-v2/game-v9-facades.js
-          node --check egypt-life-sim-v2/game-v10.js
-          node --check egypt-life-sim-v2/game-v11.js
-          node --check egypt-life-sim-v2/game-v11-1.js
-          node --check egypt-life-sim-v2/game-v11-audiofix.js
-          node --check egypt-life-sim-v2/game-v11-6-runtime.js
-          node --check egypt-life-sim-v2/game-v11-8-sfx.js
-          node --check egypt-life-sim-v2/game-v11-10-actual-sfx.js
-          node --check egypt-life-sim-v2/game-v11-11-egypt-details.js
-          node --check egypt-life-sim-v2/game-v11-11-egypt-details-base.js
-          node --check egypt-life-sim-v2/game-v11-12-ui.js
-          node --check egypt-life-sim-v2/game-v11-14-local-sfx.js
-          node --check egypt-life-sim-v2/game-v11-15-real-sfx.js
-          node --check egypt-life-sim-v2/game-v12-world.js
-          grep -Fq 'game-v11-6-runtime.js?v=11.10' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-8-sfx.js?v=11.10' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-10-actual-sfx.js?v=11.10' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v8-layout.js?v=11.10&visual=11.11' egypt-life-sim-v2/index.html
-          grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/v11-14.html
-          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-15.html
-          grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-15.html
-          grep -Fq 'game-v11-12-ui.js?v=11.16' egypt-life-sim-v2/v11-16.html
-          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/v11-16.html
-          grep -Fq "hardeningVersion:'11.16'" egypt-life-sim-v2/game-v11-12-ui.js
-          grep -Fq 'dedicatedPreviewCamera:true' egypt-life-sim-v2/game-v11-12-ui.js
-          grep -Fq "previewTarget:'street--24'" egypt-life-sim-v2/game-v11-12-ui.js
-          grep -Fq 'game-v11-11-egypt-details.js?v=11.11' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'game-v11-14-local-sfx.js?v=11.14' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'game-v11-15-real-sfx.js?v=11.15' egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'game-v11-11-egypt-details-base.js?v=11.11' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'game-v12-world.js?v=12' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'openWorld:true' egypt-life-sim-v2/game-v12-world.js
-          grep -Fq 'startsAtHome:true' egypt-life-sim-v2/game-v12-world.js
-          grep -Fq 'Greater Cairo mixed-use residential street cues' egypt-life-sim-v2/game-v12-world.js
-          grep -Fq '#v12Skip{display:none!important}' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'same-origin-local-sfx' egypt-life-sim-v2/game-v11-14-local-sfx.js
-          grep -Fq 'kenney-cc0-multivariant-sfx' egypt-life-sim-v2/game-v11-15-real-sfx.js
-          grep -Fq 'bus.gain.value=.76' egypt-life-sim-v2/game-v11-15-real-sfx.js
-          grep -Fq 'footstep07.ogg' egypt-life-sim-v2/game-v11-15-real-sfx.js
-          grep -Fq 'error_001.ogg' egypt-life-sim-v2/game-v11-15-real-sfx.js
-          grep -Fq "release:'11.15'" egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq "visualRelease:'11.13'" egypt-life-sim-v2/game-v11-audiofix.js
-          grep -Fq 'additiveOnly:true' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'removedMeshes:0' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'disabledLegacyMeshes:0' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'checkCollisions=false' egypt-life-sim-v2/game-v11-11-egypt-details.js
-          grep -Fq 'CC0 1.0' egypt-life-sim-v2/AUDIO-CREDITS.md
-          if grep -Fq "classList.add('game-started')" egypt-life-sim-v2/index.html; then echo 'premature HTML start flag present'; exit 1; fi
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
@@ -122,3 +67,29 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  published-game:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GAME_TEST_URL: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/
+      GAME_EXPECTED_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify published version and every asset hash
+        run: node scripts/test-egypt-life-published.mjs
+      - name: Prepare browser
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Play the published release on mobile and desktop
+        run: node scripts/test-egypt-life-sfx.mjs
+      - name: Upload published gameplay evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-egypt-life-verification
+          path: |
+            sfx-verification.json
+            sfx-mobile.png
+            sfx-desktop.png
+          if-no-files-found: ignore
