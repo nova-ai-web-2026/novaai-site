@@ -53,7 +53,14 @@
       if(['kiosk','produce','grocery'].includes(type)){
         const colors=['#a26442','#b79543','#657b48','#b6ab83','#6f8b8b'];
         for(let r=0;r<3;r++){for(let col=0;col<11;col++){c.fillStyle=colors[(r+col)%5];c.fillRect(39+col*40,38+r*46,21,30);c.fillStyle='#d1c2a0';c.fillRect(41+col*40,45+r*46,17,6);}c.fillStyle='#3d342b';c.fillRect(30,70+r*46,452,7);}
-      }else if(type==='ahwa'||type==='koshary'||type==='ful'){
+      }else if(type==='ahwa'){
+        c.fillStyle='#30291f';c.fillRect(30,55,452,7);c.fillRect(30,110,452,7);
+        for(let row=0;row<2;row++)for(let i=0;i<12;i++){
+          const x=42+i*36,y=29+row*55;
+          c.fillStyle='#c9c5a5';c.fillRect(x,y,13,23);c.fillStyle='#966438';c.fillRect(x+2,y+8,9,12);
+        }
+        c.fillStyle='#a69f87';c.fillRect(41,160,430,14);c.fillStyle='#654834';c.fillRect(31,181,450,46);
+      }else if(type==='koshary'||type==='ful'){
         c.fillStyle='#473327';c.fillRect(30,52,452,9);
         for(let i=0;i<5;i++){
           const x=46+i*88;c.fillStyle='#a9aba1';c.fillRect(x,104,60,57);
@@ -78,6 +85,23 @@
       box('doorHandle_'+i,.045,.20,.07,glass,.15,-.20,-.16,metal);
       glass.metadata={...glass.metadata,shopfrontDetailed:true};
     });
+    // Compact wooden cafe seating sits beside the door, within the pavement.
+    for(const [i,glass] of shops.filter(g=>g.metadata?.shopType==='ahwa').slice(0,2).entries()){
+      const pieces=[],w=glass.getBoundingInfo().boundingBox.extendSize.x*2,x=-w*.28;
+      const add=(name,a,b,c,px,py,pz)=>{const m=box(name,a,b,c,glass,px,py,pz,wood);pieces.push(m);return m;};
+      const top=B.MeshBuilder.CreateCylinder('frontage_cafeTable_'+i,{diameter:.8,height:.055,tessellation:12},scene);
+      top.parent=glass;top.position.set(x,-.62,-1.2);top.material=wood;top.isPickable=false;pieces.push(top);
+      add('tableLeg',.10,.70,.10,x,-.99,-1.2);
+      for(const side of [-1,1]){
+        const cx=x+side*.65;
+        add('chairSeat',.42,.055,.43,cx,-.91,-1.2);
+        add('chairBack',.055,.44,.43,cx+side*.19,-.68,-1.2);
+        for(const dx of [-.16,.16])for(const dz of [-.16,.16])add('chairLeg',.045,.42,.045,cx+dx,-1.12,-1.2+dz);
+      }
+      for(const p of pieces)p.computeWorldMatrix(true);
+      const merged=B.Mesh.MergeMeshes(pieces,true,true,undefined,false,false);
+      merged.name='frontage_cafeSeating_'+i;merged.isPickable=false;merged.checkCollisions=false;
+    }
     const canvasMat=mat('awningCanvas','#ddceb0');
     const tex=new B.DynamicTexture('frontage_awning',256,scene,false),c=tex.getContext();c.fillStyle='#cabd9d';c.fillRect(0,0,256,256);
     for(let x=0;x<256;x+=64){c.fillStyle='#627363';c.fillRect(x,0,29,256);}tex.update();canvasMat.diffuseTexture=tex;canvasMat.diffuseColor=B.Color3.White();
