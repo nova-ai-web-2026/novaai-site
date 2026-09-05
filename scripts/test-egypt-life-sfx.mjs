@@ -175,6 +175,7 @@ try {
 
     // Kills current playback as well as blocking future SFX.
     await page.evaluate(()=>window.__V1116_SFX_API.probe('door'));
+    assert.equal((await state()).lastPlayed.key,'door','real door sound was removed');
     await page.locator('#soundToggle').click();
     await page.waitForFunction(()=>window.__V1116_SFX_API.state().muted);
     await page.waitForTimeout(150);await resetMeter();

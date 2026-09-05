@@ -8,6 +8,9 @@
       if(i>600)throw new Error('Street scene did not become ready');
       await sleep(100);
     }
+    const style=document.createElement('style');
+    style.textContent='.logo,.menuFoot,.v12place,.v12title,.v12line,#dialogWho,#dialogText{letter-spacing:normal!important}#dialogText{direction:rtl;unicode-bidi:plaintext;line-height:1.7}';
+    document.head.appendChild(style);
     const B=BABYLON,scene=B.Engine.LastCreatedEngine.scenes[0];
     // A back-facing plane mirrors its lettering. Give each side its own geometry
     // and natural UVs instead of guessing the camera side from world rotation.
