@@ -37,9 +37,9 @@ try{
   console.log('STREET_WALK',JSON.stringify({mobile,shop,movement}));
  }
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});await ready();
- assert.equal(await page.locator('html').getAttribute('data-release'),'11.23.0');
+ assert.equal(await page.locator('html').getAttribute('data-release'),'11.24.0');
  const quality=await page.evaluate(()=>window.EgyptQuality.state());
- assert.equal(quality.version,'11.23.0');assert.ok(quality.people>=42&&quality.textures>=8,'quality geometry or materials did not load');
+ assert.equal(quality.version,'11.24.0');assert.ok(quality.people>=42&&quality.textures>=8,'quality geometry or materials did not load');
  assert.equal(await page.evaluate(()=>{const s=BABYLON.Engine.LastCreatedEngine.scenes[0];return s.meshes.filter(m=>m.metadata?.quality).every(m=>Array.from(m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[]).every(Number.isFinite));}),true,'invalid geometry');
  assert.equal(await page.evaluate(()=>{const s=BABYLON.Engine.LastCreatedEngine.scenes[0],m=s.getMeshByName('v9_head_0'),p=m.getVerticesData('position'),n=m.getVerticesData('normal');let dot=0;for(let i=0;i<p.length;i+=3)dot+=p[i]*n[i]+p[i+2]*n[i+2];return dot>1;}),true,'head surface faces inward');
  console.log('QUALITY_READY',JSON.stringify(quality));

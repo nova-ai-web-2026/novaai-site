@@ -33,7 +33,7 @@
     proto.moveWithCollisions=function(delta){
       const sc=this.getScene(),radius=.38;
       const blocked=(x,z)=>{const room=window.EgyptShops?.bounds();if(room?(x-radius<room.minX||x+radius>room.maxX||z-radius<room.minZ||z+radius>room.maxZ):(Math.abs(x)>BOUND||Math.abs(z)>BOUND))return true;for(const mesh of sc.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.18||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};
-      const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;
+      delta=window.EgyptStreetLife?.filterMove?.(this,delta)||delta;const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;
     };
   }
 
@@ -101,7 +101,7 @@
     const root=new BABYLON.TransformNode(P+'ped_'+i,scene);root.position.set(x,0,z);const skin=mat('skin'+i,['#9f7356','#b98565','#8d6249','#c09172'][i%4]),cloth=mat('shirt'+i,['#486d82','#8a5549','#5e7654','#7a657e'][i%4]);
     const torso=box('pedTorso_'+i,.62,.9,.32,0,1.2,0,cloth);torso.parent=root;const head=reg(BABYLON.MeshBuilder.CreateSphere(P+'pedHead_'+i,{diameter:.46,segments:10},scene));head.position.set(0,1.88,0);head.material=skin;head.parent=root;
     for(const s of [-1,1]){const leg=cyl('pedLeg_'+i+'_'+s,.16,.8,s*.16,.55,0,mat('pants','#343a40'),8);leg.parent=root;}
-    const startX=x,startZ=z,axis=i%2,span=8+(i%4)*3,speed=.00022+(i%3)*.00005;scene.onBeforeRenderObservable.add(()=>{const t=performance.now()*speed+i;const off=Math.sin(t)*span;if(axis)root.position.x=startX+off;else root.position.z=startZ+off;root.rotation.y=axis?(Math.cos(t)>=0?Math.PI/2:-Math.PI/2):(Math.cos(t)>=0?0:Math.PI);});counters.pedestrians++;
+    const startX=x,startZ=z,axis=i%2,span=8+(i%4)*3,speed=.00022+(i%3)*.00005;let elapsed=i;scene.onBeforeRenderObservable.add(()=>{if(window.EgyptStreetLife?.holdPerson?.(root))return;elapsed+=Math.min(scene.getEngine().getDeltaTime(),45)*speed;const t=elapsed;const off=Math.sin(t)*span;if(axis)root.position.x=startX+off;else root.position.z=startZ+off;root.rotation.y=axis?(Math.cos(t)>=0?Math.PI/2:-Math.PI/2):(Math.cos(t)>=0?0:Math.PI);});counters.pedestrians++;
   }
   function buildExpandedWorld(){
     if(worldBuilt)return;worldBuilt=true;

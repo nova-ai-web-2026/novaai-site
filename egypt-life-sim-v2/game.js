@@ -180,27 +180,27 @@
   function addCable(x1,y1,z1,x2,y2,z2){const path=[];for(let i=0;i<=10;i++){const t=i/10;path.push(new BABYLON.Vector3(x1+(x2-x1)*t,y1+(y2-y1)*t-Math.sin(Math.PI*t)*.7,z1+(z2-z1)*t));}const m=BABYLON.MeshBuilder.CreateTube('cable',{path,radius:.025,tessellation:5},scene);m.material=mat('cable','#242424');m.isPickable=false;}
 
   function makeVehicle(type,i){
-    const vertical=i%2===0,lane=world.roads[i%world.roads.length]+(i%3===0?2.1:-2.1),along=-105+(i*31)%210,root=new BABYLON.TransformNode(type+'Root',scene);root.position=vertical?new BABYLON.Vector3(lane,.52,along):new BABYLON.Vector3(along,.52,lane);root.rotation.y=vertical?0:Math.PI/2;
+    const vertical=i%2===0,dir=Math.floor(i/8)%2?-1:1,road=world.roads[Math.floor(i/2)%world.roads.length],lane=road+(vertical?-dir:dir)*2.1,along=-105+(i*31)%210,root=new BABYLON.TransformNode(type+'Root',scene);root.position=vertical?new BABYLON.Vector3(lane,.52,along):new BABYLON.Vector3(along,.52,lane);root.rotation.y=vertical?0:Math.PI/2;
     let w=1.76,h=1.08,d=3.75,col='#dddcd7',speed=.095;if(type==='micro'){w=2;h=1.58;d=4.8;col='#e7e5dc';speed=.082;}if(type==='tuktuk'){w=1.28;h=1.42;d=2.12;col=['#28688a','#a64039','#4d7043'][i%3];speed=.07;}if(type==='taxi'){col='#e9e8e3';speed=.09;}
     const lower=box('vehLower',w,.55,d,0,-.03,0,mat(type+'body'+i,col));lower.parent=root;const upper=box('vehUpper',w*.9,h*.66,d*.62,0,.48,.1,mat(type+'upper'+i,col));upper.parent=root;const wind=box('wind',w*.78,.44,.07,0,.55,-d*.31,mat('vehGlass','#23343b','#071116'));wind.parent=root;
     const hit=box('vehCollider',w*.92,Math.max(.9,h),d*.88,0,.18,0,mat('hot','#fff'),true);hit.visibility=0;hit.parent=root;
     if(type==='micro'){for(let s=-1;s<=1;s++){const side=box('microWindow',w+.03,.47,.75,0,.57,s*.94,mat('vehGlass','#23343b','#071116'));side.parent=root;}const st=box('microStripe',w+.04,.12,d*.82,0,.04,0,mat('microStripe','#416b88'));st.parent=root;}
     if(type==='taxi'){const st=box('taxiStripe',w+.04,.13,d*.78,0,.02,0,mat('taxiStripe','#222'));st.parent=root;}if(type==='tuktuk'){const cp=box('canopy',w*1.02,.12,d*.72,0,1.17,.05,mat('canopy','#202020'));cp.parent=root;}
     for(const sx of [-1,1])for(const sz of [-1,1]){const wh=BABYLON.MeshBuilder.CreateCylinder('wheel',{diameter:.5,height:.2,tessellation:10},scene);wh.parent=root;wh.position.set(sx*w*.47,-.33,sz*d*.31);wh.rotation.z=Math.PI/2;wh.material=mat('wheel','#171717');}
-    return{root,vertical,dir:i%3===0?-1:1,speed,type};
+    root.rotation.y=vertical?(dir>0?Math.PI:0):(dir>0?-Math.PI/2:Math.PI/2);return{root,vertical,dir,speed,type,road,length:d,width:w,velocity:speed*60,cruise:speed*60};
   }
   function buildVehicles(){const types=['micro','taxi','car','tuktuk','car','micro','taxi'];for(let i=0;i<20;i++)world.vehicles.push(makeVehicle(types[i%types.length],i));}
 
   function makePerson(x,z,i){
-    const root=new BABYLON.TransformNode('personRoot',scene);root.position.set(x,0,z);const skin=mat('skin','#b98563'),cols=['#455f77','#744e40','#45684a','#6b4b71','#817047','#4b4b4b'];
+    const root=new BABYLON.TransformNode('personRoot',scene);root.position.set(x,0,z);if(i%2)root.position.x=nearestRoad(x)+(i%4<2?-1:1)*6.5;else root.position.z=nearestRoad(z)+(i%4<2?-1:1)*6.5;const skin=mat('skin','#b98563'),cols=['#455f77','#744e40','#45684a','#6b4b71','#817047','#4b4b4b'];
     const torso=box('torso',.58,.85,.32,0,1.05,0,mat('shirt'+i,cols[i%cols.length]));torso.parent=root;const head=BABYLON.MeshBuilder.CreateSphere('head',{diameter:.44,segments:8},scene);head.parent=root;head.position.y=1.72;head.material=skin;
     const legL=box('legL',.18,.72,.2,-.16,.43,0,mat('pants'+i,'#343b40')),legR=box('legR',.18,.72,.2,.16,.43,0,mat('pants'+i,'#343b40')),armL=box('armL',.15,.72,.16,-.38,1.08,0,skin),armR=box('armR',.15,.72,.16,.38,1.08,0,skin);legL.parent=legR.parent=armL.parent=armR.parent=root;
-    const data={root,legL,legR,armL,armR,axis:i%2,dir:i%3===0?-1:1,speed:.016+(i%4)*.003,phase:i*.7,name:sayings[i%sayings.length][0],line:sayings[i%sayings.length][1]};world.interactables.push({kind:'person',name:data.name,data,root});return data;
+    const data={root,legL,legR,armL,armR,side:i%4<2?-1:1,axis:i%2,dir:i%3===0?-1:1,speed:.016+(i%4)*.003,phase:i*.7,name:sayings[i%sayings.length][0],line:sayings[i%sayings.length][1]};world.interactables.push({kind:'person',name:data.name,data,root});return data;
   }
   function buildPeople(){for(let i=0;i<28;i++)world.people.push(makePerson(-100+(i*29)%200,-100+(i*41)%200,i));}
 
   function update(){
-    const dt=Math.min(engine.getDeltaTime(),45)/16.6667,active=ui.menu.style.display==='none'&&!modal&&!window.__V12_PROLOGUE?.running;if(active){updateMovement(dt);updateNeeds(dt);updateVehicles(dt);updatePeople(dt);updateInteraction();updateAudio();}updateDayNight();updateHUD();drawMap();const now=performance.now();if(now-lastSave>12000&&ui.menu.style.display==='none'&&!window.__V12_PROLOGUE?.running){saveState();lastSave=now;}
+    const dt=Math.min(engine.getDeltaTime(),45)/16.6667,active=ui.menu.style.display==='none'&&!modal&&!window.__V12_PROLOGUE?.running&&!window.EgyptStreetLife?.isFailed?.();window.EgyptStreetLife?.tick?.(Math.min(engine.getDeltaTime()/1000,2),active);if(active&&!window.EgyptStreetLife?.isFailed?.()){updateMovement(dt);updateNeeds(dt);updateVehicles(dt);updatePeople(dt);updateInteraction();updateAudio();}updateDayNight();updateHUD();drawMap();const now=performance.now();if(now-lastSave>12000&&ui.menu.style.display==='none'&&!window.__V12_PROLOGUE?.running){saveState();lastSave=now;}
   }
   function updateMovement(dt){
     let forward=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0),strafe=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);if(TOUCH){forward+=joyY;strafe+=joyX;}const len=Math.hypot(forward,strafe);if(len>1){forward/=len;strafe/=len;}
@@ -208,9 +208,9 @@
     camera.position.y=EYE;camera.rotation.x=pitch;camera.rotation.y=yaw;
   }
   function updateNeeds(dt){const moving=keys.has('KeyW')||keys.has('KeyS')||keys.has('KeyA')||keys.has('KeyD')||Math.abs(joyX)+Math.abs(joyY)>.1;state.hunger=clamp(state.hunger-.0022*dt);state.energy=clamp(state.energy-(moving?(running?.0041:.0017):-.00045)*dt);if(state.hunger<25)state.mood=clamp(state.mood-.0011*dt);state.minute+=.011*dt;if(state.minute>=1440){state.minute-=1440;state.day++;}}
-  function updateVehicles(dt){for(const v of world.vehicles){if(v.vertical){v.root.position.z+=v.speed*v.dir*dt;if(v.root.position.z>112)v.root.position.z=-112;if(v.root.position.z<-112)v.root.position.z=112;}else{v.root.position.x+=v.speed*v.dir*dt;if(v.root.position.x>112)v.root.position.x=-112;if(v.root.position.x<-112)v.root.position.x=112;}}}
+  function updateVehicles(dt){if(window.EgyptStreetLife?.vehicles?.(dt/60))return;for(const v of world.vehicles){if(v.vertical){v.root.position.z+=v.speed*v.dir*dt;if(v.root.position.z>112)v.root.position.z=-112;if(v.root.position.z<-112)v.root.position.z=112;}else{v.root.position.x+=v.speed*v.dir*dt;if(v.root.position.x>112)v.root.position.x=-112;if(v.root.position.x<-112)v.root.position.x=112;}}}
   function nearestRoad(v){return world.roads.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a,world.roads[0]);}
-  function updatePeople(dt){for(const p of world.people){p.phase+=.08*dt;const sw=Math.sin(p.phase*5)*.45;p.legL.rotation.x=sw;p.legR.rotation.x=-sw;p.armL.rotation.x=-sw*.7;p.armR.rotation.x=sw*.7;if(p.axis===0){p.root.position.x+=p.speed*p.dir*dt;p.root.position.z=nearestRoad(p.root.position.z)+(p.phase%2>1?7:-7);if(p.root.position.x>106)p.root.position.x=-106;if(p.root.position.x<-106)p.root.position.x=106;p.root.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;}else{p.root.position.z+=p.speed*p.dir*dt;p.root.position.x=nearestRoad(p.root.position.x)+(p.phase%2>1?7:-7);if(p.root.position.z>106)p.root.position.z=-106;if(p.root.position.z<-106)p.root.position.z=106;p.root.rotation.y=p.dir>0?0:Math.PI;}}}
+  function updatePeople(dt){for(const p of world.people){if(window.EgyptStreetLife?.holdPerson?.(p.root))continue;p.phase+=.08*dt;const sw=Math.sin(p.phase*5)*.45;p.legL.rotation.x=sw;p.legR.rotation.x=-sw;p.armL.rotation.x=-sw*.7;p.armR.rotation.x=sw*.7;if(p.axis===0){p.root.position.x+=p.speed*p.dir*dt;p.root.position.z=nearestRoad(p.root.position.z)+p.side*6.5;if(p.root.position.x>106)p.root.position.x=-106;if(p.root.position.x<-106)p.root.position.x=106;p.root.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;}else{p.root.position.z+=p.speed*p.dir*dt;p.root.position.x=nearestRoad(p.root.position.x)+p.side*6.5;if(p.root.position.z>106)p.root.position.z=-106;if(p.root.position.z<-106)p.root.position.z=106;p.root.rotation.y=p.dir>0?0:Math.PI;}}}
 
   function itemPos(i){if(i.root)return i.root.position;if(i.mesh)return i.mesh.position;return new BABYLON.Vector3(i.x||0,0,i.z||0);}
   function canEnter(item){return item.kind==='shop'&&(item.mesh?.name==='shopHot'||item.mesh?.metadata?.interactiveShop);}
@@ -248,7 +248,7 @@
   }
   function releaseMouse(){if(document.pointerLockElement)document.exitPointerLock?.();}
   function emitSfx(name){window.dispatchEvent(new CustomEvent('egypt-sfx',{detail:{name}}));}
-  function interact(){
+  function interact(){if(window.EgyptStreetLife?.isFailed?.())return;
     if(ui.menu.style.display!=='none'||window.__V12_PROLOGUE?.running)return;
     if(modal){closeModals();return;}
     if(shopVisit){if(current?.kind==='shopExit')leaveShop();else if(current?.kind==='shopCounter'){emitSfx('interact');openShop(shopVisit.data);}return;}
@@ -350,7 +350,7 @@
   function setJoy(e){const r=ui.joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=40,len=Math.hypot(dx,dy)||1,k=Math.min(1,max/len),nx=dx*k,ny=dy*k;joyX=nx/max;joyY=-ny/max;ui.knob.style.transform=`translate(${nx}px,${ny}px)`;}
 
   function resetState(){shopVisit=null;window.EgyptShops?.leave();document.body.classList.remove('inside-shop');state={...DEFAULT};nextTargetAt=0;yaw=0;pitch=0;if(camera){camera.position.set(DEFAULT.savedX,EYE,DEFAULT.savedZ);camera.rotation.set(0,0,0);}updateHUD();}
-  function enterGame(newGame){if(newGame){localStorage.removeItem(SAVE_KEY);resetState();}else{state=loadState();camera.position.set(state.savedX,EYE,state.savedZ);yaw=0;pitch=0;camera.rotation.set(0,0,0);updateHUD();}ui.menu.style.display='none';ui.menuStatus.textContent='';startAudio();if(!TOUCH&&navigator.userActivation?.isActive)canvas.requestPointerLock?.()?.catch?.(()=>{});showToast(newGame?'بدأت يوم جديد في الحارة 🇪🇬':'رجعت لآخر مكان محفوظ');}
+  function enterGame(newGame){if(newGame){localStorage.removeItem(SAVE_KEY);resetState();}else{state=loadState();camera.position.set(state.savedX,EYE,state.savedZ);yaw=0;pitch=0;camera.rotation.set(0,0,0);updateHUD();}window.EgyptStreetLife?.begin?.(newGame);ui.menu.style.display='none';ui.menuStatus.textContent='';startAudio();if(!TOUCH&&navigator.userActivation?.isActive)canvas.requestPointerLock?.()?.catch?.(()=>{});showToast(newGame?'بدأت يوم جديد في الحارة 🇪🇬':'رجعت لآخر مكان محفوظ');}
   function setupMenu(){ui.cont.disabled=!hasSave();ui.cont.style.opacity=hasSave()?'1':'.45';ui.cont.onclick=()=>{if(hasSave())enterGame(false);};ui.newGame.onclick=()=>enterGame(true);ui.reset.onclick=()=>{localStorage.removeItem(SAVE_KEY);ui.cont.disabled=true;ui.cont.style.opacity='.45';ui.menuStatus.textContent='تم مسح الحفظ. تقدر تبدأ يوم جديد.';resetState();};if(!hasSave())ui.menuStatus.textContent='مفيش حفظ قديم لسه — ابدأ يوم جديد.';}
 
   window.EgyptLife={
@@ -359,6 +359,17 @@
       mesh.metadata={...mesh.metadata,shopName:name,shopType:type,interactiveShop:true};
       world.interactables.push({mesh,kind:'shop',name,data:{...template,name},x:mesh.position.x,z:mesh.position.z});
     },
+    streetContext:()=>({scene,camera,world,clearInput,releaseMouse,emitSfx}),
+    setJourneyFailure:reason=>{state.streetFailed=reason;clearInput();releaseMouse();saveState();},
+    journeyCheckpoint:newRun=>{
+      if(newRun||!state.journeyCheckpoint||state.journeyCheckpoint.task!==state.task){
+        const {journeyCheckpoint,streetFailed,...plain}=state;
+        if(state.task===0){plain.money+=plain.breakfastSpent;plain.breakfastBread=0;plain.breakfastFul=false;plain.breakfastSpent=0;plain.breakfastDelivered=false;}
+        state.journeyCheckpoint=plain;
+      }
+      return {...state.journeyCheckpoint};
+    },
+    retryJourney:()=>{const checkpoint=state.journeyCheckpoint;closeModals();state={...state,...checkpoint,streetFailed:null,journeyCheckpoint:checkpoint};camera.position.set(-30.3,EYE,-30.3);yaw=0;pitch=0;camera.rotation.set(0,0,0);nextTargetAt=0;clearInput();updateHUD();saveState();},
     visitHome,
     doorSound:()=>emitSfx('door'),
     modalOpen:()=>modal,

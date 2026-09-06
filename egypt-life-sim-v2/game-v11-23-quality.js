@@ -1,10 +1,10 @@
 (() => {
   'use strict';
-  const VERSION='11.23.0',B=BABYLON;
+  const VERSION='11.24.0',B=BABYLON;
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const api=window.EgyptQuality={ready:false,version:VERSION};
   const tiles=new Map(),materials=new Map();
-  let scene,atlas,shadow,sun,quality='balanced',nextShadow=0;
+  let scene,atlas,shadow,sun,quality='balanced',nextShadow=0,casters=[];
   const stats={people:0,textured:0,food:0,profileMeshes:0};
   const C=hex=>B.Color3.FromHexString(hex);
   function texture(index,repeat=1){
@@ -220,7 +220,7 @@
     sun=scene.getLightByName('sun');
     for(const light of scene.lights)if(light instanceof B.HemisphericLight){light.groundColor=new B.Color3(.52,.49,.44);light.diffuse=new B.Color3(.96,.98,1);}
     if(sun){sun.diffuse=new B.Color3(1,.94,.83);shadow=new B.ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=false;shadow.filteringQuality=B.ShadowGenerator.QUALITY_LOW;shadow.bias=.0006;shadow.normalBias=.025;shadow.darkness=.18;sun.shadowMinZ=1;sun.shadowMaxZ=120;sun.shadowFrustumSize=70;}
-    const casters=scene.meshes.filter(q=>q.name==='building'||/^v12_building_/.test(q.name)||q.metadata?.quality||/^(carBody|vanBody|busBody)/.test(q.name));
+    casters=scene.meshes.filter(q=>q.name==='building'||/^v12_building_/.test(q.name)||q.metadata?.quality||/^(carBody|vanBody|busBody)/.test(q.name));
     scene.onBeforeRenderObservable.add(()=>{
       if(!shadow||performance.now()<nextShadow)return;nextShadow=performance.now()+600;
       const c=scene.activeCamera;if(!c)return;sun.position.copyFrom(c.position.subtract(sun.direction.scale(32)));
@@ -243,7 +243,7 @@
     const button=document.createElement('button');button.id='qualityToggle';button.type='button';button.onclick=()=>setQuality(quality==='high'?'balanced':'high');button.title='تغيير جودة الصورة — Q';window.addEventListener('keydown',e=>{if(e.code==='KeyQ'&&!e.repeat&&!/INPUT|TEXTAREA/.test(e.target.tagName))button.click();});document.getElementById('hud').appendChild(button);
     const style=document.createElement('style');style.textContent='#qualityToggle{position:absolute;top:82px;left:116px;pointer-events:auto;padding:8px 10px;color:#f3e5ca;background:#25261fe8;border:1px solid #796d50;border-radius:10px;font:700 11px Tahoma;cursor:pointer}@media(max-width:760px){#qualityToggle{top:64px;left:51px;padding:8px 7px;font-size:9px;max-width:130px}}';document.head.appendChild(style);
     setQuality(localStorage.getItem('egypt-graphics')||'balanced');
-    api.shop=shop;api.material=material;api.bread=bread;api.pot=pot;api.setQuality=setQuality;api.state=()=>({ready:true,version:VERSION,quality,...stats,textures:tiles.size,shadowSize:shadow?.mapSize,renderWidth:scene.getEngine().getRenderWidth(),renderHeight:scene.getEngine().getRenderHeight()});
+    api.addCasters=meshes=>casters.push(...meshes);api.shop=shop;api.material=material;api.bread=bread;api.pot=pot;api.setQuality=setQuality;api.state=()=>({ready:true,version:VERSION,quality,...stats,textures:tiles.size,shadowSize:shadow?.mapSize,renderWidth:scene.getEngine().getRenderWidth(),renderHeight:scene.getEngine().getRenderHeight()});
     window.__EGYPT_QUALITY={ready:true,version:VERSION};console.info('Egyptian visual quality ready',api.state());
   }
   install().catch(error=>{api.error=String(error);console.error(error);const q=document.getElementById('errorBox');if(q){q.textContent='تعذّر تجهيز جودة الصورة: '+error.message;q.style.display='block';}});
