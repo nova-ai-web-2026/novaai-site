@@ -53,7 +53,7 @@
     const reshape=(name,rows,m)=>{const q=get(name);if(!q)return;profile(q,rows,24,name.includes('torso')?.014:0);q.position.set(0,0,0);q.scaling.set(1,1,1);assign(q,m);};
     reshape('v9p_torso',[[-.11,.195,.12],[0,.20,.13],[.18,.205,.14],[.38,female?.22:.25,.145],[.53,female?.235:.267,.14],[.62,.19,.12],[.69,.079,.079]],shirt);
     reshape('v9p_pelvis',[[-.15,.01,.01],[-.12,.215,.135],[.07,.215,.14],[.21,.185,.13]],pants);
-    const waist=get('v9p_waist');if(waist){waist.scaling.set(.98,.7,.94);assign(waist,shirt);}
+    const waist=get('v9p_waist');if(waist)waist.setEnabled(false);
     for(const side of ['L','R']){
       const shoulder=get('v9_shoulder'+side);shoulder.position.x=(side==='L'?-1:1)*(female?.25:.272);
       for(const part of ['shoulder','elbow','knee'])get('v9p_'+part+side)?.setEnabled(false);
@@ -93,7 +93,8 @@
       for(const y of [.12,.26,.4,.53])sphere('quality_button_'+visual.uniqueId,spine,0,y,-.155,.011,.011,.009,material('button',-1,'#c2bcb0'),8);
       box('quality_pocket_'+visual.uniqueId,.105,.12,.012,spine,.128,.40,-.147,shirt);
     }
-    const tunic=get('people_tunic');if(tunic){profile(tunic,[[-.25,.28,.15],[-.05,.245,.145],[.15,.21,.14],[.35,.2,.13]],28,.018);tunic.position.set(0,.04,0);tunic.scaling.set(1,1,1);assign(tunic,shirt);}
+    const tunic=get('people_tunic');if(tunic){profile(tunic,[[-.25,.32,.21],[-.05,.265,.18],[.15,.215,.15],[.35,.2,.13]],28,.018);tunic.position.set(0,.04,0);tunic.scaling.set(1,1,1);assign(tunic,shirt);}
+    if(/^v9_personVisual_\d+$/.test(visual.name))visual.position.y=.23;
     const storyRole=head.metadata?.storyActor;if(storyRole)for(const node of visual.getChildMeshes())node.metadata={...node.metadata,storyActor:storyRole};
     visual.metadata={...visual.metadata,realisticBody:VERSION};stats.people++;
   }
@@ -182,7 +183,7 @@
     for(const [i,root] of scene.transformNodes.filter(n=>/^v12_ped_\d+$/.test(n.name)).entries()){
       const source=scene.getTransformNodeByName('v9_personVisual_'+(i%3===1?5:i%3===2?2:0));if(!source)continue;
       for(const mesh of root.getChildMeshes())mesh.setEnabled(false);
-      const model=source.clone('quality_neighbour_'+i,root,false);model.position.set(0,.15,0);model.rotation.set(0,Math.PI,0);
+      const model=source.clone('quality_neighbour_'+i,root,false);model.position.set(0,.23,0);model.rotation.set(0,Math.PI,0);
       const nodes=model.getDescendants(),joint=name=>nodes.find(n=>new RegExp('v9_'+name+'_\\d+$').test(n.name)),hips=[joint('hipL'),joint('hipR')],arms=[joint('shoulderL'),joint('shoulderR')];
       scene.onBeforeRenderObservable.add(()=>{if(B.Vector3.DistanceSquared(root.position,scene.activeCamera.position)>2500)return;const stride=Math.sin(performance.now()*.005+i)*.32;hips.forEach((n,k)=>{if(n)n.rotation.x=k?stride:-stride;});arms.forEach((n,k)=>{if(n)n.rotation.x=k?-stride*.6:stride*.6;});});stats.people++;
     }
@@ -203,8 +204,8 @@
       else if(/^(bread$|v8_baladiLoaf|frontage_breadLoaf)/.test(q.name)){
         q.computeWorldMatrix(true);const pos=q.getAbsolutePosition().clone(),bb=q.getBoundingInfo().boundingBox,w=Math.min(.38,bb.extendSizeWorld.x*2),newBread=bread('quality_streetBread',null,w,q.uniqueId%31);newBread.position.copyFrom(pos);newBread.position.y-=.025;q.setEnabled(false);
       }else if(q.name==='frontage_fulPot'){
-        const p=pot('quality_cartPot',null,q.position.x,.975,q.position.z,.59,.67);q.setEnabled(false);
-        const lid=B.MeshBuilder.CreateCylinder('quality_cartLid',{diameter:.43,height:.025,tessellation:32},scene);lid.position.set(q.position.x,1.66,q.position.z);assign(lid,material('steel',8,'#e3e5e3',1,true));
+        const p=pot('quality_cartPot',null,q.position.x,.975,q.position.z,.59,.67);profile(p,[[0,.20,.20],[.06,.26,.26],[.18,.295,.295],[.38,.295,.295],[.49,.22,.22],[.55,.13,.13],[.65,.12,.12],[.67,.12,.12]],32);p.getChildMeshes().find(m=>m.name.endsWith('_rim'))?.scaling.setAll(.58);q.setEnabled(false);
+        const lid=B.MeshBuilder.CreateCylinder('quality_cartLid',{diameter:.27,height:.025,tessellation:32},scene);lid.position.set(q.position.x,1.66,q.position.z);assign(lid,material('steel',8,'#e3e5e3',1,true));
         sphere('quality_lidGrip',null,q.position.x,1.70,q.position.z,.065,.05,.065,material('handle',-1,'#383833'),12);
       }else if(/^frontage_pot(Neck|Lid)/.test(q.name)){q.setEnabled(false);
       }else if(/^(treeCrown|street_plant|v12_tree_)/.test(q.name)){

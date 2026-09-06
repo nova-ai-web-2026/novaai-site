@@ -81,7 +81,7 @@ try{
   for(const [slot,index] of [0,1,5,7].entries()){
    const original=scene.getTransformNodeByName('v9_personVisual_'+index);
    const model=original.clone('testPerson_'+index,window.__testPeopleRoot,false);
-   model.position.set(slot*1.2,0,0);model.rotation.y=0;
+   model.position.set(slot*1.2,.23,0);model.rotation.y=0;for(const joint of model.getDescendants().filter(n=>!n.getTotalVertices&&/v9_(pelvis|spine|hip|knee|ankle|shoulder|elbow)/.test(n.name)))joint.rotation.set(0,0,0);
   }
   const camera=scene.activeCamera;camera.position.set(1.8,1.6,-4.7);camera.setTarget(new BABYLON.Vector3(1.8,1.1,0));camera.fov=.9;
   window.__testPeopleRoot.position.set(-24,0,-24);camera.position.addInPlace(window.__testPeopleRoot.position);camera.setTarget(new BABYLON.Vector3(-22.2,1.1,-24));
