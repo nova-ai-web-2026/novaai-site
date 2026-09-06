@@ -1,0 +1,26 @@
+name: Verify home and living streets
+on:
+  workflow_call:
+    inputs:
+      game_url:
+        type: string
+        default: ''
+permissions:
+  contents: read
+jobs:
+  journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        mobile: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0
+      - if: inputs.game_url == ''
+        run: python3 -m http.server 4173 --directory egypt-life-sim-v2 >/tmp/journey.log 2>&1 &
+      - run: node scripts/test-egypt-life-journey.mjs
+        env:
+          GAME_TEST_URL: ${{ inputs.game_url }}
+          GAME_TEST_MOBILE: ${{ matrix.mobile }}

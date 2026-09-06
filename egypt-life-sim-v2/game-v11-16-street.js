@@ -97,7 +97,7 @@
     for(const road of [-72,-24,24,72])for(let i=0;i<3;i++){
       const p=box('roadRepair',1.1+random(),.006,2+random()*2,road-2+random()*4,.018,-65+i*52+random()*8,asphalt);p.rotation.y=random()*.18;
     }
-    window.__EGYPT_STREET_FIX={ready:true,version:'11.23.0',signs,buildings:buildings.length,details};
+    window.__EGYPT_STREET_FIX={ready:true,version:'11.24.0',signs,buildings:buildings.length,details};
   }
   install().catch(error=>{window.__EGYPT_STREET_FIX.error=String(error);console.error(error);});
 })();

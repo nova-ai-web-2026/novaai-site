@@ -30,6 +30,8 @@ jobs:
     uses: ./.github/workflows/test-egypt-life-street.yml
   shop-entry:
     uses: ./.github/workflows/test-egypt-life-shop-entry.yml
+  journey:
+    uses: ./.github/workflows/test-egypt-life-journey.yml
   validate-release:
     runs-on: ubuntu-latest
     steps:
@@ -48,7 +50,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: [validate-release, sound, start, gameplay, mobile, street, errand, story-review, shop-entry]
+    needs: [validate-release, sound, start, gameplay, mobile, street, errand, story-review, shop-entry, journey]
     permissions:
       contents: read
       pages: write
@@ -111,5 +113,11 @@ jobs:
   published-shop-entry:
     needs: deploy
     uses: ./.github/workflows/test-egypt-life-shop-entry.yml
+    with:
+      game_url: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/
+
+  published-journey:
+    needs: deploy
+    uses: ./.github/workflows/test-egypt-life-journey.yml
     with:
       game_url: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/
