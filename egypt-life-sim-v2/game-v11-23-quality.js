@@ -223,7 +223,7 @@
     casters=scene.meshes.filter(q=>q.name==='building'||/^v12_building_/.test(q.name)||q.metadata?.quality||/^(carBody|vanBody|busBody)/.test(q.name));
     scene.onBeforeRenderObservable.add(()=>{
       if(!shadow||performance.now()<nextShadow)return;nextShadow=performance.now()+600;
-      const c=scene.activeCamera;if(!c)return;sun.position.copyFrom(c.position.subtract(sun.direction.scale(32)));
+      const c=scene.activeCamera;if(!c)return;sun.shadowFrustumSize=c.position.x<-125&&c.position.z<-125?22:70;sun.position.copyFrom(c.position.subtract(sun.direction.scale(32)));
       const indoor=!!window.EgyptShops?.active();
       const list=(indoor?scene.getTransformNodeByName('shopInterior')?.getChildMeshes(false)||[]:casters).filter(q=>q.isEnabled()&&q.isVisible&&q.visibility>0&&q.getTotalVertices()>0&&!/floor|Floor|title|Wall|Grout|Wainscot|ceiling|Ceiling/i.test(q.name)&&B.Vector3.DistanceSquared(q.getAbsolutePosition(),c.position)<(indoor?400:1800)).sort((a,b)=>B.Vector3.DistanceSquared(a.getAbsolutePosition(),c.position)-B.Vector3.DistanceSquared(b.getAbsolutePosition(),c.position));
       shadow.getShadowMap().renderList=list.slice(0,quality==='high'?240:140);

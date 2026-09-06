@@ -59,10 +59,10 @@ try{
  // The actual furniture must leave a continuous route from the living room to the door.
  await teleport(-150,-151);await walk(5.6);assert.ok((await pose()).z>-145.5);
  console.log('HOME_ROUTE_PASSED',JSON.stringify({mobile,home}));
- const id=await bumpFixture();await bump();const blocked=await pose();assert.ok(blocked.z<-44.70,'walked through the body');assert.equal((await street()).encounter.id,id);assert.match(await page.locator('#streetNotice').innerText(),/خلي بالك|حاسب|وسع/);await evidence('pedestrianBump');
+ const id=await bumpFixture();await bump();const blocked=await pose();assert.ok(blocked.z<-44.70,'walked through the body');assert.equal((await street()).encounter.id,id);assert.match(await page.locator('#streetNotice').innerText(),/خلي بالك|حاسب|وسع/);
  await walk(1.2,-1);await page.waitForFunction(()=>!EgyptStreetLife.inspect().encounter);assert.equal((await street()).failed,false);
  await buy('bread');assert.equal((await state()).money,288);assert.equal((await state()).breakfastBread,4);
- await bumpFixture();await page.waitForTimeout(3200);await bump();
+ await bumpFixture();await page.waitForTimeout(3200);await bump();await evidence('pedestrianBump');
  await page.locator('#streetLoss').waitFor({state:'visible',timeout:15000});assert.ok((await state()).streetFailed);await evidence('journeyLost');
  const stopped=await pose(),release=await hold();await page.waitForTimeout(500);await release();assert.deepEqual(await pose(),stopped,'failed round still accepts movement');
  if(mobile){await page.reload({waitUntil:'domcontentloaded'});await ready();await click('#continueBtn');await page.locator('#streetLoss').waitFor({state:'visible'});assert.equal((await street()).failed,true,'reload bypassed the loss');}
@@ -71,8 +71,8 @@ try{
  await roadFixture('red');const redRelease=await hold();try{await page.locator('#streetLoss').waitFor({state:'visible',timeout:25000});}finally{await redRelease();}
  assert.match(await page.locator('#streetLoss p').innerText(),/حمرا/);await retry();
  await roadFixture('green');await page.waitForFunction(()=>EgyptStreetLife.inspect().signals.find(s=>s.id==='station').phase==='walk',null,{timeout:15000});
- assert.ok((await carState()).velocity<.01);await evidence('greenCrossing');
- const crossed=await walk(12.1);assert.ok(crossed.x>-18.2);
+ assert.ok((await carState()).velocity<.01);await walk(2);await evidence('greenCrossing');
+ const crossed=await walk(10.1);assert.ok(crossed.x>-18.2);
  await page.waitForFunction(()=>window.__journeyCar.velocity>.2,null,{timeout:20000});console.log('SIGNAL_WAIT_CROSS_RESUME_PASSED',JSON.stringify({mobile,crossed,car:await carState()}));
  await roadFixture('yield');const approach=await carState();assert.ok(approach.velocity>0);
  await page.waitForFunction(()=>window.__journeyCar.velocity<.01,null,{timeout:60000});const stoppedCar=await carState();assert.ok(stoppedCar.z>approach.z&&stoppedCar.z+stoppedCar.length/2<=-81.73,'car did not brake before the crossing');

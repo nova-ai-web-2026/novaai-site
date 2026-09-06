@@ -132,11 +132,11 @@
     const handle=box('doorHandle',.20,.035,.09,0,0,0,M.brass);handle.parent=door;handle.position.set(.80,-.05,-.10);
     for(let i=0;i<7;i++)box('acVent',1.17,.015,.018,-145.3,2.28+i*.024,-156.622,M.dark);
     hide(['fanHead','fanPole']);
-    cylinder('fanBase',.51,.065,-144.5,.15,-144.2,M.cream);cylinder('fanStem',.055,1.10,-144.5,.72,-144.2,M.metal);
-    const fan=cylinder('fanMotor',.18,.23,-144.5,1.48,-144.2,M.cream);fan.rotation.x=Math.PI/2;
-    for(const radius of [.10,.28,.45]){const ring=B.MeshBuilder.CreateTorus('fanRing',{diameter:radius*2,thickness:.009,tessellation:40},scene);finish(ring,'fanGuard',-144.5,1.48,-144.06,M.metal);ring.rotation.x=Math.PI/2;}
-    for(let i=0;i<8;i++){const a=i*Math.PI/4;tube('fanSpoke',[[-144.5,1.48,-144.025],[-144.5+Math.cos(a)*.45,1.48+Math.sin(a)*.45,-144.06]],.005,M.metal);}
-    for(let i=0;i<3;i++){const a=i*Math.PI*2/3,blade=round('fanBlade',.18,.34,.025,.012,-144.5+Math.sin(a)*.20,1.48+Math.cos(a)*.20,-144.13,M.green);blade.rotation.z=-a;}
+    cylinder('fanBase',.51,.065,-151.5,.15,-145.2,M.cream);cylinder('fanStem',.055,1.10,-151.5,.72,-145.2,M.metal);
+    const fan=cylinder('fanMotor',.18,.23,-151.5,1.48,-145.2,M.cream);fan.rotation.x=Math.PI/2;
+    for(const radius of [.10,.28,.45]){const ring=B.MeshBuilder.CreateTorus('fanRing',{diameter:radius*2,thickness:.009,tessellation:40},scene);finish(ring,'fanGuard',-151.5,1.48,-145.06,M.metal);ring.rotation.x=Math.PI/2;}
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;tube('fanSpoke',[[-151.5,1.48,-145.025],[-151.5+Math.cos(a)*.45,1.48+Math.sin(a)*.45,-145.06]],.005,M.metal);}
+    for(let i=0;i<3;i++){const a=i*Math.PI*2/3,blade=round('fanBlade',.18,.34,.025,.012,-151.5+Math.sin(a)*.20,1.48+Math.cos(a)*.20,-145.13,M.green);blade.rotation.z=-a;}
     const plant=EgyptQuality.pot('home24_planter',null,-142,.12,-152.8,.39,.42);built.push(...plant.getChildMeshes(false),plant);
     for(let i=0;i<8;i++){const a=i*Math.PI/4,stem=[[-142,.50,-152.8],[-142+Math.sin(a)*.19,.93+i%3*.13,-152.8+Math.cos(a)*.19]];tube('plantStem',stem,.012,M.green);const tip=stem[1],leaf=finish(B.MeshBuilder.CreateSphere('leaf',{diameter:1,segments:12},scene),'plantLeaf',...tip,M.green);leaf.scaling.set(.16,.33,.045);leaf.rotation.z=-Math.sin(a)*.7;leaf.rotation.y=a;}
   }
