@@ -22,6 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  story-review:
+    uses: ./.github/workflows/test-scene-story-audit.yml
   errand:
     uses: ./.github/workflows/test-egypt-life-errand.yml
   street:
@@ -44,7 +46,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: [validate-release, sound, start, gameplay, mobile, street, errand]
+    needs: [validate-release, sound, start, gameplay, mobile, street, errand, story-review]
     permissions:
       contents: read
       pages: write

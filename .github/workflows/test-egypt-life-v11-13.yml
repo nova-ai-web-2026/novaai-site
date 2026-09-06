@@ -38,7 +38,7 @@ jobs:
           const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 
           async function inspectGame(page,label){
-            await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&window.__V1113_HUD?.gameStarted===true,{timeout:60000});
+            await page.waitForFunction(()=>getComputedStyle(document.getElementById('menu')).display==='none'&&window.__V1113_HUD?.gameStarted===true,null,{timeout:60000});
             await page.waitForTimeout(900);
             const result=await page.evaluate(()=>{
               const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0];
@@ -94,7 +94,7 @@ jobs:
           const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
           const errors=[];page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
           await page.goto('http://127.0.0.1:4173/?ci=v1113-new',{waitUntil:'domcontentloaded'});
-          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true&&window.__V1113_HUD?.installed===true,{timeout:60000});
+          await page.waitForFunction(()=>window.__V1112_UI?.previewActive===true&&window.__V1113_HUD?.installed===true,null,{timeout:60000});
           const before=await page.evaluate(()=>({menu:getComputedStyle(document.getElementById('menu')).display,hud:getComputedStyle(document.getElementById('hud')).visibility,preview:window.__V1112_UI?.previewActive,meshes:window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0]?.meshes?.length||0}));
           if(before.menu==='none'||before.hud!=='hidden'||!before.preview||before.meshes<50)throw new Error('Start screen unhealthy '+JSON.stringify(before));
           await page.screenshot({path:'v1113-start.png',fullPage:true});
@@ -105,12 +105,15 @@ jobs:
           if(overlap)throw new Error('Toast still overlaps mission');
           await page.screenshot({path:'v1113-game.png',fullPage:true});
           if(errors.length)throw new Error(errors.join('\n'));
+          // The next scenario has its own page; release the completed WebGL
+          // scene so software rendering does not compete with the old-save boot.
+          await page.close();
 
           const old=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
           const oldErrors=[];old.on('pageerror',e=>oldErrors.push('pageerror: '+e.message));
           await old.addInitScript(()=>localStorage.setItem('hayat-masr-v4',JSON.stringify({money:300,hunger:84,energy:92,mood:76,minute:500,day:1,task:0,worked:0,savedX:0,savedZ:0})));
           await old.goto('http://127.0.0.1:4173/?ci=v1113-old-save',{waitUntil:'domcontentloaded'});
-          await old.waitForFunction(()=>window.__V1113_HUD?.installed===true&&window.__V119_READY===true,{timeout:60000});
+          await old.waitForFunction(()=>window.__V1113_HUD?.installed===true&&window.__V119_READY===true,null,{timeout:60000});
           await old.tap('#continueBtn');
           const repaired=await inspectGame(old,'old-save');
           if(!repaired.marker?.spawnRepaired)throw new Error('Blocked old save was not repaired '+JSON.stringify(repaired));

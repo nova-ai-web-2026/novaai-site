@@ -32,7 +32,7 @@
     const proto=window.BABYLON?.UniversalCamera?.prototype;if(!proto)return;
     proto.moveWithCollisions=function(delta){
       const sc=this.getScene(),radius=.38;
-      const blocked=(x,z)=>{if(Math.abs(x)>BOUND||Math.abs(z)>BOUND)return true;for(const mesh of sc.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.08||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};
+      const blocked=(x,z)=>{if(Math.abs(x)>BOUND||Math.abs(z)>BOUND)return true;for(const mesh of sc.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.18||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};
       const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;
     };
   }
@@ -82,7 +82,14 @@
     for(let f=1;f<Math.min(floors,6);f++)for(let s=-1;s<=1;s+=2){box('balcony_'+i+'_'+f+'_'+s,3.0,.16,1.05,x+s*w*.27,f*3+.25,front-.45,mat('balcony','#9d8a74'));box('rail_'+i+'_'+f+'_'+s,3.0,.72,.05,x+s*w*.27,f*3+.62,front-.94,mat('rail','#565651'));counters.balconies++;if((i+f+s)%3===0){for(let q=0;q<3;q++){box('laundry_'+i+'_'+f+'_'+s+'_'+q,.5,.65,.035,x+s*w*.27-.62+q*.62,f*3+.28,front-1.0,mat('laundry'+q,['#b95c50','#52749a','#d0ad4c'][q]));counters.laundry++;}}}
     for(let q=0;q<2;q++){box('ac_'+i+'_'+q,.92,.54,.34,x-w*.22+q*w*.44,2.4+q*2.8,front-.2,mat('ac','#d8d5ca'));counters.acUnits++;}
     if(i%2===0){const dish=reg(BABYLON.MeshBuilder.CreateDisc(P+'dish_'+i,{radius:.64,tessellation:22,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene));dish.position.set(x-2,h+.85,z);dish.rotation.x=Math.PI*.36;dish.material=mat('dish','#b5b3a8');counters.satelliteDishes++;cyl('tank_'+i,1.25,1.25,x+2,h+.7,z+1.2,mat('tank','#292b2a'),16);counters.rooftopTanks++;}
-    if(shopName){box('shopfront_'+i,w*.74,2.55,.35,x,1.3,front-.28,mat('shopfront',['#536b55','#70483a','#43647a','#735f3d'][i%4]));sign('shop_'+i,shopName,x,2.78,front-.5,Math.min(6,w*.65),.72,['#315d48','#7d4b33','#315f78','#6e5c32'][i%4],Math.PI);counters.mixedUse++;}
+    if(shopName){
+      const facade=box('shopfront_'+i,w*.74,2.55,.35,x,1.3,front-.28,mat('shopfront',['#536b55','#70483a','#43647a','#735f3d'][i%4]));
+      sign('shop_'+i,shopName,x,2.78,front-.5,Math.min(6,w*.65),.72,['#315d48','#7d4b33','#315f78','#6e5c32'][i%4],Math.PI);
+      const type=/بقالة|ألبان/.test(shopName)?'grocery':/فرن/.test(shopName)?'bakery':/عصير/.test(shopName)?'juice':/كشري/.test(shopName)?'koshary':/خضار/.test(shopName)?'produce':/قهوة/.test(shopName)?'ahwa':null;
+      if(type)window.EgyptLife.registerShop(facade,shopName,type);
+      else{facade.metadata={closedShop:true,shopName};sign('closed_'+i,'مغلق',x,1.6,front-.5,1.25,.4,'#564d42',Math.PI);}
+      counters.mixedUse++;
+    }
   }
   function addMicrobus(x,z,ry,i){
     const root=new BABYLON.TransformNode(P+'microbus_'+i,scene);root.position.set(x,0,z);root.rotation.y=ry;
