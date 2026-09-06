@@ -55,10 +55,10 @@ jobs:
           page.on('response',r=>{if(r.status()===404&&r.url().includes('/audio/v11-8/'))errors.push('404 local SFX: '+r.url());});
 
           await page.goto('http://127.0.0.1:4173/?ci=v1116-direct-media',{waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.__V1116_SFX?.version==='11.16'&&!!window.__V1116_SFX_API,{timeout:55000});
+          await page.waitForFunction(()=>window.__V1116_SFX?.version==='11.16'&&!!window.__V1116_SFX_API,null,{timeout:55000});
           await page.tap('#newGameBtn');
-          await page.waitForFunction(()=>document.body.classList.contains('game-started'),{timeout:45000});
-          await page.waitForFunction(()=>window.__V1116_SFX_API.state().localReady===true,{timeout:12000});
+          await page.waitForFunction(()=>document.body.classList.contains('game-started'),null,{timeout:45000});
+          await page.waitForFunction(()=>window.__V1116_SFX_API.state().localReady===true,null,{timeout:12000});
           await page.waitForTimeout(250);
 
           const initial=await page.evaluate(()=>window.__V1116_SFX_API.state());

@@ -10,6 +10,7 @@
   function texture(index,repeat=1){
     const key=index+':'+repeat;if(tiles.has(key))return tiles.get(key);
     const t=new B.DynamicTexture('quality_surface_'+key,{width:512,height:512},scene,true),c=t.getContext(),cell=atlas.width/4;
+    c.fillStyle=index===4?'#d9d1bf':index===6?'#626361':'#ffffff';c.fillRect(0,0,512,512);c.globalAlpha=index===4?.38:index===6?.70:1;
     c.drawImage(atlas,(index%4)*cell+2,Math.floor(index/4)*cell+2,cell-4,cell-4,0,0,512,512);
     t.update();t.wrapU=t.wrapV=B.Texture.WRAP_ADDRESSMODE;t.uScale=t.vScale=repeat;t.anisotropicFilteringLevel=8;tiles.set(key,t);return t;
   }
@@ -30,7 +31,7 @@
     for(let r=0;r<rows.length;r++)for(let i=0;i<=segments;i++){
       const a=i/segments*Math.PI*2,[y,rx,rz]=rows[r],w=1+wrinkle*Math.sin(a*5+y*18);
       positions.push(Math.sin(a)*rx*w,y,Math.cos(a)*rz*w);uvs.push(i/segments,r/(rows.length-1));
-      if(r<rows.length-1&&i<segments){const p=r*(segments+1)+i,n=p+segments+1;indices.push(p,p+1,n,p+1,n+1,n);}
+      if(r<rows.length-1&&i<segments){const p=r*(segments+1)+i,n=p+segments+1;indices.push(p,n,p+1,p+1,n,n+1);}
     }
     B.VertexData.ComputeNormals(positions,indices,normals);const v=new B.VertexData();v.positions=positions;v.indices=indices;v.normals=normals;v.uvs=uvs;mesh.makeGeometryUnique();v.applyToMesh(mesh);stats.profileMeshes++;
     mesh.isPickable=false;mesh.receiveShadows=true;return mesh;
@@ -93,6 +94,7 @@
       box('quality_pocket_'+visual.uniqueId,.105,.12,.012,spine,.128,.40,-.147,shirt);
     }
     const tunic=get('people_tunic');if(tunic){profile(tunic,[[-.25,.28,.15],[-.05,.245,.145],[.15,.21,.14],[.35,.2,.13]],28,.018);tunic.position.set(0,.04,0);tunic.scaling.set(1,1,1);assign(tunic,shirt);}
+    const storyRole=head.metadata?.storyActor;if(storyRole)for(const node of visual.getChildMeshes())node.metadata={...node.metadata,storyActor:storyRole};
     visual.metadata={...visual.metadata,realisticBody:VERSION};stats.people++;
   }
   // Baked bread has a thin, irregular rim and a lightly inflated centre.
@@ -105,6 +107,7 @@
     }
     const offset=p.length/3;
     for(let j=0;j<=segments;j++){const a=j/segments*Math.PI*2,edge=1+.045*Math.sin(a*3+seed)+.025*Math.sin(a*7-seed);p.push(Math.cos(a)*radius*edge,.005,Math.sin(a)*radius*edge);uv.push(j/segments,0);if(j<segments){const k=rings*(segments+1)+j;idx.push(k,k+1,offset+j,k+1,offset+j+1,offset+j);}}
+    for(let i=0;i<idx.length;i+=3){const swap=idx[i+1];idx[i+1]=idx[i+2];idx[i+2]=swap;}
     B.VertexData.ComputeNormals(p,idx,n);const data=new B.VertexData();Object.assign(data,{positions:p,normals:n,uvs:uv,indices:idx});data.applyToMesh(q);q.parent=parent;assign(q,material('baladiBread',0,'#ffffff'));q.material.backFaceCulling=false;q.isPickable=false;q.metadata={...q.metadata,realisticFood:'baladi-bread'};stats.food++;return q;
   }
   function pot(name,parent,x,y,z,diameter=.48,height=.48){
@@ -185,14 +188,14 @@
     }
   }
   function world(){
-    for(const visual of scene.transformNodes.filter(n=>/^v9_personVisual_\d+$/.test(n.name)||/^storyRig_/.test(n.name)))refineRig(visual);
+    for(const visual of scene.transformNodes.filter(n=>/^v9_personVisual_\d+$/.test(n.name)||/^storyRig_(hero|mother|vendor)$/.test(n.name)))refineRig(visual);
     expandedPeople();
     for(const q of [...scene.meshes]){
       if(!q.isEnabled()||q.metadata?.quality||q.metadata?.readableArabic)continue;
       if(q.name==='building'||/^v12_building_/.test(q.name)){
         const brick=q.material.name.includes('Brick')||q.material.name.includes('exposedBrick');q.computeWorldMatrix(true);const h=q.getBoundingInfo().boundingBox.extendSizeWorld.y*2;
         assign(q,material('facade',brick?5:4,brick?'#c4afa0':'#e9ddc7'));surfaceUV(q,brick?.7:2.4);
-      }else if(/^(road[HV]|v12_(road|northMain|eastMain|northLane|eastLane|northCross|eastCross))/.test(q.name)){assign(q,material('asphalt',6,'#a6a6a0'));surfaceUV(q,1.8);}
+      }else if(/^(road[HV]|v12_(road|northMain|eastMain|northLane|eastLane|northCross|eastCross))/.test(q.name)){assign(q,material('asphalt',6,'#a6a6a0'));surfaceUV(q,.45);}
       else if(/^(walk[HV]|v12_(walk|northWalk|eastWalk|homeFloor|balconyFloor))/.test(q.name)){assign(q,material('pavement',7,'#d4ccbb'));surfaceUV(q,.8);}
       else if(/^v12_homeWall/.test(q.name)){assign(q,material('homeWall',4,'#e7dfcd'));surfaceUV(q,2.4);}
       else if(/^(v12_homeDoor|v12_diningTop|v12_coffeeTable|v12_chair|v12_bedBase)/.test(q.name))assign(q,material('homeWood',9,'#b3a38c',2));
@@ -211,11 +214,11 @@
     const cart=scene.getMeshByName('cart');if(cart)assign(cart,material('cartPaint',11,'#c4c1a4',1));
   }
   function lighting(){
-    const ipc=scene.imageProcessingConfiguration;ipc.toneMappingEnabled=true;ipc.toneMappingType=B.ImageProcessingConfiguration.TONEMAPPING_ACES;ipc.exposure=1.05;ipc.contrast=1.04;scene.ambientColor=new B.Color3(.025,.025,.025);
+    const ipc=scene.imageProcessingConfiguration;ipc.toneMappingEnabled=true;ipc.toneMappingType=B.ImageProcessingConfiguration.TONEMAPPING_ACES;ipc.exposure=1.20;ipc.contrast=1.01;scene.ambientColor=new B.Color3(.025,.025,.025);
     scene.getLightByName('v9_sun')?.setEnabled(false);
     sun=scene.getLightByName('sun');
-    for(const light of scene.lights)if(light instanceof B.HemisphericLight){light.groundColor=new B.Color3(.30,.28,.24);light.diffuse=new B.Color3(.81,.88,.97);}
-    if(sun){sun.diffuse=new B.Color3(1,.94,.83);shadow=new B.ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=true;shadow.filteringQuality=B.ShadowGenerator.QUALITY_LOW;shadow.bias=.0006;shadow.normalBias=.025;shadow.darkness=.18;sun.shadowMinZ=1;sun.shadowMaxZ=120;sun.shadowFrustumSize=70;}
+    for(const light of scene.lights)if(light instanceof B.HemisphericLight){light.groundColor=new B.Color3(.52,.49,.44);light.diffuse=new B.Color3(.96,.98,1);}
+    if(sun){sun.diffuse=new B.Color3(1,.94,.83);shadow=new B.ShadowGenerator(1024,sun);shadow.usePercentageCloserFiltering=false;shadow.filteringQuality=B.ShadowGenerator.QUALITY_LOW;shadow.bias=.0006;shadow.normalBias=.025;shadow.darkness=.18;sun.shadowMinZ=1;sun.shadowMaxZ=120;sun.shadowFrustumSize=70;}
     const casters=scene.meshes.filter(q=>q.name==='building'||/^v12_building_/.test(q.name)||q.metadata?.quality||/^(carBody|vanBody|busBody)/.test(q.name));
     scene.onBeforeRenderObservable.add(()=>{
       if(!shadow||performance.now()<nextShadow)return;nextShadow=performance.now()+600;
@@ -228,7 +231,7 @@
   function setQuality(value){
     quality=value==='high'?'high':'balanced';try{localStorage.setItem('egypt-graphics',quality);}catch{}
     const dpr=Math.min(devicePixelRatio||1,quality==='high'?2:1.25);scene.getEngine().setHardwareScalingLevel(1/dpr);
-    if(shadow)shadow.mapSize=quality==='high'?2048:1024;
+    if(shadow){shadow.mapSize=quality==='high'?2048:1024;shadow.usePercentageCloserFiltering=quality==='high';shadow.getShadowMap().refreshRate=quality==='high'?1:3;}
     const button=document.getElementById('qualityToggle');if(button){button.textContent='الجودة: '+(quality==='high'?'عالية':'متوازنة');button.setAttribute('aria-pressed',String(quality==='high'));}
     nextShadow=0;
   }
