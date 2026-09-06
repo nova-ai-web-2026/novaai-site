@@ -10,7 +10,7 @@
     const plates=scene.meshes.filter(m=>m.metadata?.readableArabic&&!m.name.endsWith('_readableBack'));
     const fulCart=scene.getMeshByName('cart');
     if(fulCart){
-      const plate=plates.find(m=>B.Vector3.Distance(m.position,new B.Vector3(fulCart.position.x,1.74,fulCart.position.z-.82))<.05);
+      const plate=plates.find(m=>m.isEnabled()&&B.Vector3.Distance(m.position,new B.Vector3(fulCart.position.x,1.74,fulCart.position.z-.82))<.05);
       if(plate){plate.position.set(fulCart.position.x,.55,fulCart.position.z-.78);plate.scaling.set(.8,.68,1);plate.metadata.cartPlaque=true;}
     }
     const legacy=plates.filter(m=>m.name.startsWith('v11_legacyShop_'));

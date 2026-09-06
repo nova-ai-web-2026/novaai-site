@@ -71,8 +71,9 @@ try{
   if(!sign)return null;cart.computeWorldMatrix(true);sign.computeWorldMatrix(true);
   return {host:sign.metadata.host,top:sign.getBoundingInfo().boundingBox.maximumWorld.y,counter:cart.getBoundingInfo().boundingBox.maximumWorld.y};
  });
- assert.ok(plaque&&plaque.host==='cart'&&plaque.top<plaque.counter,'cart sign is suspended above the counter and obscures serving props');
+ console.log('CART_PLAQUE',JSON.stringify(plaque));
  console.log('VISUAL_EVIDENCE_cart:'+(await page.screenshot({type:'jpeg',quality:65})).toString('base64'));
+ assert.ok(plaque&&plaque.host==='cart'&&plaque.top<plaque.counter,'cart sign is suspended above the counter and obscures serving props');
  // Render the same animated rigs at close range for silhouette review.
  await page.evaluate(()=>{
   const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
