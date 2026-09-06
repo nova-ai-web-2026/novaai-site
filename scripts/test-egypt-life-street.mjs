@@ -66,6 +66,12 @@ try{
   camera.position.set(-11.3,1.9,-21.4);camera.setTarget(new BABYLON.Vector3(-8,1.05,-18));camera.fov=1.05;
  });
  await page.waitForTimeout(250);
+ const plaque=await page.evaluate(()=>{
+  const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],cart=scene.getMeshByName('cart'),sign=scene.meshes.find(m=>m.metadata?.cartPlaque);
+  if(!sign)return null;cart.computeWorldMatrix(true);sign.computeWorldMatrix(true);
+  return {host:sign.metadata.host,top:sign.getBoundingInfo().boundingBox.maximumWorld.y,counter:cart.getBoundingInfo().boundingBox.maximumWorld.y};
+ });
+ assert.ok(plaque&&plaque.host==='cart'&&plaque.top<plaque.counter,'cart sign is suspended above the counter and obscures serving props');
  console.log('VISUAL_EVIDENCE_cart:'+(await page.screenshot({type:'jpeg',quality:65})).toString('base64'));
  // Render the same animated rigs at close range for silhouette review.
  await page.evaluate(()=>{

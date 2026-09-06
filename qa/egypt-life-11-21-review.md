@@ -37,7 +37,7 @@ These are specific visual references, not a claim that every Egyptian neighborho
 
 | Visual feature | Comparison and decision |
 | --- | --- |
-| Ful cart | The model needed recognizable wheels, painted panels, rounded pots with narrower necks, a tray and bread. Those details are added without copying photographs into game assets. |
+| Ful cart | The model needed recognizable wheels, painted panels, rounded pots with narrower necks, a tray and bread. Those details are added without copying photographs into game assets. A close-up also exposed a suspended sign hiding the pots: it is now a plaque on the cart body. Invisible interaction volumes are no longer treated as physical supports for signs. |
 | Shop fronts | Mounted Arabic signs, awnings, handles, counters and cafe seating help. Repeated flat shop textures and similar facade widths still limit variety. |
 | Buildings and street activity | The reference photographs show more varied balconies, shutters and ground floors, plus more parked vehicles and people than the inspected game view. The game's repeated blocks and spacious, orderly street layout remain a visible limitation. |
 

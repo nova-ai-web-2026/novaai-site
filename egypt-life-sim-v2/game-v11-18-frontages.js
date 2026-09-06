@@ -8,8 +8,13 @@
     const metal=mat('iron','#454b49'),wood=mat('wood','#594737'),frame=mat('frame','#c0af91');
     function box(name,w,h,d,parent,x,y,z,material){const m=B.MeshBuilder.CreateBox('frontage_'+name,{width:w,height:h,depth:d},scene);m.parent=parent;m.position.set(x,y,z);m.material=material;m.isPickable=false;m.checkCollisions=false;return m;}
     const plates=scene.meshes.filter(m=>m.metadata?.readableArabic&&!m.name.endsWith('_readableBack'));
+    const fulCart=scene.getMeshByName('cart');
+    if(fulCart){
+      const plate=plates.find(m=>B.Vector3.Distance(m.position,new B.Vector3(fulCart.position.x,1.74,fulCart.position.z-.82))<.05);
+      if(plate){plate.position.set(fulCart.position.x,.55,fulCart.position.z-.78);plate.scaling.set(.8,.68,1);plate.metadata.cartPlaque=true;}
+    }
     const legacy=plates.filter(m=>m.name.startsWith('v11_legacyShop_'));
-    const hosts=scene.meshes.filter(m=>m.name==='building'||/^v12_building_/.test(m.name)||/shopFrame|kioskBody|homeWall|fulHot|stall/.test(m.name));
+    const hosts=scene.meshes.filter(m=>m.isEnabled()&&m.isVisible&&m.visibility>0&&(m.name==='cart'||m.name==='building'||/^v12_building_/.test(m.name)||/shopFrame|kioskBody|homeWall|stall/.test(m.name)));
     hosts.forEach(m=>m.computeWorldMatrix(true));
     let wallMounted=0,postMounted=0,vehicleMounted=0,duplicates=0;
     for(const sign of plates){
@@ -18,7 +23,7 @@
       sign.computeWorldMatrix(true);
       const bounds=sign.getBoundingInfo().boundingBox,w=bounds.extendSize.x*2,h=bounds.extendSize.y*2,pos=sign.getAbsolutePosition();
       const backing=box('signBack_'+sign.uniqueId,w+.09,h+.09,.07,sign,0,0,.04,wood);
-      const back=scene.getMeshByName(sign.name+'_readableBack');if(back)back.position.z=.081;
+      const back=sign.getChildMeshes().find(m=>m.parent===sign&&m.name===sign.name+'_readableBack');if(back)back.position.z=.081;
       const supports=[backing.name];
       let mount='';
       if(sign.parent){mount='vehicle-or-prop';vehicleMounted++;}
