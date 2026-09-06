@@ -18,7 +18,7 @@
     if(kicker&&kicker.textContent!==`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.10'}`;
     const t='حياة مصر — مؤثرات صوتية مسجلة فعلية للخطوات والتفاعل والشراء والأبواب، مع تنويعات متعددة بدل الأصوات الصناعية.';
     if(tagline&&tagline.textContent!==t)tagline.textContent=t;
-    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.20.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`)foot.textContent=`V${document.documentElement.dataset.release||'11.20.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`;
+    if(foot&&foot.textContent!==`V${document.documentElement.dataset.release||'11.21.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`)foot.textContent=`V${document.documentElement.dataset.release||'11.21.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`;
     if(status&&!ready&&!/ثانية واحدة/.test(status.textContent)&&status.textContent!=='جاري تجهيز اللعبة…')status.textContent='جاري تجهيز اللعبة…';
   };
 

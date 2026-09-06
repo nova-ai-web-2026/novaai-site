@@ -319,6 +319,11 @@
   function setupMenu(){ui.cont.disabled=!hasSave();ui.cont.style.opacity=hasSave()?'1':'.45';ui.cont.onclick=()=>{if(hasSave())enterGame(false);};ui.newGame.onclick=()=>enterGame(true);ui.reset.onclick=()=>{localStorage.removeItem(SAVE_KEY);ui.cont.disabled=true;ui.cont.style.opacity='.45';ui.menuStatus.textContent='تم مسح الحفظ. تقدر تبدأ يوم جديد.';resetState();};if(!hasSave())ui.menuStatus.textContent='مفيش حفظ قديم لسه — ابدأ يوم جديد.';}
 
   window.EgyptLife={
+    registerShop:(mesh,name,type)=>{
+      const template=shopData.find(s=>s.type===type);if(!template)throw new Error('Unknown shop type: '+type);
+      mesh.metadata={...mesh.metadata,shopName:name,shopType:type,interactiveShop:true};
+      world.interactables.push({mesh,kind:'shop',name,data:{...template,name},x:mesh.position.x,z:mesh.position.z});
+    },
     visitHome,
     doorSound:()=>emitSfx('door'),
     modalOpen:()=>modal,

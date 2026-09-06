@@ -77,7 +77,7 @@
       c.fillStyle='rgba(154,185,183,.09)';c.fillRect(0,0,512,256);c.fillStyle='#3d372e';c.fillRect(250,0,12,256);c.fillRect(0,228,512,28);c.fillStyle='#d2bea0';c.fillRect(272,135,5,27);
       tex.update();m.diffuseTexture=tex;m.emissiveColor=new B.Color3(.10,.08,.055);textures.set(type,m);return m;
     }
-    const shops=scene.meshes.filter(m=>m.name==='shopGlass');
+    const shops=scene.meshes.filter(m=>m.name==='shopGlass'||m.metadata?.interactiveShop);
     shops.forEach((glass,i)=>{
       glass.material=shopMaterial(glass.metadata?.shopType||'grocery');
       const b=glass.getBoundingInfo().boundingBox,w=b.extendSize.x*2;
@@ -109,6 +109,22 @@
       const w=awning.getBoundingInfo().boundingBox.extendSize.x*2;
       box('awningValance_'+i,w,.24,.035,awning,0,-.105,-.50,canvasMat);
     });
+    // Egyptian ful-cart proportions: wheels, metal pots, serving dishes and painted panels.
+    const cart=scene.getMeshByName('cart'),silver=mat('pots','#a6a798'),red=mat('cartRed','#953c2d'),green=mat('cartGreen','#37664a'),breadMat=mat('bread','#c4a56a');
+    if(cart){
+      const x=cart.position.x,z=cart.position.z,parts=[];
+      const cylinder=(name,diameter,height,px,py,pz,material)=>{const m=B.MeshBuilder.CreateCylinder('frontage_'+name,{diameter,height,tessellation:12},scene);m.position.set(px,py,pz);m.material=material;m.isPickable=false;parts.push(m);return m;};
+      for(const side of [-1,1])for(const front of [-1,1]){const wheel=cylinder('cartWheel',.43,.10,x+side*1.08,.25,z+front*.53,metal);wheel.rotation.z=Math.PI/2;}
+      for(let i=0;i<3;i++)box('cartPaint_'+i,.77,.53,.035,cart,-.85+i*.85,0,-.742,i%2?red:green);
+      scene.getMeshByName('fulPot')?.setEnabled(false);
+      for(const dx of [-.68,.1]){
+        const pot=B.MeshBuilder.CreateSphere('frontage_fulPot',{diameter:.62,segments:10},scene);pot.position.set(x+dx,1.28,z+.12);pot.scaling.y=1.05;pot.material=silver;pot.isPickable=false;parts.push(pot);
+        cylinder('potNeck',.26,.18,x+dx,1.61,z+.12,silver);cylinder('potLid',.34,.045,x+dx,1.72,z+.12,silver);
+      }
+      const dish=cylinder('servingTray',.38,.025,x+.83,.99,z-.20,silver);dish.scaling.z=.8;
+      for(let i=0;i<3;i++){const loaf=cylinder('breadLoaf',.29,.035,x+.80+i*.025,1.025+i*.035,z-.23,breadMat);loaf.scaling.z=.76;}
+      for(const part of parts)part.checkCollisions=false;
+    }
     window.__EGYPT_FRONTAGES={ready:true,wallMounted,postMounted,vehicleMounted,duplicates,shops:shops.length};
   }
   install().catch(console.error);
