@@ -10,7 +10,7 @@ try{
  await page.route('**/game-v12-world.js*',async route=>{await new Promise(r=>setTimeout(r,1500));await route.continue();});
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');
- await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready,null,{timeout:60000});
+ await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready&&window.__EGYPT_QUALITY?.ready,null,{timeout:60000});
  await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
@@ -88,6 +88,18 @@ try{
  });
  await page.waitForTimeout(200);
  console.log('VISUAL_EVIDENCE_people:'+(await page.screenshot({type:'jpeg',quality:60})).toString('base64'));
+ for(const type of ['ful','ahwa','produce']){
+  const props=await page.evaluate(type=>{
+   const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+   window.EgyptShops.enter(scene,{name:{ful:'فول وطعمية',ahwa:'قهوة الحارة',produce:'خضار وفاكهة'}[type],type});
+   const camera=scene.activeCamera;camera.position.set(420,1.75,417.6);camera.setTarget(new BABYLON.Vector3(420,1.35,421.1));camera.fov=.95;
+   return scene.getTransformNodeByName('quality_shopStock').getChildMeshes().filter(m=>m.isEnabled()).map(m=>m.name);
+  },type);
+  assert.ok(props.some(n=>n.includes({ful:'foodPot',ahwa:'drinkingCup',produce:'produceCrate'}[type])),'missing shaped stock for '+type);
+  await page.waitForTimeout(350);console.log('VISUAL_EVIDENCE_quality'+type+':'+(await page.screenshot({type:'jpeg',quality:72})).toString('base64'));
+  await page.evaluate(()=>window.EgyptShops.leave());
+ }
+ assert.deepEqual(errors,[]);
  // Continuing a saved game skips the story and restores ordinary play.
  await page.reload({waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__V119_READY,null,{timeout:60000});

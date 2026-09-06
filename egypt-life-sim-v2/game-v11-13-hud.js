@@ -10,7 +10,7 @@
   function syncCopy(){
     const kicker=document.querySelector('.kicker'),foot=document.querySelector('.menuFoot');
     if(kicker)kicker.textContent=`HAYAT MASR • V${document.documentElement.dataset.release||'11.13'}`;
-    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.22.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`;
+    if(foot)foot.textContent=`V${document.documentElement.dataset.release||'11.23.0'} — مشوار الفطار — شنطة وحفظ وحوار العيلة`;
   }
 
   function installStyle(){
