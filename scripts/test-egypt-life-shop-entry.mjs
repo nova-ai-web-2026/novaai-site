@@ -45,7 +45,7 @@ try{
  for(const [index,shop] of shops.entries()){
   await approach(shop);await evidence('shopApproach'+index);
   const outside=await pose();
-  if(index===0)await click('#prompt');else if(mobile)await click('#act');else await page.keyboard.press('e');
+  if(!mobile)await page.keyboard.press('e');else await click(index===0?'#prompt':'#act');
   await page.locator('#shop').waitFor({state:'visible'});
   assert.equal((await inside()).name,shop.name);assert.ok(Math.hypot((await pose()).x-outside.x,(await pose()).z-outside.z)>20,'shop menu did not enter the room');
   await click('#shopBrowse');await page.locator('#shop').waitFor({state:'hidden'});

@@ -26,8 +26,8 @@
     for(let n=-4;n<=4;n++)box('floorGroutZ_'+n,9.35,.005,.018,0,.094,n,material('grout','#8d9088'));
     titleTexture=new B.DynamicTexture('shopInside_title',{width:1024,height:192},scene,false);
     const titleMaterial=material('title','#ffffff');titleMaterial.diffuseTexture=titleTexture;titleMaterial.emissiveColor=new B.Color3(.12,.12,.12);
-    const title=B.MeshBuilder.CreatePlane('shopInside_titlePlate',{width:4.8,height:.75},scene);title.parent=root;title.position.set(0,2.58,4.18);title.material=titleMaterial;title.isPickable=false;
-    box('titleBacking',4.92,.87,.055,0,2.58,4.22,wood);
+    const title=B.MeshBuilder.CreatePlane('shopInside_titlePlate',{width:2.3,height:.46},scene);title.parent=root;title.position.set(0,3.03,4.18);title.material=titleMaterial;title.isPickable=false;
+    box('titleBacking',2.42,.58,.055,0,3.03,4.22,wood);
     light=new B.PointLight('shopInside_light',new B.Vector3(ORIGIN.x,3.02,ORIGIN.z),scene);light.intensity=.7;light.range=10;light.diffuse=new B.Color3(1,.92,.77);
     cylinder('lamp',.65,.08,0,3.24,0,material('lamp','#f0ead3'),root);
     const source=scene.getTransformNodeByName('v9_personVisual_2');

@@ -215,10 +215,11 @@
   function itemPos(i){if(i.root)return i.root.position;if(i.mesh)return i.mesh.position;return new BABYLON.Vector3(i.x||0,0,i.z||0);}
   function canEnter(item){return item.kind==='shop'&&(item.mesh?.name==='shopHot'||item.mesh?.metadata?.interactiveShop);}
   function updateInteraction(){
-    let best=null,bestD=3.25;
+    let best=null,bestD=shopVisit?3.6:3.25;
     const options=shopVisit?[{kind:'shopCounter',name:'اطلب من الكاونتر',...window.EgyptShops.counter()},{kind:'shopExit',name:'اخرج للشارع',...window.EgyptShops.door()}]:world.interactables;
     for(const item of options){
       const p=itemPos(item);let x=p.x,z=p.z;
+      if(item.kind==='shopExit'&&(x-camera.position.x)*Math.sin(yaw)+(z-camera.position.z)*Math.cos(yaw)<0)continue;
       if(canEnter(item)){
         if(camera.position.z>z+.65)continue;
         const half=item.mesh.getBoundingInfo().boundingBox.extendSize.x;
