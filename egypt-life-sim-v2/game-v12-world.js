@@ -32,7 +32,7 @@
     const proto=window.BABYLON?.UniversalCamera?.prototype;if(!proto)return;
     proto.moveWithCollisions=function(delta){
       const sc=this.getScene(),radius=.38;
-      const blocked=(x,z)=>{if(Math.abs(x)>BOUND||Math.abs(z)>BOUND)return true;for(const mesh of sc.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.18||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};
+      const blocked=(x,z)=>{const room=window.EgyptShops?.bounds();if(room?(x-radius<room.minX||x+radius>room.maxX||z-radius<room.minZ||z+radius>room.maxZ):(Math.abs(x)>BOUND||Math.abs(z)>BOUND))return true;for(const mesh of sc.meshes){if(!mesh.checkCollisions||!mesh.isEnabled?.()||!mesh.getBoundingInfo)continue;mesh.computeWorldMatrix(true);const bb=mesh.getBoundingInfo().boundingBox,min=bb.minimumWorld,max=bb.maximumWorld;if(max.y<.18||min.y>2.45)continue;if(x+radius>min.x&&x-radius<max.x&&z+radius>min.z&&z-radius<max.z)return true;}return false;};
       const nx=this.position.x+(delta.x||0);if(!blocked(nx,this.position.z))this.position.x=nx;const nz=this.position.z+(delta.z||0);if(!blocked(this.position.x,nz))this.position.z=nz;return this;
     };
   }

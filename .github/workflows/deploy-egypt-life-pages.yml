@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: egypt-life-release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   story-review:
@@ -28,6 +28,8 @@ jobs:
     uses: ./.github/workflows/test-egypt-life-errand.yml
   street:
     uses: ./.github/workflows/test-egypt-life-street.yml
+  shop-entry:
+    uses: ./.github/workflows/test-egypt-life-shop-entry.yml
   validate-release:
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +48,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: [validate-release, sound, start, gameplay, mobile, street, errand, story-review]
+    needs: [validate-release, sound, start, gameplay, mobile, street, errand, story-review, shop-entry]
     permissions:
       contents: read
       pages: write
@@ -103,5 +105,11 @@ jobs:
   published-errand:
     needs: deploy
     uses: ./.github/workflows/test-egypt-life-errand.yml
+    with:
+      game_url: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/
+
+  published-shop-entry:
+    needs: deploy
+    uses: ./.github/workflows/test-egypt-life-shop-entry.yml
     with:
       game_url: ${{ needs.deploy.outputs.page_url }}egypt-life-sim-v2/
