@@ -24,7 +24,7 @@ async function hold(direction=1){
 async function walk(distance,direction=1){const start=await pose(),release=await hold(direction);try{await page.waitForFunction(({start,distance})=>{const p=window.__egyptDebug.getCamera();return Math.hypot(p.x-start.x,p.z-start.z)>=distance;},{start,distance},{timeout:60000});}finally{await release();}assert.equal((await street()).failed,false);return await pose();}
 async function bumpFixture(){
  await teleport(-30.5,-45);
- return page.evaluate(()=>{const f=window.__egyptDebug.streetFixture(),root=EgyptLife.streetContext().world.people[1].root;root.position.set(-30.5,0,-44);root.setEnabled(true);return root.uniqueId;});
+ return page.evaluate(()=>{const person=EgyptLife.streetContext().world.people[1],root=person.root;person.lane=-30.5;root.position.set(-30.5,0,-44);root.setEnabled(true);return root.uniqueId;});
 }
 async function bump(){const release=await hold();try{await page.waitForFunction(()=>!!EgyptStreetLife.inspect().encounter,null,{timeout:15000});}finally{await release();}}
 async function buy(kind){
@@ -55,7 +55,7 @@ try{
  await click('#newGameBtn');await page.waitForFunction(()=>window.__V12_PROLOGUE.running);await click('#storyPace');await page.waitForTimeout(900);await evidence('newBedroom');
  await click('#v12Skip');await page.waitForFunction(()=>!window.__V12_PROLOGUE.running);
  await teleport(-150,-153,1.00,.10);await evidence('newLivingRoom');
- await teleport(-149,-144.1,2.20,.18);await evidence('newKitchen');
+ await teleport(-149,-149.6,.83,.18);await evidence('newKitchen');
  // The actual furniture must leave a continuous route from the living room to the door.
  await teleport(-150,-151);await walk(5.6);assert.ok((await pose()).z>-145.5);
  console.log('HOME_ROUTE_PASSED',JSON.stringify({mobile,home}));
@@ -86,5 +86,5 @@ try{
  await interact();await page.locator('#dialog').waitFor({state:'visible'});assert.equal((await state()).breakfastDelivered,true);assert.equal((await state()).task,1);assert.equal((await state()).money,283);
  assert.deepEqual(errors,[]);console.log('JOURNEY_FULL_STORY_PASSED',JSON.stringify({mobile,version:'11.24.0',state:await state()}));
 }catch(e){
- console.error('JOURNEY_FAILURE_STATE',await page.evaluate(()=>({camera:window.__egyptDebug?.getCamera(),street:window.EgyptStreetLife?.inspect?.(),state:window.EgyptLife?.snapshot?.().state,error:document.getElementById('errorBox')?.textContent,prompt:document.getElementById('prompt')?.textContent})).catch(()=>null));await evidence('journeyFailure').catch(()=>{});throw e;
+ console.error('JOURNEY_FAILURE_STATE',JSON.stringify(await page.evaluate(()=>({camera:window.__egyptDebug?.getCamera(),street:window.EgyptStreetLife?.inspect?.(),state:window.EgyptLife?.snapshot?.().state,error:document.getElementById('errorBox')?.textContent,prompt:document.getElementById('prompt')?.textContent})).catch(()=>null)));await evidence('journeyFailure').catch(()=>{});throw e;
 }finally{clearTimeout(deadline);await browser.close();}

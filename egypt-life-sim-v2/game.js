@@ -369,7 +369,7 @@
       }
       return {...state.journeyCheckpoint};
     },
-    retryJourney:()=>{const checkpoint=state.journeyCheckpoint;closeModals();state={...state,...checkpoint,streetFailed:null,journeyCheckpoint:checkpoint};camera.position.set(-30.3,EYE,-30.3);yaw=0;pitch=0;camera.rotation.set(0,0,0);nextTargetAt=0;clearInput();updateHUD();saveState();},
+    retryJourney:()=>{const checkpoint=state.journeyCheckpoint;closeModals();state={...state,...checkpoint,streetFailed:null,journeyCheckpoint:checkpoint};camera.position.set(-30.5,EYE,-34.5);yaw=0;pitch=0;camera.rotation.set(0,0,0);nextTargetAt=0;clearInput();updateHUD();saveState();},
     visitHome,
     doorSound:()=>emitSfx('door'),
     modalOpen:()=>modal,

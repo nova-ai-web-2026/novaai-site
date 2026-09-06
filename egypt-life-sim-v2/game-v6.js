@@ -27,6 +27,7 @@
         source,
         /  function updateVehicles\(dt\)\{[\s\S]*?\n  function nearestRoad/,
 `  function updateVehicles(dt){
+    if(window.EgyptStreetLife?.vehicles?.(dt/60))return;
     for(const v of world.vehicles){
       if(v.vertical){
         v.root.position.z+=v.speed*v.dir*dt;
@@ -51,7 +52,7 @@
         source,
         /  function makePerson\(x,z,i\)\{[\s\S]*?\n  function buildPeople\(\)\{[^\n]*\}/,
 `  function makePerson(x,z,i){
-    const root=new BABYLON.TransformNode('personRoot',scene);root.position.set(x,0,z);
+    const root=new BABYLON.TransformNode('personRoot',scene),lane=(i%2?nearestRoad(x):nearestRoad(z))+(Math.floor(i/2)%2===0?1:-1)*6.5;root.position.set(i%2?lane:x,0,i%2?z:lane);
     const visual=new BABYLON.TransformNode('personVisual',scene);visual.parent=root;
     const skin=mat('skin','#b98563'),cols=['#455f77','#744e40','#45684a','#6b4b71','#817047','#4b4b4b'],shirt=mat('shirt'+i,cols[i%cols.length]),pants=mat('pants'+i,'#343b40'),shoe=mat('shoe','#24211f');
 
@@ -77,7 +78,7 @@
     }
 
     const leftLeg=leg(-1),rightLeg=leg(1),leftArm=arm(-1),rightArm=arm(1);
-    const data={root,visual,torso,hipL:leftLeg.hip,hipR:rightLeg.hip,kneeL:leftLeg.knee,kneeR:rightLeg.knee,footL:leftLeg.foot,footR:rightLeg.foot,shoulderL:leftArm.shoulder,shoulderR:rightArm.shoulder,elbowL:leftArm.elbow,elbowR:rightArm.elbow,axis:i%2,dir:i%3===0?-1:1,speed:.014+(i%5)*.0022,cadence:.88+(i%4)*.08,phase:i*.73,turning:0,name:sayings[i%sayings.length][0],line:sayings[i%sayings.length][1]};
+    const data={root,visual,torso,lane,hipL:leftLeg.hip,hipR:rightLeg.hip,kneeL:leftLeg.knee,kneeR:rightLeg.knee,footL:leftLeg.foot,footR:rightLeg.foot,shoulderL:leftArm.shoulder,shoulderR:rightArm.shoulder,elbowL:leftArm.elbow,elbowR:rightArm.elbow,axis:i%2,dir:i%3===0?-1:1,speed:.014+(i%5)*.0022,cadence:.88+(i%4)*.08,phase:i*.73,turning:0,name:sayings[i%sayings.length][0],line:sayings[i%sayings.length][1]};
     world.interactables.push({kind:'person',name:data.name,data,root});return data;
   }
   function buildPeople(){for(let i=0;i<28;i++)world.people.push(makePerson(-100+(i*29)%200,-100+(i*41)%200,i));}`,
@@ -90,8 +91,9 @@
 `  function updatePeople(dt){
     for(let i=0;i<world.people.length;i++){
       const p=world.people[i];
+      if(window.EgyptStreetLife?.holdPerson?.(p.root))continue;
       if(p.lane===undefined){
-        const side=(Math.floor(i/2)%2===0?1:-1)*6.8;
+        const side=(Math.floor(i/2)%2===0?1:-1)*6.5;
         p.lane=p.axis===0?nearestRoad(p.root.position.z)+side:nearestRoad(p.root.position.x)+side;
       }
 

@@ -25,6 +25,7 @@
   function uvMetres(mesh,metres){const p=mesh.getVerticesData('position'),n=mesh.getVerticesData('normal'),uv=[];for(let i=0;i<p.length;i+=3){const axis=Math.abs(n[i+1])>.6?1:Math.abs(n[i])>.6?0:2;uv.push((axis===0?p[i+2]:p[i])/metres,(axis===1?p[i+2]:p[i+1])/metres);}mesh.makeGeometryUnique();mesh.setVerticesData('uv',uv);}
   function legs(name,x,z,w,d,top){for(const sx of [-1,1])for(const sz of [-1,1])box(name+sx+sz,.075,top-.10,.075,x+sx*(w/2-.12),.10+(top-.10)/2,z+sz*(d/2-.12));}
   function hide(names){for(const name of names)old(name)?.setEnabled(false);}
+  function turnFurniture(name,meshes,x,z,nextX=x,nextZ=z){const root=new B.TransformNode('home24_'+name,scene);root.position.set(nextX,0,nextZ);root.rotation.y=Math.PI;for(const m of meshes){m.parent=root;m.position.x-=x;m.position.z-=z;}return root;}
   function bedroom(){
     hide(['bedBase','mattress','pillowA','pillowB','bedHeadboard','bedsideTable']);
     const x=-155.05,z=-155;
@@ -40,6 +41,7 @@
     old('alarmClock').position.y=.825;old('alarmClockFace').position.y=.825;
     box('clockFootA',.045,.035,.10,-156.91,.714,-155.36,M.dark);box('clockFootB',.045,.035,.10,-156.69,.714,-155.36,M.dark);
     for(const sx of [-1,1]){box('wardrobeDoor',1.19,2.25,.04,-144.2+sx*.62,1.27,-155.345,M.wood);box('wardrobeHandle',.025,.32,.05,-144.2+sx*.13,1.27,-155.30,M.brass);}
+    const wardrobe=turnFurniture('wardrobeGroup',[old('wardrobe'),...built.filter(m=>/^home24_wardrobe/.test(m.name))],-144.2,-155.7,-158.4,-153.5);wardrobe.rotation.y=Math.PI/2;old('wardrobe').material=M.wood;old('wardrobe').checkCollisions=true;
   }
   function sittingRoom(){
     hide(['sofaSeat','sofaBack','coffeeTable','coffeeLegA','coffeeLegB','tv','tvStand']);
@@ -57,13 +59,15 @@
     const tray=cylinder('teaTray',.46,.023,-146.35,.626,-149.32,M.brass);
     for(let i=0;i<2;i++){cylinder('teaGlass'+i,.095,.14,-146.48+i*.22,.703,-149.32,M.glass);cylinder('tea'+i,.080,.003,-146.48+i*.22,.755,-149.32,M.tea);}
     box('bookPages',.26,.055,.35,-145.58,.64,-149.31,M.linen);box('bookCover',.28,.009,.37,-145.58,.673,-149.31,M.green);
-    // TV sits on a cabinet opposite the sofa, leaving the front-door route clear.
+    turnFurniture('sittingGroup',built.filter(m=>/^home24_(sofa|seatCushion|backCushion|scatterCushion|coffee|tea|book)/.test(m.name)),x,z);
+    // The sofa faces a TV against the north wall; the kitchen stays behind it.
     round('mediaCabinet',2.15,.48,.43,.025,-145.9,.45,-146.7,M.wood).checkCollisions=true;legs('mediaFoot',-145.9,-146.7,2.15,.43,.25);
     for(const sx of [-1,1])box('mediaDoor',1.015,.35,.022,-145.9+sx*.527,.45,-146.93,M.cane);
     const tv=round('television',1.73,.97,.085,.032,-145.9,1.31,-146.7,M.dark);
     box('tvScreen',1.64,.865,.007,-145.9,1.315,-146.747,M.screen);
     for(const sx of [-1,1]){const leg=box('tvFoot',.23,.025,.30,-145.9+sx*.56,.713,-146.7,M.dark);leg.rotation.y=sx*.22;}
-    const rug=old('rug');rug.position.set(-146,.122,-149.55);rug.scaling.set(.84,1,.86);rug.material=M.rug;
+    turnFurniture('televisionGroup',built.filter(m=>/^home24_(media|television$|tv)/.test(m.name)),-145.9,-146.7,-145.9,-155.65);
+    const rug=old('rug');rug.position.set(-146,.122,-152.85);rug.scaling.set(.84,1,.86);rug.material=M.rug;
     // A proper table and four-legged chairs replace floating dining slabs.
     old('diningTop').material=M.wood;legs('diningLeg',-154.5,-146.9,2.7,1.5,.76);
     for(const m of scene.meshes.filter(m=>/^v12_chairSeat_/.test(m.name))){m.material=M.wood;legs('chairLeg'+m.uniqueId,m.position.x,m.position.z,.67,.67,.44);round('chairCushion',.62,.07,.62,.025,m.position.x,.548,m.position.z,M.cane);}
@@ -72,11 +76,11 @@
     const jug=EgyptQuality.pot('home24_waterJug',null,-154.5,.915,-146.9,.25,.28);built.push(...jug.getChildMeshes(false),jug);
   }
   function kitchen(){
-    const counter=old('counter');counter.material=M.green;counter.checkCollisions=true;
+    const counter=old('counter');counter.material=M.cabinet;counter.checkCollisions=true;
     round('countertop',4.7,.07,.79,.025,-144.7,.985,-148,M.stone);
     for(let i=0;i<5;i++){
-      const x=-146.54+i*.92;box('cabinetDoor'+i,.86,.73,.04,x,.52,-147.622,M.green);
-      box('cabinetInset'+i,.69,.56,.015,x,.52,-147.595,M.green);box('cabinetHandle'+i,.17,.024,.05,x,.76,-147.568,M.brass);
+      const x=-146.54+i*.92;box('cabinetDoor'+i,.86,.73,.04,x,.52,-147.622,M.cabinet);
+      box('cabinetInset'+i,.69,.56,.015,x,.52,-147.595,M.cabinet);box('cabinetHandle'+i,.17,.024,.05,x,.76,-147.568,M.brass);
     }
     box('kitchenKickboard',4.5,.12,.055,-144.7,.165,-147.66,M.dark);
     const splash=box('backsplash',4.75,.63,.045,-144.7,1.30,-148.34,M.tile);uvMetres(splash,.42);
@@ -102,6 +106,9 @@
     const glass=cylinder('washerGlass',.53,.075,-146.8,.51,-144.855,M.screen);glass.rotation.x=Math.PI/2;
     cylinder('washerDial',.12,.04,-146.40,.91,-144.93,M.metal).rotation.x=Math.PI/2;
     box('washerDrawer',.41,.125,.024,-147.10,.915,-144.937,M.cream);
+    turnFurniture('fridgeGroup',[old('fridge'),...built.filter(m=>/^home24_fridge/.test(m.name))],-142.9,-145.5,-142.9,-144);
+    turnFurniture('washerGroup',[old('washer'),...built.filter(m=>/^home24_washer/.test(m.name))],-146.8,-145.45,-146.8,-144);
+    turnFurniture('cookerGroup',[old('stove'),...built.filter(m=>/^home24_(hob|burner|oven|cookerKnob)/.test(m.name)),pot],-145.1,-145.45,-145.1,-144);
   }
   function room(){
     old('homeFloor').material=M.tile;uvMetres(old('homeFloor'),1.5);
@@ -118,7 +125,7 @@
     for(const sx of [-1,1])for(let i=0;i<7;i++){
       const x=-155+sx*(1.60+i*.082),m=round('curtainPleat',.12,1.76,.105,.042,x,1.78,-156.40+Math.sin(i*2)*.034,M.curtain);m.scaling.y=1+Math.sin(i)*.009;
     }
-    const door=old('homeDoor');door.material=M.wood;
+    const door=old('homeDoor');door.material=M.wood;door.checkCollisions=true;
     for(const sx of [-1,1])box('doorJamb',.10,2.80,.22,-150+sx*1.18,1.4,-143.22,M.wood);
     box('doorLintel',2.46,.10,.22,-150,2.78,-143.22,M.wood);
     for(const y of [-.65,.3]){const panel=box('doorPanel',1.84,.72,.024,0,0,0,M.wood);panel.parent=door;panel.position.set(0,y,-.077);}
@@ -139,6 +146,8 @@
     const material=(name,cell,color='#ffffff')=>EgyptQuality.material('home24_'+name,cell,color);
     M={wood:material('walnut',9,'#e3c39c'),cane:material('cane',10,'#e3d4ad'),linen:material('linen',1,'#f6efdf'),sofa:material('sofa',1,'#7f9890'),quilt:material('quilt',1,'#b38365'),green:material('paint',11,'#b3c4b1'),cream:material('cream',-1,'#e9e3d6'),dark:material('dark',-1,'#33362f'),brass:material('brass',8,'#b6a174'),metal:material('steel',8,'#c3c9c5'),stone:material('stone',12,'#e3ded0'),tile:material('tiles',13,'#ece6d8'),plaster:material('wall',4,'#f5ebd7'),screen:material('screen',-1,'#263e41'),glass:material('glass',-1,'#b4c7be'),tea:material('tea',-1,'#8b5026'),curtain:material('curtain',1,'#e9d6b3')};
     M.rug=pattern('kilim',c=>{c.fillStyle='#965d46';c.fillRect(0,0,512,512);for(const [inset,color] of [[13,'#d4b788'],[28,'#344b4a'],[45,'#d4b788'],[54,'#965d46']]){c.strokeStyle=color;c.lineWidth=9;c.strokeRect(inset,inset,512-inset*2,512-inset*2);}for(let y=108;y<460;y+=100)for(let x=105;x<460;x+=100){c.fillStyle='#d8bc86';c.beginPath();c.moveTo(x,y-39);c.lineTo(x+34,y);c.lineTo(x,y+39);c.lineTo(x-34,y);c.closePath();c.fill();c.fillStyle='#364d49';c.fillRect(x-11,y-11,22,22);}});
+    const paint=M.plaster.diffuseTexture.getContext().canvas;M.plaster=pattern('interiorPaint',c=>{c.fillStyle='#e6ddcd';c.fillRect(0,0,512,512);c.globalAlpha=.14;c.drawImage(paint,0,0,512,512);c.globalAlpha=1;});
+    M.cabinet=material('cabinetPaint',-1,'#81958a');
     M.window=pattern('windowView',c=>{c.fillStyle='#c0d5d6';c.fillRect(0,0,512,512);for(let i=0;i<4;i++){const x=i*136-15,top=100+(i%3)*37;c.fillStyle=['#b7a18c','#d0b696','#baac91'][i%3];c.fillRect(x,top,129,512-top);for(let y=top+25;y<512;y+=65)for(let j=0;j<3;j++){c.fillStyle='#536f6a';c.fillRect(x+13+j*36,y,21,32);c.fillStyle='#8f866f';c.fillRect(x+10+j*36,y+33,28,5);}}});
     bedroom();sittingRoom();kitchen();room();EgyptQuality.addCasters?.(built);
     window.__EGYPT_HOME24={ready:true,version:VERSION,details:built.length,bedWidth:2.75,walkway:{x:-150,fromZ:-151,toZ:-143.3}};
