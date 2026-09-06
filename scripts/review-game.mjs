@@ -17,12 +17,14 @@ try{
   const pose=await page.evaluate(()=>{
     const B=BABYLON,scene=B.Engine.LastCreatedEngine.scenes[0],rig=scene.getTransformNodeByName('storyActor_hero'),head=scene.getMeshByName(window.__EGYPT_CAST.actors.hero.head);
     head.computeWorldMatrix(true);const spine=rig.getDescendants().find(n=>n.name.endsWith('v9_spine_3'));
-    return {headY:head.getAbsolutePosition().y,spine:spine.rotation.x,hero:rig.position.asArray(),door:scene.getTransformNodeByName('storyDoorHinge').rotation.y,cash:scene.getTransformNodeByName('storyCash').isEnabled(),action:document.getElementById('storyAction').textContent};
+    const joint=name=>{const n=rig.getDescendants().find(n=>n.name.endsWith(name+'_3'));n.computeWorldMatrix(true);return n.getAbsolutePosition().asArray();};
+    const quilt=scene.getMeshByName('v12_bedQuilt');quilt.computeWorldMatrix(true);
+    return {headY:head.getAbsolutePosition().y,spine:spine.rotation.x,hero:rig.position.asArray(),hip:joint('v9_hipL'),knee:joint('v9_kneeL'),ankle:joint('v9_ankleL'),quiltTop:quilt.getBoundingInfo().boundingBox.maximumWorld.y,door:scene.getTransformNodeByName('storyDoorHinge').rotation.y,doorZ:window.__V12_HOME.door.z,cash:scene.getTransformNodeByName('storyCash').isEnabled(),action:document.getElementById('storyAction').textContent};
   });
-  assert.ok(pose.action.length>10);if(beat===0){assert.ok(pose.spine>1.4&&pose.headY<1.5,'hero is not lying on the bed');}
-  if(beat===1)assert.ok(Math.abs(pose.spine)<.05&&pose.headY>1.9,'hero did not sit up');
+  assert.ok(pose.action.length>10);if(beat===0){assert.ok(pose.spine>1.4&&pose.headY<1.5,'hero is not lying on the bed');assert.ok(pose.knee[1]>pose.quiltTop+.06,'legs disappear inside the bed quilt');}
+  if(beat===1){assert.ok(Math.abs(pose.spine)<.05&&pose.headY>1.9,'hero did not sit up');assert.ok(pose.knee[2]>pose.hip[2]+.3&&pose.ankle[1]<pose.knee[1]-.3,'sitting needs forward thighs and lowered feet');}
   if(beat===2)assert.ok(pose.cash,'money handoff has no visible banknotes');
-  if(beat===3)assert.ok(pose.hero[2]>-145&&pose.door<-1,'hero did not walk to the open door');
+  if(beat===3)assert.ok(pose.hero[2]>pose.doorZ+.4&&pose.door<-1,'hero did not cross the open doorway');
   console.log('STORY_ACTION',JSON.stringify(pose));
   console.log('STORY_BEAT',JSON.stringify(await page.evaluate(()=>({beat:window.__V12_PROLOGUE.beat,speaker:document.getElementById('storySpeaker').textContent,text:document.getElementById('storyText').textContent,action:window.__V12_PROLOGUE.action||null}))));
   console.log('VISUAL_EVIDENCE_beat'+beat+':'+(await page.screenshot({type:'jpeg',quality:65})).toString('base64'));

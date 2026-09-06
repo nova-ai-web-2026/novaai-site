@@ -4,10 +4,10 @@
     const B=BABYLON,button=document.getElementById('newGameBtn');
     // Each line has a visible action; the camera remains fixed within each shot.
     const beats=[
-      {who:'الصبح بدري',line:'المنبّه بيرن… وأنا عامل نفسي مش من سكان الشقة.',action:'نايم على السرير والمنبّه جنبي.',from:[-157.2,2.8,-150.8],look:[-155.7,1.1,-154.6]},
-      {who:'أنا',line:'أهو قعدت… باقي بس أقنع رجليّ إن الإجازة خلصت.',action:'بصحصح وبقعد على طرف السرير.',from:[-155.4,2.5,-149.6],look:[-155.05,1.35,-153.85]},
+      {who:'الصبح بدري',line:'المنبّه بيرن… وأنا عامل نفسي مش من سكان الشقة.',action:'نايم على السرير والمنبّه جنبي.',from:[-157.6,2.95,-149.8],look:[-155.9,1.0,-154.75]},
+      {who:'أنا',line:'أهو قعدت… باقي بس أقنع رجليّ إن الإجازة خلصت.',action:'بصحصح وبقعد على طرف السرير.',from:[-157.8,2.7,-150.4],look:[-155.3,1.35,-154]},
       {who:'ماما',line:'خد الفلوس: أربعة عيش وطبق فول. والفكة ترجع… ما تعملهاش بلوك!',action:'ماما بتديني فلوس مشوار الفطار.',from:[-153.7,2.45,-146.0],look:[-153.7,1.35,-150.9]},
-      {who:'أنا',line:'نازل أجيب الفطار… أول مهمة في اليوم، وربنا يستر من ريحة الطعمية!',action:'بخرج من الشقة… وبعد شوية أوصل أول الحارة.',from:[-152,2.6,-150.2],look:[-150,1.1,-145.4]}
+      {who:'أنا',line:'نازل أجيب الفطار… أول مهمة في اليوم، وربنا يستر من ريحة الطعمية!',action:'بخرج من الشقة… وبعد شوية أوصل أول الحارة.',from:[-152,2.6,-150.2],look:[-150,1.25,-144.2]}
     ];
     let actors,cash,doorHinge;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -31,7 +31,16 @@
         if(['v12_sofaSeat','v12_sofaBack'].includes(mesh.name))mesh.position.x+=8.5;
         if(/^v12_coffee(Table|Leg)/.test(mesh.name)){mesh.position.x+=6;mesh.position.z+=1.7;}
         if(mesh.name==='v12_diningTop'||/^v12_chair(Seat|Back)_/.test(mesh.name))mesh.position.x-=4;
+        if(/^v12_fan(Head|Pole)$/.test(mesh.name))mesh.position.x+=4;
       }
+      // The flat opens onto a landing, so the exit shot never exposes the
+      // off-map space used to keep the indoor set separate from the street.
+      const landing=(name,size,position,material)=>{const m=B.MeshBuilder.CreateBox('storyLanding_'+name,size,scene);m.position.set(...position);m.material=material;m.checkCollisions=true;m.isPickable=false;};
+      const wall=scene.getMeshByName('v12_homeWallN').material,floor=scene.getMeshByName('v12_homeFloor').material;
+      landing('floor',{width:5.2,height:.16,depth:4.5},[-150,.02,-140.8],floor);
+      landing('back',{width:5.2,height:3.1,depth:.22},[-150,1.55,-138.55],wall);
+      for(const x of [-152.6,-147.4])landing('side_'+x,{width:.22,height:3.1,depth:4.5},[x,1.55,-140.8],wall);
+      landing('ceiling',{width:5.2,height:.18,depth:4.5},[-150,3.22,-140.8],wall);
       const door=scene.getMeshByName('v12_homeDoor');
       doorHinge=new B.TransformNode('storyDoorHinge',scene);doorHinge.position.set(door.position.x-1.125,door.position.y,door.position.z);
       door.parent=doorHinge;door.position.set(1.125,0,0);
@@ -53,16 +62,20 @@
       hero.root.setEnabled(true);cash.setEnabled(index===2);
       for(const actor of [hero,mother]){
         actor.visual.rotation.set(0,Math.PI,0);actor.joint('v9_spine').rotation.set(0,0,0);
+        actor.joint('v9_pelvis').position.y=.82;actor.joint('v9_spine').position.y=.22;
         for(const side of ['L','R'])for(const part of ['hip','knee','shoulder','elbow'])actor.joint('v9_'+part+side).rotation.set(0,0,0);
       }
-      mother.root.position.set(-153,0,-150.9);hero.root.position.set(-155.05,0,-154.65);
+      mother.root.position.set(-153,.12,-150.9);hero.root.position.set(-155.05,0,-154.65);
       for(const eye of hero.visual.getChildMeshes().filter(m=>/v9_eye[LR]_3$/.test(m.name)))eye.scaling.y=index===0?.065:.65;
       const clock=scene.getMeshByName('v12_alarmClock'),face=scene.getMeshByName('v12_alarmClockFace');
       clock.rotation.z=face.rotation.z=index===0&&!reduced?Math.sin(performance.now()*.018)*.075:0;
       doorHinge.rotation.y=0;
       if(index<=1){
+        const reclined=index===0?1:1-ease;
+        hero.joint('v9_pelvis').position.y=.82+.19*reclined;
+        hero.joint('v9_spine').position.y=.22-.19*reclined;
         hero.joint('v9_spine').rotation.x=1.55*(index===0?1:1-ease);
-        hero.root.position.z=-154.65+(index===1?.8*ease:0);
+        hero.root.position.z=-154.65+(index===1?.6*ease:0);
         for(const side of ['L','R']){
           hero.joint('v9_hip'+side).rotation.x=index===0?1.55:1.55-.25*ease;
           hero.joint('v9_knee'+side).rotation.x=index===0?0:-1.25*ease;
@@ -70,13 +83,13 @@
           hero.joint('v9_elbow'+side).rotation.x=index===1?.5*ease:0;
         }
       }else if(index===2){
-        hero.root.position.set(-154.4,0,-150.9);hero.visual.rotation.y=-Math.PI/2;mother.visual.rotation.y=Math.PI/2;
+        hero.root.position.set(-154.4,.12,-150.9);hero.visual.rotation.y=-Math.PI/2;mother.visual.rotation.y=Math.PI/2;
         for(const [actor,side] of [[hero,'L'],[mother,'R']]){actor.joint('v9_shoulder'+side).rotation.x=1.3;actor.joint('v9_elbow'+side).rotation.x=.3;}
         hero.visual.computeWorldMatrix(true);mother.visual.computeWorldMatrix(true);
         const hand=(actor,side)=>{const elbow=actor.joint('v9_elbow'+side);elbow.computeWorldMatrix(true);return B.Vector3.TransformCoordinates(new B.Vector3(0,-.32,0),elbow.getWorldMatrix());};
         cash.position.copyFrom(B.Vector3.Lerp(hand(mother,'R'),hand(hero,'L'),ease));cash.rotation.y=0;
       }else{
-        hero.root.position.set(-150.1,0,-148.7+4.4*ease);
+        hero.root.position.set(-150.1,.12,-148.7+6.45*ease);
         const stride=t<1&&!reduced?Math.sin(t*Math.PI*10)*.42:0;
         hero.joint('v9_hipL').rotation.x=stride;hero.joint('v9_hipR').rotation.x=-stride;
         hero.joint('v9_shoulderL').rotation.x=-stride*.6;hero.joint('v9_shoulderR').rotation.x=stride*.6;
