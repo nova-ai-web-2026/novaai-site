@@ -9,6 +9,7 @@ try{
  page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1000,height:700},isMobile:mobile,hasTouch:mobile});
  const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});
  const click=s=>mobile?page.tap(s):page.click(s);
+ const interact=()=>mobile?page.tap('#prompt'):page.keyboard.press('e');
  const pose=()=>page.evaluate(()=>window.__egyptDebug.getCamera());
  const state=()=>page.evaluate(()=>window.EgyptLife.snapshot().state);
  const inside=()=>page.evaluate(()=>window.EgyptLife.insideShop());
@@ -53,7 +54,7 @@ try{
   await evidence('shopInterior'+index);
   const walkInside=await walk(2.1);assert.ok(walkInside.end.z>walkInside.start.z+2);
   await page.waitForFunction(()=>document.getElementById('prompt').textContent.includes('اطلب من الكاونتر'));
-  await click('#prompt');await page.locator('#shop').waitFor({state:'visible'});
+  await interact();await page.locator('#shop').waitFor({state:'visible'});
   const before=await state();
   if(index===0){await click('[data-errand="bread"] button');assert.equal((await state()).money,before.money-12);assert.equal((await state()).breakfastBread,4);}
   else{
@@ -82,7 +83,7 @@ try{
  const cart=await page.evaluate(()=>{const m=BABYLON.Engine.LastCreatedEngine.scenes[0].getMeshByName('fulHot');return{x:m.position.x,z:m.position.z-2};});
  await page.evaluate(p=>window.__egyptDebug.v12Teleport(p.x,p.z),cart);
  await page.waitForFunction(()=>document.getElementById('prompt').textContent.includes('اشتري من')&&document.getElementById('prompt').textContent.includes('فول'));
- await click('#prompt');await page.locator('#shop').waitFor({state:'visible'});assert.equal(await inside(),null);assert.equal(await page.locator('#shopBrowse').isVisible(),false);await click('#shopClose');
+ await interact();await page.locator('#shop').waitFor({state:'visible'});assert.equal(await inside(),null);assert.equal(await page.locator('#shopBrowse').isVisible(),false);await click('#shopClose');
  assert.deepEqual(errors,[]);console.log('Street access, tappable entrance, indoor walking, counter, exit, save and outdoor cart passed',{mobile});
 }catch(error){
  if(page){console.error('SHOP_FAILURE_STATE',await page.evaluate(()=>({camera:window.__egyptDebug?.getCamera(),inside:window.EgyptLife?.insideShop(),prompt:document.getElementById('prompt')?.textContent,error:document.getElementById('errorBox')?.textContent})).catch(()=>null));console.log('VISUAL_EVIDENCE_shopFailure:'+(await page.screenshot({type:'jpeg',quality:65}).catch(()=>Buffer.alloc(0))).toString('base64'));}
