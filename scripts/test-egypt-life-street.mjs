@@ -10,7 +10,13 @@ try{
  await page.route('**/game-v12-world.js*',async route=>{await new Promise(r=>setTimeout(r,1500));await route.continue();});
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');
- await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready&&window.__EGYPT_QUALITY?.ready,null,{timeout:60000});
+ try{
+  // A queued click includes cold texture/shadow compilation on software WebGL.
+  await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready&&window.__EGYPT_QUALITY?.ready,null,{timeout:90000});
+ }catch(error){
+  console.log('EARLY_START_STATE',await page.evaluate(()=>({ready:window.__V119_READY,quality:window.EgyptQuality?.state?.()||window.EgyptQuality,story:window.__V12_PROLOGUE,menu:document.getElementById('menuStatus')?.textContent,error:document.getElementById('errorBox')?.textContent})));
+  console.log('VISUAL_EVIDENCE_earlyStartFailure:'+(await page.screenshot({type:'jpeg',quality:60})).toString('base64'));throw error;
+ }
  await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
