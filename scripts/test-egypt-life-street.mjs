@@ -10,7 +10,13 @@ try{
  await page.route('**/game-v12-world.js*',async route=>{await new Promise(r=>setTimeout(r,1500));await route.continue();});
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
  await page.click('#newGameBtn');
- await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready,null,{timeout:60000});
+ try{
+  // A queued click includes cold texture/shadow compilation on software WebGL.
+  await page.waitForFunction(()=>window.__V12_PROLOGUE?.running&&window.__EGYPT_FRONTAGES?.ready&&window.__EGYPT_PEOPLE?.ready&&window.__EGYPT_QUALITY?.ready,null,{timeout:90000});
+ }catch(error){
+  console.log('EARLY_START_STATE',await page.evaluate(()=>({ready:window.__V119_READY,quality:window.EgyptQuality?.state?.()||window.EgyptQuality,story:window.__V12_PROLOGUE,menu:document.getElementById('menuStatus')?.textContent,error:document.getElementById('errorBox')?.textContent})));
+  console.log('VISUAL_EVIDENCE_earlyStartFailure:'+(await page.screenshot({type:'jpeg',quality:60})).toString('base64'));throw error;
+ }
  await page.waitForFunction(()=>window.__V1116_SFX_API.state().events.typing>0,null,{timeout:10000});
  assert.equal(await page.evaluate(()=>window.__V12_PROLOGUE.starts),1,'early click must start one introduction');
  assert.equal(await page.evaluate(()=>document.body.classList.contains('game-started')),false,'gameplay started during introduction');
@@ -81,13 +87,25 @@ try{
   for(const [slot,index] of [0,1,5,7].entries()){
    const original=scene.getTransformNodeByName('v9_personVisual_'+index);
    const model=original.clone('testPerson_'+index,window.__testPeopleRoot,false);
-   model.position.set(slot*1.2,0,0);model.rotation.y=0;
+   model.position.set(slot*1.2,.23,0);model.rotation.y=0;for(const joint of model.getDescendants().filter(n=>!n.getTotalVertices&&/v9_(pelvis|spine|hip|knee|ankle|shoulder|elbow)/.test(n.name)))joint.rotation.set(0,0,0);
   }
   const camera=scene.activeCamera;camera.position.set(1.8,1.6,-4.7);camera.setTarget(new BABYLON.Vector3(1.8,1.1,0));camera.fov=.9;
   window.__testPeopleRoot.position.set(-24,0,-24);camera.position.addInPlace(window.__testPeopleRoot.position);camera.setTarget(new BABYLON.Vector3(-22.2,1.1,-24));
  });
  await page.waitForTimeout(200);
  console.log('VISUAL_EVIDENCE_people:'+(await page.screenshot({type:'jpeg',quality:60})).toString('base64'));
+ for(const type of ['ful','ahwa','produce']){
+  const props=await page.evaluate(type=>{
+   const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];
+   window.EgyptShops.enter(scene,{name:{ful:'فول وطعمية',ahwa:'قهوة الحارة',produce:'خضار وفاكهة'}[type],type});
+   const camera=scene.activeCamera;camera.position.set(420,1.75,417.6);camera.setTarget(new BABYLON.Vector3(420,1.35,421.1));camera.fov=.95;
+   return scene.getTransformNodeByName('quality_shopStock').getChildMeshes().filter(m=>m.isEnabled()).map(m=>m.name);
+  },type);
+  assert.ok(props.some(n=>n.includes({ful:'foodPot',ahwa:'drinkingCup',produce:'produceCrate'}[type])),'missing shaped stock for '+type);
+  await page.waitForTimeout(350);console.log('VISUAL_EVIDENCE_quality'+type+':'+(await page.screenshot({type:'jpeg',quality:72})).toString('base64'));
+  await page.evaluate(()=>window.EgyptShops.leave());
+ }
+ assert.deepEqual(errors,[]);
  // Continuing a saved game skips the story and restores ordinary play.
  await page.reload({waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__V119_READY,null,{timeout:60000});

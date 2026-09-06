@@ -55,6 +55,7 @@
     enter(s,data){scene=s;B=BABYLON;if(!root)build();if(active?.type!==data.type)stock(data.type);active={name:data.name,type:data.type};root.setEnabled(true);light.setEnabled(true);
       counterMaterial.diffuseColor=B.Color3.FromHexString(data.sign||'#476350');
       const c=titleTexture.getContext();c.fillStyle='#3d5545';c.fillRect(0,0,1024,192);c.fillStyle='#fff1cf';c.direction='rtl';c.textAlign='center';c.textBaseline='middle';c.font='bold 64px Tahoma,Arial';c.fillText(data.name,512,96,970);titleTexture.update();
+      window.EgyptQuality?.shop?.(root,data.type);
       return {x:ORIGIN.x,z:ORIGIN.z-2.8};
     },
     leave(){active=null;root?.setEnabled(false);light?.setEnabled(false);},

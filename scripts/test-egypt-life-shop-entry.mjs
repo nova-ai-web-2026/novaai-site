@@ -37,8 +37,18 @@ try{
   console.log('STREET_WALK',JSON.stringify({mobile,shop,movement}));
  }
  await page.goto(process.env.GAME_TEST_URL||'http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});await ready();
- assert.equal(await page.locator('html').getAttribute('data-release'),'11.22.0');
+ assert.equal(await page.locator('html').getAttribute('data-release'),'11.23.0');
+ const quality=await page.evaluate(()=>window.EgyptQuality.state());
+ assert.equal(quality.version,'11.23.0');assert.ok(quality.people>=42&&quality.textures>=8,'quality geometry or materials did not load');
+ assert.equal(await page.evaluate(()=>{const s=BABYLON.Engine.LastCreatedEngine.scenes[0];return s.meshes.filter(m=>m.metadata?.quality).every(m=>Array.from(m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[]).every(Number.isFinite));}),true,'invalid geometry');
+ assert.equal(await page.evaluate(()=>{const s=BABYLON.Engine.LastCreatedEngine.scenes[0],m=s.getMeshByName('v9_head_0'),p=m.getVerticesData('position'),n=m.getVerticesData('normal');let dot=0;for(let i=0;i<p.length;i+=3)dot+=p[i]*n[i]+p[i+2]*n[i+2];return dot>1;}),true,'head surface faces inward');
+ console.log('QUALITY_READY',JSON.stringify(quality));
  await click('#newGameBtn');await page.waitForFunction(()=>window.__V12_PROLOGUE.running);await click('#v12Skip');
+ if(mobile)await click('#qualityToggle');else await page.keyboard.press('q');
+ assert.equal((await page.evaluate(()=>window.EgyptQuality.state())).shadowSize,2048);
+ assert.equal(await page.evaluate(()=>localStorage.getItem('egypt-graphics')),'high');
+ if(mobile)await click('#qualityToggle');else await page.keyboard.press('q');
+ assert.equal((await page.evaluate(()=>window.EgyptQuality.state())).shadowSize,1024);
  const shops=await page.evaluate(()=>{
   const s=BABYLON.Engine.LastCreatedEngine.scenes[0];
   return [s.meshes.find(m=>m.name==='shopGlass'&&m.metadata.shopType==='bakery'),s.meshes.find(m=>m.metadata?.interactiveShop&&m.metadata.shopType==='bakery')].map(m=>({x:m.position.x,z:m.position.z,name:m.metadata.shopName,type:m.metadata.shopType}));
@@ -53,6 +63,9 @@ try{
   assert.ok(await page.locator('#shopExit').isVisible());assert.equal(await page.locator('#shopLocation').innerText(),shop.name);
   await evidence('shopInterior'+index);
   const walkInside=await walk(2.1);assert.ok(walkInside.end.z>walkInside.start.z+2);
+  const breadShape=await page.evaluate(()=>{const s=BABYLON.Engine.LastCreatedEngine.scenes[0],m=s.getMeshByName('quality_counterBread');m.computeWorldMatrix(true);const box=m.getBoundingInfo().boundingBox;return{thickness:box.maximumWorld.y-box.minimumWorld.y,width:box.maximumWorld.x-box.minimumWorld.x,texture:m.material.diffuseTexture.isReady()};});
+  assert.ok(breadShape.texture&&breadShape.thickness<.05&&breadShape.width>.30,'bread is thick, missing or untextured');
+  await page.evaluate(()=>window.__egyptDebug.applyLook(0,.25/.0019));await evidence('qualityBakery'+index);await page.evaluate(()=>window.__egyptDebug.applyLook(0,-.25/.0019));
   await page.waitForFunction(()=>document.getElementById('prompt').textContent.includes('اطلب من الكاونتر'));
   await interact();await page.locator('#shop').waitFor({state:'visible'});
   const before=await state();
