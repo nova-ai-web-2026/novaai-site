@@ -114,7 +114,7 @@
     if(cart){
       const x=cart.position.x,z=cart.position.z,parts=[];
       const cylinder=(name,diameter,height,px,py,pz,material)=>{const m=B.MeshBuilder.CreateCylinder('frontage_'+name,{diameter,height,tessellation:12},scene);m.position.set(px,py,pz);m.material=material;m.isPickable=false;parts.push(m);return m;};
-      for(const side of [-1,1])for(const front of [-1,1]){const wheel=cylinder('cartWheel',.43,.10,x+side*1.08,.25,z+front*.53,metal);wheel.rotation.z=Math.PI/2;}
+      for(const side of [-1,1])for(const front of [-1,1]){const wheel=cylinder('cartWheel',.43,.10,x+side*1.40,.25,z+front*.53,metal);wheel.rotation.z=Math.PI/2;}
       for(let i=0;i<3;i++)box('cartPaint_'+i,.77,.53,.035,cart,-.85+i*.85,0,-.742,i%2?red:green);
       scene.getMeshByName('fulPot')?.setEnabled(false);
       for(const dx of [-.68,.1]){

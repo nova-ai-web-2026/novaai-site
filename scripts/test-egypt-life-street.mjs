@@ -61,6 +61,12 @@ try{
  });
  await page.waitForTimeout(250);
  console.log('VISUAL_EVIDENCE_street:'+(await page.screenshot({type:'jpeg',quality:60})).toString('base64'));
+ await page.evaluate(()=>{
+  const scene=BABYLON.Engine.LastCreatedEngine.scenes[0],camera=scene.activeCamera;
+  camera.position.set(-11.3,1.9,-21.4);camera.setTarget(new BABYLON.Vector3(-8,1.05,-18));camera.fov=1.05;
+ });
+ await page.waitForTimeout(250);
+ console.log('VISUAL_EVIDENCE_cart:'+(await page.screenshot({type:'jpeg',quality:65})).toString('base64'));
  // Render the same animated rigs at close range for silhouette review.
  await page.evaluate(()=>{
   const scene=BABYLON.Engine.LastCreatedEngine.scenes[0];

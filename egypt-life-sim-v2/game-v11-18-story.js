@@ -4,7 +4,7 @@
     const B=BABYLON,button=document.getElementById('newGameBtn');
     // Each line has a visible action; the camera remains fixed within each shot.
     const beats=[
-      {who:'الصبح بدري',line:'المنبّه بيرن… وأنا عامل نفسي مش من سكان الشقة.',action:'نايم على السرير والمنبّه جنبي.',from:[-157.6,2.95,-149.8],look:[-155.9,1.0,-154.75]},
+      {who:'الصبح بدري',line:'المنبّه بيرن… وأنا عامل نفسي مش من سكان الشقة.',action:'نايم على السرير والمنبّه جنبي.',from:[-155.8,2.95,-150.2],look:[-155.9,1.0,-154.75]},
       {who:'أنا',line:'أهو قعدت… باقي بس أقنع رجليّ إن الإجازة خلصت.',action:'بصحصح وبقعد على طرف السرير.',from:[-157.8,2.7,-150.4],look:[-155.3,1.35,-154]},
       {who:'ماما',line:'خد الفلوس: أربعة عيش وطبق فول. والفكة ترجع… ما تعملهاش بلوك!',action:'ماما بتديني فلوس مشوار الفطار.',from:[-153.7,2.45,-146.0],look:[-153.7,1.35,-150.9]},
       {who:'أنا',line:'نازل أجيب الفطار… أول مهمة في اليوم، وربنا يستر من ريحة الطعمية!',action:'بخرج من الشقة… وبعد شوية أوصل أول الحارة.',from:[-152,2.6,-150.2],look:[-150,1.25,-144.2]}
@@ -23,7 +23,7 @@
           if(node.getTotalVertices){node.metadata={...node.metadata,storyActor:role};node.isPickable=false;node.checkCollisions=false;}
         }
         const joint=name=>nodes.find(n=>n.name.endsWith(name+'_'+rig));
-        return {root,visual,joint,head:nodes.find(n=>n.name.endsWith('v9_head_'+rig))};
+        return {root,visual,joint,waist:nodes.filter(n=>/v9p_(pelvis|waist)_/.test(n.name)),head:nodes.find(n=>n.name.endsWith('v9_head_'+rig))};
       };
       actors={hero:copy('hero',3,[-154,0,-154.1]),mother:copy('mother',1,[-150.4,0,-150]),vendor:copy('vendor',2,[-8,0,-16.7])};
       // Clear sight lines to the bed and a walkable route to the front door.
@@ -63,6 +63,7 @@
       for(const actor of [hero,mother]){
         actor.visual.rotation.set(0,Math.PI,0);actor.joint('v9_spine').rotation.set(0,0,0);
         actor.joint('v9_pelvis').position.y=.82;actor.joint('v9_spine').position.y=.22;
+        for(const mesh of actor.waist)mesh.rotation.x=0;
         for(const side of ['L','R'])for(const part of ['hip','knee','shoulder','elbow'])actor.joint('v9_'+part+side).rotation.set(0,0,0);
       }
       mother.root.position.set(-153,.12,-150.9);hero.root.position.set(-155.05,0,-154.65);
@@ -74,6 +75,7 @@
         const reclined=index===0?1:1-ease;
         hero.joint('v9_pelvis').position.y=.82+.19*reclined;
         hero.joint('v9_spine').position.y=.22-.19*reclined;
+        for(const mesh of hero.waist)mesh.rotation.x=1.55*reclined;
         hero.joint('v9_spine').rotation.x=1.55*(index===0?1:1-ease);
         hero.root.position.z=-154.65+(index===1?.6*ease:0);
         for(const side of ['L','R']){
