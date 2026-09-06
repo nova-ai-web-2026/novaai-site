@@ -42,7 +42,7 @@
 
   let state=loadState();
   let engine,scene,camera,sun,hemi,sky;
-  let yaw=0,pitch=0,current=null,modal=false,running=false,lastSave=0,toastTimer=0;
+  let yaw=0,pitch=0,current=null,modal=false,running=false,lastSave=0,toastTimer=0,shopVisit=null;
   let joyX=0,joyY=0,joyPointer=null,lookPointer=null,lastPX=0,lastPY=0,stepClock=0,nextHorn=0;
   const keys=new Set(), mats=new Map();
   const world={size:216,roads:[-72,-24,24,72],interactables:[],people:[],vehicles:[],lights:[],market:{x:48,z:-48},home:null,job:null};
@@ -58,7 +58,7 @@
       loaded.breakfastSpent=Math.max(0,Number(loaded.breakfastSpent)||0);return loaded;
     }catch{return {...DEFAULT};}
   }
-  function saveState(){if(!camera||window.__V12_PROLOGUE?.running)return;state.savedX=+camera.position.x.toFixed(2);state.savedZ=+camera.position.z.toFixed(2);localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
+  function saveState(){if(!camera||window.__V12_PROLOGUE?.running)return;const p=shopVisit?.outside||camera.position;state.savedX=+p.x.toFixed(2);state.savedZ=+p.z.toFixed(2);localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
   function hasSave(){return !!localStorage.getItem(SAVE_KEY);}
   function clamp(v,a=0,b=100){return Math.max(a,Math.min(b,v));}
   function rnd(seed){const n=Math.sin(seed*12.9898+78.233)*43758.5453;return n-Math.floor(n);}
@@ -213,15 +213,47 @@
   function updatePeople(dt){for(const p of world.people){p.phase+=.08*dt;const sw=Math.sin(p.phase*5)*.45;p.legL.rotation.x=sw;p.legR.rotation.x=-sw;p.armL.rotation.x=-sw*.7;p.armR.rotation.x=sw*.7;if(p.axis===0){p.root.position.x+=p.speed*p.dir*dt;p.root.position.z=nearestRoad(p.root.position.z)+(p.phase%2>1?7:-7);if(p.root.position.x>106)p.root.position.x=-106;if(p.root.position.x<-106)p.root.position.x=106;p.root.rotation.y=p.dir>0?Math.PI/2:-Math.PI/2;}else{p.root.position.z+=p.speed*p.dir*dt;p.root.position.x=nearestRoad(p.root.position.x)+(p.phase%2>1?7:-7);if(p.root.position.z>106)p.root.position.z=-106;if(p.root.position.z<-106)p.root.position.z=106;p.root.rotation.y=p.dir>0?0:Math.PI;}}}
 
   function itemPos(i){if(i.root)return i.root.position;if(i.mesh)return i.mesh.position;return new BABYLON.Vector3(i.x||0,0,i.z||0);}
-  function updateInteraction(){let best=null,bestD=3;for(const i of world.interactables){const p=itemPos(i),d=Math.hypot(p.x-camera.position.x,p.z-camera.position.z);if(d<bestD){bestD=d;best=i;}}current=best;ui.prompt.classList.toggle('show',!!best);if(best)ui.prompt.textContent=`${TOUCH?'تفاعل':'E'} — ${best.name}`;}
+  function canEnter(item){return item.kind==='shop'&&(item.mesh?.name==='shopHot'||item.mesh?.metadata?.interactiveShop);}
+  function updateInteraction(){
+    let best=null,bestD=3.25;
+    const options=shopVisit?[{kind:'shopCounter',name:'اطلب من الكاونتر',...window.EgyptShops.counter()},{kind:'shopExit',name:'اخرج للشارع',...window.EgyptShops.door()}]:world.interactables;
+    for(const item of options){
+      const p=itemPos(item);let x=p.x,z=p.z;
+      if(canEnter(item)){
+        if(camera.position.z>z+.65)continue;
+        const half=item.mesh.getBoundingInfo().boundingBox.extendSize.x;
+        x=Math.max(x-half+.3,Math.min(camera.position.x,x+half-.3));
+      }
+      const d=Math.hypot(x-camera.position.x,z-camera.position.z)+(item.kind==='person'?.65:0);
+      if(d<bestD){bestD=d;best=item;}
+    }
+    current=best;ui.prompt.classList.toggle('show',!!best);ui.prompt.disabled=!best;
+    const action=best?(canEnter(best)?'ادخل '+best.name:best.kind==='shop'?'اشتري من '+best.name:best.name):'';
+    if(best)ui.prompt.textContent=`${TOUCH?'اضغط هنا':'E'} — ${action}`;
+    ui.act.textContent=canEnter(best||{})?'دخول':best?.kind==='shopCounter'?'اطلب':best?.kind==='shopExit'?'خروج':'تفاعل';
+  }
+  function clearInput(){keys.clear();joyX=joyY=0;joyPointer=lookPointer=null;running=false;ui.knob.style.transform='translate(0,0)';}
+  function enterShop(item){
+    const outside={x:camera.position.x,z:camera.position.z,yaw};
+    const inside=window.EgyptShops.enter(scene,item.data);shopVisit={outside,data:item.data};
+    clearInput();camera.position.set(inside.x,EYE,inside.z);yaw=0;pitch=0;camera.rotation.set(0,0,0);current=null;
+    document.body.classList.add('inside-shop');$('shopLocation').textContent=item.name;
+    emitSfx('door');openShop(item.data);saveState();nextTargetAt=0;
+  }
+  function leaveShop(){
+    if(!shopVisit)return;const p=shopVisit.outside;shopVisit=null;window.EgyptShops.leave();
+    clearInput();camera.position.set(p.x,EYE,p.z);yaw=p.yaw+Math.PI;pitch=0;camera.rotation.set(0,yaw,0);current=null;
+    document.body.classList.remove('inside-shop');emitSfx('door');saveState();nextTargetAt=0;
+  }
   function releaseMouse(){if(document.pointerLockElement)document.exitPointerLock?.();}
   function emitSfx(name){window.dispatchEvent(new CustomEvent('egypt-sfx',{detail:{name}}));}
   function interact(){
     if(ui.menu.style.display!=='none'||window.__V12_PROLOGUE?.running)return;
     if(modal){closeModals();return;}
+    if(shopVisit){if(current?.kind==='shopExit')leaveShop();else if(current?.kind==='shopCounter'){emitSfx('interact');openShop(shopVisit.data);}return;}
     if(window.__V12_INTERACT_DOOR?.())return;
     if(!current)return;emitSfx('interact');playInteract();
-    if(current.kind==='shop')openShop(current.data);
+    if(current.kind==='shop'){if(canEnter(current))enterShop(current);else openShop(current.data);}
     else if(current.kind==='person')openDialog(current.data.name,current.data.line);
     else if(current.kind==='market'){state.mood=clamp(state.mood+3);showToast('لفّيت في سوق الحارة 👌');advanceTask('market');}
     else if(current.kind==='job')startJob();
@@ -243,7 +275,8 @@
     showToast(missingBreakfast().length?'اتحط في الشنطة — باقي '+missingBreakfast().join(' و'):'الفطار جاهز — ارجع بيت العيلة');
   }
   function openShop(data){
-    modal=true;releaseMouse();ui.shopTitle.textContent=data.name;ui.shopDesc.textContent=data.desc;ui.shopItems.innerHTML='';
+    modal=true;clearInput();releaseMouse();ui.shopTitle.textContent=data.name;ui.shopDesc.textContent=data.desc;ui.shopItems.innerHTML='';
+    $('shopBrowse').hidden=!shopVisit;ui.shopClose.textContent=shopVisit?'اخرج للشارع':'اقفل القائمة';
     const offer=breakfastOffer(data);
     if(offer){
       const row=document.createElement('div');row.className='item errand-item';row.dataset.errand=offer.key;
@@ -276,7 +309,7 @@
     showToast('رجعت بيت العيلة وارتحت');advanceTask('home');saveState();updateHUD();
   }
   function openDialog(who,text){modal=true;releaseMouse();ui.dialogWho.textContent=who;ui.dialogText.textContent=text;ui.dialog.style.display='flex';state.mood=clamp(state.mood+1);}
-  function closeModals(){modal=false;ui.shop.style.display='none';ui.dialog.style.display='none';}
+  function closeModals(stayInShop=false){modal=false;ui.shop.style.display='none';ui.dialog.style.display='none';clearInput();if(stayInShop!==true)leaveShop();}
   function startJob(){if(state.energy<18){showToast('طاقتك قليلة، كل أو ارجع البيت الأول');return;}const pay=48+Math.floor(Math.random()*28);state.energy=clamp(state.energy-10);state.money+=pay;state.worked++;state.minute+=35;emitSfx('reward');playBuy();showToast(`خلصت طلبية وكسبت ${pay} جنيه`);advanceTask('job');saveState();}
   function advanceTask(action){if(state.task===1&&action==='market'){state.task=2;showToast('عرفت السوق — جرّب شغل التوصيل');}else if(state.task===2&&action==='job'){state.task=3;showToast('خلصت الشغل — ارجع بيت العيلة');}else if(state.task===3&&action==='home'){state.task=4;showToast('خلصت أول يوم في الحارة 🇪🇬');}}
   function taskCopy(){switch(state.task){case 0:return['مشوار الفطار',missingBreakfast().length?'هات '+missingBreakfast().join(' و')+' للبيت. اختار «حط في الشنطة» عند البياع.':'الفطار في الشنطة. ارجع بيت العيلة وسلّمه لماما.'];case 1:return['لفة السوق','روح سوق الحارة واتفرج على الباعة.'];case 2:return['رزق اليوم','روح «طلبات الحارة» وخد شغلانة توصيل.'];case 3:return['ارجع للعيلة','بعد الشغل ارجع بيت العيلة وارتاح.'];default:return['عيش يومك','لف الحارة، كل، اشتغل واتكلم مع الناس.'];}}
@@ -290,14 +323,15 @@
       }
       return item.kind===(state.task===1?'market':state.task===2?'job':state.task===3?'home':'none');
     });
-    const distance=item=>Math.hypot(itemPos(item).x-camera.position.x,itemPos(item).z-camera.position.z);
+    const here=shopVisit?.outside||camera.position;
+    const distance=item=>Math.hypot(itemPos(item).x-here.x,itemPos(item).z-here.z);
     missionTarget=targets.sort((a,b)=>distance(a)-distance(b))[0]||null;
     const bag=$('taskBag'),guide=$('taskGuide');
     if(bag){bag.hidden=state.breakfastDelivered;bag.textContent=`الشنطة: عيش ${state.breakfastBread}/٤ · فول ${state.breakfastFul?'١':'٠'}/١`;}
     if(guide){
       const indoors=window.__V12_HOME&&Math.abs(camera.position.x-window.__V12_HOME.spawn.x)<15&&Math.abs(camera.position.z-window.__V12_HOME.spawn.z)<15;
       guide.hidden=!missionTarget;
-      guide.textContent=indoors?'اخرج من باب البيت علشان تكمل المشوار':missionTarget?`● ${missionTarget.name} · ${Math.round(distance(missionTarget))} م`:'';
+      guide.textContent=shopVisit?'جوه '+shopVisit.data.name+' — الطلب من الكاونتر':indoors?'اخرج من باب البيت علشان تكمل المشوار':missionTarget?`● ${missionTarget.name} · ${Math.round(distance(missionTarget))} م`:'';
     }
   }
   function updateDayNight(){const t=state.minute/1440,a=t*Math.PI*2-Math.PI/2,light=clamp(Math.sin(a)*.78+.45,.08,1);sun.direction.set(Math.cos(a)*-.55,-Math.max(.12,Math.sin(a)),Math.sin(a)*-.35);sun.intensity=.2+light*1.15;hemi.intensity=.24+light*.48;scene.fogColor=new BABYLON.Color3(.17+.56*light,.2+.56*light,.23+.53*light);if(sky&&sky.material)sky.material.emissiveColor=new BABYLON.Color3(.07+.43*light,.09+.51*light,.13+.57*light);const night=light<.34;for(const b of world.lights)b.material.emissiveColor=night?new BABYLON.Color3(.9,.65,.22):new BABYLON.Color3(.1,.08,.04);}
@@ -307,14 +341,14 @@
 
   function applyLook(dx,dy){yaw+=dx*.00225;pitch=clamp(pitch+dy*.0019,-1.15,1.15);}
   function setupInput(){
-    addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='KeyE')interact();if(e.code==='ShiftLeft'||e.code==='ShiftRight')running=true;if(e.code==='Escape')closeModals();if(e.code==='KeyM')toggleAudio();});addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='ShiftLeft'||e.code==='ShiftRight')running=false;});
+    addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='KeyE'&&!e.repeat)interact();if(e.code==='ShiftLeft'||e.code==='ShiftRight')running=true;if(e.code==='Escape')closeModals();if(e.code==='KeyM')toggleAudio();});addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='ShiftLeft'||e.code==='ShiftRight')running=false;});
     if(!TOUCH){canvas.addEventListener('click',()=>{if(ui.menu.style.display==='none'&&!modal)canvas.requestPointerLock?.();});document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&!modal)applyLook(e.movementX,e.movementY);});}
     else{ui.joy.addEventListener('pointerdown',e=>{joyPointer=e.pointerId;ui.joy.setPointerCapture(e.pointerId);setJoy(e);});ui.joy.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer)setJoy(e);});const end=e=>{if(e.pointerId===joyPointer){joyPointer=null;joyX=joyY=0;ui.knob.style.transform='translate(0,0)';}};ui.joy.addEventListener('pointerup',end);ui.joy.addEventListener('pointercancel',end);canvas.addEventListener('pointerdown',e=>{lookPointer=e.pointerId;lastPX=e.clientX;lastPY=e.clientY;});canvas.addEventListener('pointermove',e=>{if(e.pointerId!==lookPointer||modal)return;const dx=e.clientX-lastPX,dy=e.clientY-lastPY;lastPX=e.clientX;lastPY=e.clientY;applyLook(dx,dy);});canvas.addEventListener('pointerup',e=>{if(e.pointerId===lookPointer)lookPointer=null;});canvas.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer)lookPointer=null;});}
-    ui.shopClose.onclick=closeModals;ui.dialogClose.onclick=closeModals;ui.act.onclick=interact;ui.run.onpointerdown=()=>running=true;ui.run.onpointerup=()=>running=false;ui.run.onpointercancel=()=>running=false;if(ui.sound)ui.sound.onclick=toggleAudio;addEventListener('beforeunload',saveState);addEventListener('resize',()=>engine.resize());
+    ui.shopClose.onclick=()=>closeModals();ui.dialogClose.onclick=()=>closeModals();ui.act.onclick=interact;ui.prompt.onclick=interact;$('shopBrowse').onclick=()=>closeModals(true);$('shopExit').onclick=()=>closeModals();ui.run.onpointerdown=()=>running=true;ui.run.onpointerup=()=>running=false;ui.run.onpointercancel=()=>running=false;if(ui.sound)ui.sound.onclick=toggleAudio;addEventListener('beforeunload',saveState);addEventListener('resize',()=>engine.resize());
   }
   function setJoy(e){const r=ui.joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=40,len=Math.hypot(dx,dy)||1,k=Math.min(1,max/len),nx=dx*k,ny=dy*k;joyX=nx/max;joyY=-ny/max;ui.knob.style.transform=`translate(${nx}px,${ny}px)`;}
 
-  function resetState(){state={...DEFAULT};nextTargetAt=0;yaw=0;pitch=0;if(camera){camera.position.set(DEFAULT.savedX,EYE,DEFAULT.savedZ);camera.rotation.set(0,0,0);}updateHUD();}
+  function resetState(){shopVisit=null;window.EgyptShops?.leave();document.body.classList.remove('inside-shop');state={...DEFAULT};nextTargetAt=0;yaw=0;pitch=0;if(camera){camera.position.set(DEFAULT.savedX,EYE,DEFAULT.savedZ);camera.rotation.set(0,0,0);}updateHUD();}
   function enterGame(newGame){if(newGame){localStorage.removeItem(SAVE_KEY);resetState();}else{state=loadState();camera.position.set(state.savedX,EYE,state.savedZ);yaw=0;pitch=0;camera.rotation.set(0,0,0);updateHUD();}ui.menu.style.display='none';ui.menuStatus.textContent='';startAudio();if(!TOUCH&&navigator.userActivation?.isActive)canvas.requestPointerLock?.()?.catch?.(()=>{});showToast(newGame?'بدأت يوم جديد في الحارة 🇪🇬':'رجعت لآخر مكان محفوظ');}
   function setupMenu(){ui.cont.disabled=!hasSave();ui.cont.style.opacity=hasSave()?'1':'.45';ui.cont.onclick=()=>{if(hasSave())enterGame(false);};ui.newGame.onclick=()=>enterGame(true);ui.reset.onclick=()=>{localStorage.removeItem(SAVE_KEY);ui.cont.disabled=true;ui.cont.style.opacity='.45';ui.menuStatus.textContent='تم مسح الحفظ. تقدر تبدأ يوم جديد.';resetState();};if(!hasSave())ui.menuStatus.textContent='مفيش حفظ قديم لسه — ابدأ يوم جديد.';}
 
@@ -327,6 +361,7 @@
     visitHome,
     doorSound:()=>emitSfx('door'),
     modalOpen:()=>modal,
+    insideShop:()=>shopVisit?{name:shopVisit.data.name,type:shopVisit.data.type,outside:{...shopVisit.outside}}:null,
     snapshot:()=>({state:{...state},target:missionTarget?{kind:missionTarget.kind,name:missionTarget.name,type:missionTarget.data?.type,x:itemPos(missionTarget).x,z:itemPos(missionTarget).z}:null})
   };
 

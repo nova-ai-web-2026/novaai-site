@@ -5,10 +5,6 @@ on:
       game_url:
         type: string
         default: ''
-  pull_request:
-    paths:
-      - 'scripts/test-egypt-life-shop-entry.mjs'
-      - '.github/workflows/test-egypt-life-shop-entry.yml'
 permissions:
   contents: read
 jobs:

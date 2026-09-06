@@ -48,7 +48,7 @@ try{
     assert.equal(after.playCalls,before.playCalls,'closing family dialogue played a sound');
     assert.equal(after.events.door,before.events.door,'closing dialogue reopened the home door');
   };
-  await page.goto(base+'?v=11.21.0',{waitUntil:'domcontentloaded'});await ready();await newDay();
+  await page.goto(base+'?v=11.22.0',{waitUntil:'domcontentloaded'});await ready();await newDay();
   assert.equal((await state()).money,300);assert.equal((await state()).task,0);
   await page.waitForFunction(()=>document.getElementById('taskGuide').textContent.includes('م'));
   await approachFul();

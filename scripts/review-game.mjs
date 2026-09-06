@@ -42,12 +42,14 @@ try{
    await page.waitForFunction(name=>document.getElementById('prompt').classList.contains('show')&&document.getElementById('prompt').textContent.includes(name),shop.name);
    await interact();await page.locator('#shop').waitFor({state:'visible'});
    assert.equal(await page.locator('#shopTitle').innerText(),shop.name);
+   assert.equal(await page.evaluate(()=>window.EgyptLife.insideShop()?.type),shop.type,'storefront did not enter its shop interior');
    const rows=page.locator('#shopItems .item:not(.errand-item)');assert.ok(await rows.count()>=2);
    const price=Number((await rows.first().innerText()).match(/(\d+) جنيه/)[1]),before=await state();
    await rows.first().getByRole('button',{name:'اشتري',exact:true}).click();
    const after=await state();assert.equal(after.money,before.money-price);assert.equal(after.task,0);assert.equal(after.breakfastDelivered,false);
    console.log('SHOP_PURCHASE',JSON.stringify({type:shop.type,name:shop.name,price,money:after.money}));
    await click('#shopClose');await page.locator('#shop').waitFor({state:'hidden'});
+   assert.equal(await page.evaluate(()=>window.EgyptLife.insideShop()),null,'shop close did not return outside');
   }
   const expanded=await page.evaluate(()=>{
     const s=BABYLON.Engine.LastCreatedEngine.scenes[0],m=s.meshes.find(m=>m.metadata?.interactiveShop&&m.metadata.shopType==='bakery');
