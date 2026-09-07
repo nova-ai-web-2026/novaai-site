@@ -1,6 +1,7 @@
 package com.novaai.hayatmasr;
 
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebChromeClient;
@@ -9,7 +10,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
-    private static final String GAME_URL = "https://nova-ai-web-2026.github.io/novaai-site/egypt-life-sim-v2/?v=11.25.0&menu=egyptian";
+    private static final String GAME_URL = "https://nova-ai-web-2026.github.io/novaai-site/egypt-life-sim-v2/?v=11.26.0&menu=baladi&perf=1";
     private WebView webView;
 
     @Override
@@ -25,6 +26,11 @@ public class MainActivity extends Activity {
         );
 
         webView = new WebView(this);
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+        }
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
@@ -38,6 +44,8 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setLoadsImagesAutomatically(true);
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
