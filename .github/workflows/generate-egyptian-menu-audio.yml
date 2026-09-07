@@ -1,0 +1,43 @@
+name: Generate Egyptian menu audio
+
+on:
+  push:
+    branches:
+      - egyptian-sampled-menu-audio-v11-27
+    paths:
+      - 'scripts/generate-egyptian-menu-audio.py'
+      - '.github/workflows/generate-egyptian-menu-audio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: egyptian-sampled-menu-audio-v11-27
+
+      - name: Generate WAV sources
+        run: python3 scripts/generate-egyptian-menu-audio.py
+
+      - name: Encode lightweight Opus assets
+        run: |
+          ffmpeg -y -hide_banner -loglevel error -i egypt-life-sim-v2/assets/egyptian-menu-loop.wav -ac 1 -c:a libopus -b:a 22k -vbr on -application audio egypt-life-sim-v2/assets/egyptian-menu-loop.ogg
+          ffmpeg -y -hide_banner -loglevel error -i egypt-life-sim-v2/assets/egyptian-button-sting.wav -ac 1 -c:a libopus -b:a 32k -vbr on -application audio egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          rm egypt-life-sim-v2/assets/egyptian-menu-loop.wav egypt-life-sim-v2/assets/egyptian-button-sting.wav
+
+      - name: Commit generated audio
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add egypt-life-sim-v2/assets/egyptian-menu-loop.ogg egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          if git diff --cached --quiet; then
+            echo 'Audio assets unchanged.'
+          else
+            git commit -m 'Add original Egyptian sampled menu audio'
+            git push origin HEAD:egyptian-sampled-menu-audio-v11-27
+          fi
