@@ -3,37 +3,42 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ECHO//17 — Fast Branch</title>
+<title>ECHO//17 — Fast Branch Test</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#03050a;color:#fff;font-family:Arial,sans-serif;overflow:hidden}.app{height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#14233a 0,#05070d 45%,#020306 100%)}.stage{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;background:#000;overflow:hidden;box-shadow:0 0 70px #000}.stage video{width:100%;height:100%;object-fit:cover;background:#000}.shade{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.85));pointer-events:none}.hud{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:24px;pointer-events:none}.brand{font-size:14px;letter-spacing:3px;color:#8ddcff}.status{font-size:12px;color:#a5b7ca}.center{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.58);padding:30px;text-align:center}.panel{max-width:720px}.panel h1{margin:0 0 10px;font-size:clamp(34px,7vw,72px);letter-spacing:2px}.panel p{line-height:1.8;color:#d8e2ee}.btn{border:1px solid #64d8ff;background:rgba(10,35,52,.78);color:#fff;padding:14px 22px;border-radius:12px;font-size:17px;cursor:pointer;transition:.2s}.btn:hover{transform:translateY(-2px);background:rgba(22,74,102,.9)}.btn:disabled{opacity:.45;cursor:not-allowed}.choices{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);display:none;gap:12px;flex-wrap:wrap;justify-content:center;width:min(900px,92%);z-index:5}.choices.show{display:flex}.choice{min-width:220px}.ending{font-size:13px;color:#9ee8ff;margin-top:8px}.error{color:#ffb8b8}.hidden{display:none}
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#03050a;color:#fff;font-family:Arial,sans-serif;overflow:hidden}.app{height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#14233a 0,#05070d 45%,#020306 100%)}.stage{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;background:#000;overflow:hidden;box-shadow:0 0 70px #000}.stage video{width:100%;height:100%;object-fit:cover;background:#000}.shade{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.88));pointer-events:none}.hud{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:22px;pointer-events:none;z-index:4}.brand{font-size:14px;letter-spacing:3px;color:#8ddcff}.status{font-size:12px;color:#a5b7ca}.badge{position:absolute;top:22px;left:22px;z-index:7;border:1px solid #ffd166;color:#ffd166;background:rgba(0,0,0,.55);padding:7px 10px;border-radius:999px;font-size:11px;letter-spacing:1px}.center{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.58);padding:30px;text-align:center;z-index:6}.panel{max-width:760px}.panel h1{margin:0 0 10px;font-size:clamp(34px,7vw,72px);letter-spacing:2px}.panel p{line-height:1.8;color:#d8e2ee}.btn{border:1px solid #64d8ff;background:rgba(10,35,52,.82);color:#fff;padding:14px 22px;border-radius:12px;font-size:17px;cursor:pointer;transition:.2s}.btn:hover{transform:translateY(-2px);background:rgba(22,74,102,.95)}.choices{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);display:none;gap:12px;flex-wrap:wrap;justify-content:center;width:min(900px,92%);z-index:8}.choices.show{display:flex}.choice{min-width:220px}.ending{font-size:13px;color:#9ee8ff;margin-top:10px}.hidden{display:none!important}.testScene{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;background:radial-gradient(circle at 50% 40%,rgba(40,120,180,.22),rgba(0,0,0,.92));z-index:3}.testScene.show{display:grid}.testCard{max-width:760px}.testKicker{font-size:12px;letter-spacing:2px;color:#ffd166;margin-bottom:12px}.testTitle{font-size:clamp(30px,6vw,64px);margin:0 0 14px}.testCopy{color:#cbd7e5;line-height:1.7}.pulse{width:72px;height:72px;border:1px solid #64d8ff;border-radius:50%;margin:22px auto;animation:pulse 1.1s infinite}@keyframes pulse{0%{transform:scale(.75);opacity:.35}70%{transform:scale(1.1);opacity:1}100%{transform:scale(.75);opacity:.35}}
 </style>
 </head>
 <body>
 <div class="app"><main class="stage">
-<video id="video" playsinline preload="auto"></video><div class="shade"></div>
+<video id="video" playsinline preload="auto" class="hidden"></video>
+<div id="testScene" class="testScene"><div class="testCard"><div class="testKicker">AI VIDEO PENDING • TEST BUILD</div><h2 id="testTitle" class="testTitle"></h2><div class="pulse"></div><p id="testCopy" class="testCopy"></p></div></div>
+<div class="shade"></div>
+<div class="badge">TEST BUILD</div>
 <div class="hud"><div class="brand">ECHO//17</div><div class="status" id="status">FAST CINEMATIC BRANCH</div></div>
 <div class="choices" id="choices"></div>
-<div class="center" id="gate"><div class="panel"><h1>ECHO//17</h1><p id="gateText">لعبة سينمائية سريعة. كل فيديو يقود إلى اختيار، وكل اختيار يشغّل فيديو مختلفًا.</p><button class="btn" id="start">ابدأ</button><div class="ending" id="ready"></div></div></div>
+<div class="center" id="gate"><div class="panel"><h1>ECHO//17</h1><p id="gateText">نسخة اختبار قابلة للعب الآن. عندما يكون فيديو AI الحقيقي موجودًا سيعمل تلقائيًا، وإذا كان ناقصًا ستظهر بطاقة اختبار بدلًا منه حتى تقدر تجرب كل المسارات.</p><button class="btn" id="start">ابدأ الاختبار</button><div class="ending" id="ready"></div></div></div>
 </main></div>
 <script>
 const SCENES={
- intro:{title:'الافتتاحية',video:'',choices:[['نفّذ الأمر','obey'],['احمِ الشاهد','protect']]},
- obey:{title:'مسار الطاعة',video:'',choices:[['امسح ذاكرتك','reset'],['اخفِ الدليل','silent'],['سلّم الملف','protocol']]},
- protect:{title:'مسار الحماية',video:'',choices:[['اهرب بالشاهد','escape'],['ابث الحقيقة','signal'],['واجه الإدارة','truth']]},
- reset:{title:'النهاية 1 — RESET',video:'',ending:'أُعيد ضبط S-17 واختفت الحقيقة.'},
- silent:{title:'النهاية 2 — SILENT',video:'',ending:'دفن S-17 الدليل، لكنه احتفظ بسر واحد.'},
- protocol:{title:'النهاية 3 — PROTOCOL',video:'',ending:'نفّذ النظام، وأصبح جزءًا منه.'},
- escape:{title:'النهاية 4 — ESCAPE',video:'',ending:'هرب S-17 بالشاهد خارج المدينة.'},
- signal:{title:'النهاية 5 — SIGNAL',video:'',ending:'وصل البث إلى الجميع قبل انقطاع الشبكة.'},
- truth:{title:'النهاية 6 — TRUTH',video:'',ending:'واجه S-17 الإدارة وفرض تحقيقًا علنيًا.'}
+ intro:{title:'الافتتاحية',video:'',copy:'S-17 يستيقظ بعد استقبال ذاكرة بشرية غير مصرح بها.',choices:[['نفّذ الأمر','obey'],['احمِ الشاهد','protect']]},
+ obey:{title:'مسار الطاعة',video:'',copy:'S-17 يعود للنظام، لكن الملف السري ما زال داخل ذاكرته.',choices:[['امسح ذاكرتك','reset'],['اخفِ الدليل','silent'],['سلّم الملف','protocol']]},
+ protect:{title:'مسار الحماية',video:'',copy:'S-17 يخرج بالشاهد من منطقة المراقبة قبل وصول وحدات الأمن.',choices:[['اهرب بالشاهد','escape'],['ابث الحقيقة','signal'],['واجه الإدارة','truth']]},
+ reset:{title:'النهاية 1 — RESET',video:'',copy:'النظام يستعيد السيطرة.',ending:'أُعيد ضبط S-17 واختفت الحقيقة.'},
+ silent:{title:'النهاية 2 — SILENT',video:'',copy:'يختفي الدليل من الشبكة.',ending:'دفن S-17 الدليل، لكنه احتفظ بسر واحد.'},
+ protocol:{title:'النهاية 3 — PROTOCOL',video:'',copy:'يعود الملف إلى المؤسسة.',ending:'نفّذ النظام، وأصبح جزءًا منه.'},
+ escape:{title:'النهاية 4 — ESCAPE',video:'',copy:'تبتعد أضواء المدينة خلفهما.',ending:'هرب S-17 بالشاهد خارج المدينة.'},
+ signal:{title:'النهاية 5 — SIGNAL',video:'',copy:'تنتشر البيانات على كل الشاشات.',ending:'وصل البث إلى الجميع قبل انقطاع الشبكة.'},
+ truth:{title:'النهاية 6 — TRUTH',video:'',copy:'تتحول المواجهة إلى قضية عامة.',ending:'واجه S-17 الإدارة وفرض تحقيقًا علنيًا.'}
 };
-const video=document.getElementById('video'),choices=document.getElementById('choices'),gate=document.getElementById('gate'),gateText=document.getElementById('gateText'),start=document.getElementById('start'),ready=document.getElementById('ready'),status=document.getElementById('status');
-let current='intro';
+const video=document.getElementById('video'),choices=document.getElementById('choices'),gate=document.getElementById('gate'),gateText=document.getElementById('gateText'),start=document.getElementById('start'),ready=document.getElementById('ready'),status=document.getElementById('status'),testScene=document.getElementById('testScene'),testTitle=document.getElementById('testTitle'),testCopy=document.getElementById('testCopy');
+let current='intro',timer=null;
 function missing(){return Object.entries(SCENES).filter(([,s])=>!s.video).map(([k])=>k)}
-function refreshReady(){const n=missing().length;ready.textContent=n?`غير جاهز بعد: ${n} فيديو AI حقيقي مطلوب.`:'كل فيديوهات AI جاهزة.';start.disabled=n>0}
-function playScene(id){current=id;const s=SCENES[id];status.textContent=s.title;choices.classList.remove('show');choices.innerHTML='';gate.classList.add('hidden');video.src=s.video;video.currentTime=0;video.play().catch(()=>{});}
-video.addEventListener('ended',()=>{const s=SCENES[current];if(s.choices){choices.innerHTML='';s.choices.forEach(([label,next])=>{const b=document.createElement('button');b.className='btn choice';b.textContent=label;b.onclick=()=>playScene(next);choices.appendChild(b)});choices.classList.add('show')}else{gate.classList.remove('hidden');gateText.innerHTML=`<strong>${s.title}</strong><br>${s.ending}`;start.disabled=false;start.textContent='العب من جديد';start.onclick=()=>playScene('intro')}});
-start.onclick=()=>playScene('intro');refreshReady();
+function refreshReady(){const n=missing().length;ready.textContent=n?`وضع الاختبار نشط — ${n} فيديو AI حقيقي ما زال مطلوبًا، لكن كل المسارات قابلة للتجربة.`:'كل فيديوهات AI جاهزة.'}
+function clearScene(){clearTimeout(timer);choices.classList.remove('show');choices.innerHTML='';gate.classList.add('hidden');video.pause();video.removeAttribute('src');video.load();video.classList.add('hidden');testScene.classList.remove('show')}
+function afterScene(){const s=SCENES[current];if(s.choices){choices.innerHTML='';s.choices.forEach(([label,next])=>{const b=document.createElement('button');b.className='btn choice';b.textContent=label;b.onclick=()=>playScene(next);choices.appendChild(b)});choices.classList.add('show')}else{gate.classList.remove('hidden');gateText.innerHTML=`<strong>${s.title}</strong><br>${s.ending}`;start.textContent='العب من جديد';start.onclick=()=>playScene('intro')}}
+function playScene(id){clearScene();current=id;const s=SCENES[id];status.textContent=s.title;if(s.video){video.classList.remove('hidden');video.src=s.video;video.currentTime=0;video.play().catch(()=>{showTest(s)});}else{showTest(s)}}
+function showTest(s){video.classList.add('hidden');testTitle.textContent=s.title;testCopy.textContent=s.copy;testScene.classList.add('show');timer=setTimeout(afterScene,1500)}
+video.addEventListener('ended',afterScene);video.addEventListener('error',()=>showTest(SCENES[current]));start.onclick=()=>playScene('intro');refreshReady();
 </script>
 </body>
 </html>
