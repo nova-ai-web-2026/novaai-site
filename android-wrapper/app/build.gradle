@@ -1,0 +1,16 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.novaai.hayatmasr'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.novaai.hayatmasr'
+        minSdk 23
+        targetSdk 35
+        versionCode 112400
+        versionName '11.24.0'
+    }
+}
