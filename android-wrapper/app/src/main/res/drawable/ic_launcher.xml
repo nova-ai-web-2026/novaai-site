@@ -4,9 +4,36 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#11100E" android:pathData="M0,0H108V108H0Z" />
-    <path android:fillColor="#E9B84B" android:pathData="M15,82L54,20L93,82Z" />
-    <path android:fillColor="#F6EAD2" android:pathData="M32,82L54,47L76,82Z" />
-    <path android:fillColor="#D79A2B" android:pathData="M54,20L93,82H76L54,47Z" />
-    <path android:fillColor="#E9B84B" android:pathData="M82,18m-9,0a9,9 0,1 0,18,0a9,9 0,1 0,-18,0" />
+
+    <!-- Egyptian flag inspired base -->
+    <path android:fillColor="#C8102E" android:pathData="M0,0H108V36H0Z"/>
+    <path android:fillColor="#F5F3EE" android:pathData="M0,36H108V67H0Z"/>
+    <path android:fillColor="#111318" android:pathData="M0,67H108V108H0Z"/>
+
+    <!-- Premium gold badge ring -->
+    <path android:fillColor="#D8A33B" android:pathData="M54,7a47,47 0,1 0,0,94a47,47 0,1 0,0,-94"/>
+    <path android:fillColor="#17191F" android:pathData="M54,12a42,42 0,1 0,0,84a42,42 0,1 0,0,-84"/>
+
+    <!-- Warm sky -->
+    <path android:fillColor="#B83235" android:pathData="M54,18a36,36 0,0 0,-35,29H89A36,36 0,0 0,54,18Z"/>
+    <path android:fillColor="#E7B84D" android:pathData="M75,28a9,9 0,1 0,0,18a9,9 0,1 0,0,-18"/>
+
+    <!-- Cairo skyline -->
+    <path android:fillColor="#24262D" android:pathData="M18,69H26V52H34V69H39V46H46V69H50V57H57V69H63V49H71V69H76V55H84V69H90V88H18Z"/>
+
+    <!-- Cairo-tower inspired centerpiece -->
+    <path android:fillColor="#E3B44D" android:pathData="M51,31H57L59,39L57,47V73H51V47L49,39Z"/>
+    <path android:fillColor="#F6D77C" android:pathData="M47,37H61V42H47Z"/>
+    <path android:fillColor="#D1972F" android:pathData="M50,27H58L57,32H51Z"/>
+
+    <!-- Palm silhouette -->
+    <path android:fillColor="#D9A43C" android:pathData="M31,43L34,43L37,73H33Z"/>
+    <path android:fillColor="#E5B84D" android:pathData="M33,43C27,36 23,37 19,39C24,40 28,42 33,46ZM34,43C38,35 44,34 49,36C44,38 39,41 34,46ZM33,42C30,34 31,29 34,25C36,31 36,36 34,43Z"/>
+
+    <!-- Lit windows -->
+    <path android:fillColor="#F6D77C" android:pathData="M22,74H25V78H22ZM29,58H32V62H29ZM41,52H44V56H41ZM65,55H68V59H65ZM79,61H82V65H79ZM72,74H75V78H72ZM84,74H87V78H84Z"/>
+
+    <!-- Street / game-life cue -->
+    <path android:fillColor="#0B0C0F" android:pathData="M16,82H92V90H16Z"/>
+    <path android:fillColor="#F0C35A" android:pathData="M26,85H38V87H26ZM46,85H58V87H46ZM66,85H78V87H66Z"/>
 </vector>
