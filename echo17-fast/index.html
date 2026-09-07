@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ECHO//17 — Fast Branch</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#03050a;color:#fff;font-family:Arial,sans-serif;overflow:hidden}.app{height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#14233a 0,#05070d 45%,#020306 100%)}.stage{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;background:#000;overflow:hidden;box-shadow:0 0 70px #000}.stage video{width:100%;height:100%;object-fit:cover;background:#000}.shade{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.85));pointer-events:none}.hud{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:24px;pointer-events:none}.brand{font-size:14px;letter-spacing:3px;color:#8ddcff}.status{font-size:12px;color:#a5b7ca}.center{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.58);padding:30px;text-align:center}.panel{max-width:720px}.panel h1{margin:0 0 10px;font-size:clamp(34px,7vw,72px);letter-spacing:2px}.panel p{line-height:1.8;color:#d8e2ee}.btn{border:1px solid #64d8ff;background:rgba(10,35,52,.78);color:#fff;padding:14px 22px;border-radius:12px;font-size:17px;cursor:pointer;transition:.2s}.btn:hover{transform:translateY(-2px);background:rgba(22,74,102,.9)}.btn:disabled{opacity:.45;cursor:not-allowed}.choices{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);display:none;gap:12px;flex-wrap:wrap;justify-content:center;width:min(900px,92%);z-index:5}.choices.show{display:flex}.choice{min-width:220px}.ending{font-size:13px;color:#9ee8ff;margin-top:8px}.error{color:#ffb8b8}.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app"><main class="stage">
+<video id="video" playsinline preload="auto"></video><div class="shade"></div>
+<div class="hud"><div class="brand">ECHO//17</div><div class="status" id="status">FAST CINEMATIC BRANCH</div></div>
+<div class="choices" id="choices"></div>
+<div class="center" id="gate"><div class="panel"><h1>ECHO//17</h1><p id="gateText">لعبة سينمائية سريعة. كل فيديو يقود إلى اختيار، وكل اختيار يشغّل فيديو مختلفًا.</p><button class="btn" id="start">ابدأ</button><div class="ending" id="ready"></div></div></div>
+</main></div>
+<script>
+const SCENES={
+ intro:{title:'الافتتاحية',video:'',choices:[['نفّذ الأمر','obey'],['احمِ الشاهد','protect']]},
+ obey:{title:'مسار الطاعة',video:'',choices:[['امسح ذاكرتك','reset'],['اخفِ الدليل','silent'],['سلّم الملف','protocol']]},
+ protect:{title:'مسار الحماية',video:'',choices:[['اهرب بالشاهد','escape'],['ابث الحقيقة','signal'],['واجه الإدارة','truth']]},
+ reset:{title:'النهاية 1 — RESET',video:'',ending:'أُعيد ضبط S-17 واختفت الحقيقة.'},
+ silent:{title:'النهاية 2 — SILENT',video:'',ending:'دفن S-17 الدليل، لكنه احتفظ بسر واحد.'},
+ protocol:{title:'النهاية 3 — PROTOCOL',video:'',ending:'نفّذ النظام، وأصبح جزءًا منه.'},
+ escape:{title:'النهاية 4 — ESCAPE',video:'',ending:'هرب S-17 بالشاهد خارج المدينة.'},
+ signal:{title:'النهاية 5 — SIGNAL',video:'',ending:'وصل البث إلى الجميع قبل انقطاع الشبكة.'},
+ truth:{title:'النهاية 6 — TRUTH',video:'',ending:'واجه S-17 الإدارة وفرض تحقيقًا علنيًا.'}
+};
+const video=document.getElementById('video'),choices=document.getElementById('choices'),gate=document.getElementById('gate'),gateText=document.getElementById('gateText'),start=document.getElementById('start'),ready=document.getElementById('ready'),status=document.getElementById('status');
+let current='intro';
+function missing(){return Object.entries(SCENES).filter(([,s])=>!s.video).map(([k])=>k)}
+function refreshReady(){const n=missing().length;ready.textContent=n?`غير جاهز بعد: ${n} فيديو AI حقيقي مطلوب.`:'كل فيديوهات AI جاهزة.';start.disabled=n>0}
+function playScene(id){current=id;const s=SCENES[id];status.textContent=s.title;choices.classList.remove('show');choices.innerHTML='';gate.classList.add('hidden');video.src=s.video;video.currentTime=0;video.play().catch(()=>{});}
+video.addEventListener('ended',()=>{const s=SCENES[current];if(s.choices){choices.innerHTML='';s.choices.forEach(([label,next])=>{const b=document.createElement('button');b.className='btn choice';b.textContent=label;b.onclick=()=>playScene(next);choices.appendChild(b)});choices.classList.add('show')}else{gate.classList.remove('hidden');gateText.innerHTML=`<strong>${s.title}</strong><br>${s.ending}`;start.disabled=false;start.textContent='العب من جديد';start.onclick=()=>playScene('intro')}});
+start.onclick=()=>playScene('intro');refreshReady();
+</script>
+</body>
+</html>
