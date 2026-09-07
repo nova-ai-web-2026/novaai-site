@@ -288,7 +288,7 @@
   }
   function publish(extra={}){
     const canvas=document.getElementById('game');
-    window.__V1112_UI={version:'11.12',hardeningVersion:'11.25',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,previewActive,mobileStatsWidthVw:46,mobileMissionWidthVw:46,sceneMeshes:previewScene?.meshes?.length||0,previewCamera:previewCamera?{x:+previewCamera.position.x.toFixed(2),y:+previewCamera.position.y.toFixed(2),z:+previewCamera.position.z.toFixed(2)}:null,canvasVisible:canvas?getComputedStyle(canvas).visibility!=='hidden'&&getComputedStyle(canvas).display!=='none':false,menuMusic:{style:'egyptian-maqsoum-hijaz-mizmar-inspired',bpm:BPM,playing:musicPlaying,unlocked:musicUnlocked,menuOnly:true,mode:menuAudioSettings.mode,enabled:menuAudioSettings.enabled,buttonStings:true,settingsPanel:true},...extra};
+    window.__V1112_UI={version:'11.12',hardeningVersion:'11.16',menuRefreshVersion:'11.25',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,previewActive,mobileStatsWidthVw:46,mobileMissionWidthVw:46,sceneMeshes:previewScene?.meshes?.length||0,previewCamera:previewCamera?{x:+previewCamera.position.x.toFixed(2),y:+previewCamera.position.y.toFixed(2),z:+previewCamera.position.z.toFixed(2)}:null,canvasVisible:canvas?getComputedStyle(canvas).visibility!=='hidden'&&getComputedStyle(canvas).display!=='none':false,menuMusic:{style:'egyptian-maqsoum-hijaz-mizmar-inspired',bpm:BPM,playing:musicPlaying,unlocked:musicUnlocked,menuOnly:true,mode:menuAudioSettings.mode,enabled:menuAudioSettings.enabled,buttonStings:true,settingsPanel:true},...extra};
     window.__V1116_START_SCENE=window.__V1112_UI;window.__V1125_MENU=window.__V1112_UI;
   }
 
