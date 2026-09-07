@@ -21,6 +21,11 @@ jobs:
         with:
           ref: egyptian-sampled-menu-audio-v11-27
 
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Generate WAV sources
         run: python3 scripts/generate-egyptian-menu-audio.py
 
