@@ -35,14 +35,30 @@ jobs:
           ffmpeg -y -hide_banner -loglevel error -i egypt-life-sim-v2/assets/egyptian-button-sting.wav -ac 1 -c:a libopus -b:a 32k -vbr on -application audio egypt-life-sim-v2/assets/egyptian-button-sting.ogg
           rm egypt-life-sim-v2/assets/egyptian-menu-loop.wav egypt-life-sim-v2/assets/egyptian-button-sting.wav
 
-      - name: Commit generated audio
+      - name: Wire sampled audio into the start menu
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('egypt-life-sim-v2/index.html')
+          s=p.read_text(encoding='utf-8')
+          old='  <script src="game-v11-12-ui.js?v=11.12&release=11.24.0" data-egypt-v1112-ui="true"></script>'
+          pre='  <script src="game-v11-27-audio-preload.js?v=11.27"></script>'
+          post='  <script src="game-v11-27-egyptian-audio.js?v=11.27"></script>'
+          if pre not in s:
+              if old not in s:
+                  raise SystemExit('Could not find the V11.12 UI script tag to patch')
+              s=s.replace(old,pre+'\n'+old+'\n'+post,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Commit sampled audio and activation
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add egypt-life-sim-v2/assets/egyptian-menu-loop.ogg egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          git add egypt-life-sim-v2/assets/egyptian-menu-loop.ogg egypt-life-sim-v2/assets/egyptian-button-sting.ogg egypt-life-sim-v2/index.html
           if git diff --cached --quiet; then
-            echo 'Audio assets unchanged.'
+            echo 'Audio assets and menu wiring unchanged.'
           else
-            git commit -m 'Add original Egyptian sampled menu audio'
+            git commit -m 'Activate original Egyptian sampled menu audio'
             git push origin HEAD:egyptian-sampled-menu-audio-v11-27
           fi
