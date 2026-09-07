@@ -302,7 +302,7 @@
     if(previewActive)return true;if(gameStarted()||!menuVisible())return false;
     const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0],active=scene?.activeCamera;
     if(!scene||!active||!window.BABYLON?.UniversalCamera||!window.BABYLON?.Vector3||scene.meshes.length<40)return false;
-    previewScene=scene;gameCamera=active;previewCamera=new BABYLON.UniversalCamera('v1125PreviewCamera',new BABYLON.Vector3(-24,2.1,-29),scene);previewCamera.minZ=.05;previewCamera.fov=.84;previewCamera.inertia=0;previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));previewCamera.inputs.clear();scene.activeCamera=previewCamera;
+    previewScene=scene;gameCamera=active;previewCamera=new BABYLON.UniversalCamera('v1116PreviewCamera',new BABYLON.Vector3(-24,2.1,-29),scene);previewCamera.minZ=.05;previewCamera.fov=.84;previewCamera.inertia=0;previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));previewCamera.inputs.clear();scene.activeCamera=previewCamera;
     previewHandle=scene.onBeforeRenderObservable.add(()=>{if(gameStarted()||!menuVisible()){stopPreview();stopMenuMusic(.16);return;}previewCamera.position.set(-24,2.1,-29);previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));if(scene.activeCamera!==previewCamera)scene.activeCamera=previewCamera;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});});
     previewActive=true;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});return true;
   }
