@@ -1,147 +1,206 @@
-import math, random, wave, struct
 from pathlib import Path
+import struct
 
-SR=44100
-BPM=100
-BEAT=60.0/BPM
-BARS=2
-DUR=BARS*4*BEAT
-N=int(DUR*SR)
-L=[0.0]*N
-R=[0.0]*N
-random.seed(2409)
+# Original Hayat Masr menu composition.
+# The workflow renders this MIDI through a GM SoundFont, so the shipped Ogg uses
+# instrument timbres (accordion/organ/reed + hand percussion) instead of raw oscillators.
+TPQ = 480
+BPM = 102
+BAR = TPQ * 4
+EIGHTH = TPQ // 2
+SIXTEENTH = TPQ // 4
+OUT = Path('egypt-life-sim-v2/assets')
+OUT.mkdir(parents=True, exist_ok=True)
 
-def add(sig,start,pan=0.0,gain=1.0):
-    pos=int(start*SR)
-    if pos>=N:return
-    left=math.cos((pan+1)*math.pi/4)*gain
-    right=math.sin((pan+1)*math.pi/4)*gain
-    for i,x in enumerate(sig):
-        j=pos+i
-        if j>=N:break
-        L[j]+=x*left; R[j]+=x*right
 
-def envelope(length,attack=.01,release=.08):
-    a=max(1,int(attack*SR)); r=max(1,int(release*SR))
-    out=[1.0]*length
-    for i in range(min(a,length)):out[i]=i/a
-    for k in range(min(r,length)):
-        i=length-r+k
-        if i>=0:out[i]*=(r-k)/r
-    return out
+def vlq(n: int) -> bytes:
+    n = max(0, int(n))
+    buf = [n & 0x7F]
+    n >>= 7
+    while n:
+        buf.append((n & 0x7F) | 0x80)
+        n >>= 7
+    return bytes(reversed(buf))
 
-def dum(start,amp=1.0):
-    d=.22; m=int(d*SR); sig=[]
-    for i in range(m):
-        t=i/SR; f=55+95*math.exp(-11*t)
-        ph=2*math.pi*f*t
-        body=math.sin(ph)+.22*math.sin(2*ph)
-        n=(random.random()*2-1)*.06
-        sig.append((body+n)*math.exp(-12*t))
-    add(sig,start,-.05,.23*amp)
 
-def tak(start,amp=1.0):
-    d=.085; m=int(d*SR); sig=[]
-    for i in range(m):
-        t=i/SR
-        n=(random.random()*2-1)
-        tone=math.sin(2*math.pi*(900-380*t)*t)
-        sig.append((.34*tone+.66*n)*math.exp(-35*t))
-    add(sig,start,.12,.07*amp)
+def track_chunk(events):
+    events = sorted(events, key=lambda x: (x[0], x[1]))
+    data = bytearray()
+    last = 0
+    for tick, order, payload in events:
+        data += vlq(tick - last)
+        data += payload
+        last = tick
+    data += b'\x00\xff\x2f\x00'
+    return b'MTrk' + struct.pack('>I', len(data)) + data
 
-def riq(start,amp=1.0):
-    d=.07; m=int(d*SR); freqs=(2650,3270,4090,5180)
-    sig=[]
-    for i in range(m):
-        t=i/SR
-        metal=sum(math.sin(2*math.pi*f*t) for f in freqs)/len(freqs)
-        n=(random.random()*2-1)*.45
-        sig.append((metal*.55+n)*math.exp(-29*t))
-    add(sig,start,.28,.045*amp)
 
-def accordion(freq,start,dur,amp=.05):
-    m=int(dur*SR); sig=[]
-    for i in range(m):
-        t=i/SR; vib=1+.0022*math.sin(2*math.pi*5.2*t)
-        x=0.0
-        for cents,g in ((-8,.32),(0,.46),(7,.28)):
-            f=freq*(2**(cents/1200))*vib
-            ph=2*math.pi*f*t
-            x+=g*(math.sin(ph)+.42*math.sin(2*ph)+.16*math.sin(3*ph))
-        a=min(1,t/.035); rel=min(1,max(0,(dur-t)/.11))
-        sig.append(x*a*rel)
-    add(sig,start,-.25,amp)
+def meta_track(total_ticks):
+    us = round(60_000_000 / BPM)
+    events = [
+        (0, 0, b'\xff\x51\x03' + us.to_bytes(3, 'big')),
+        (0, 1, b'\xff\x58\x04\x04\x02\x18\x08'),
+        (0, 2, b'\xff\x59\x02\x00\x00'),
+        (total_ticks, 99, b'\xff\x01\x00'),
+    ]
+    return track_chunk(events)
 
-def arghul(freq,start,dur,amp=.052,slide=None):
-    m=int(dur*SR); sig=[]; phase=0.0
-    for i in range(m):
-        t=i/SR
-        base=freq
-        if slide and t<.07: base=slide+(freq-slide)*(t/.07)
-        vib=1+.0045*math.sin(2*math.pi*6.1*t)+.0015*math.sin(2*math.pi*8.6*t)
-        phase+=2*math.pi*(base*vib)/SR
-        x=math.sin(phase)+.58*math.sin(2*phase)+.33*math.sin(3*phase)+.18*math.sin(5*phase)
-        x+=(random.random()*2-1)*.035
-        a=min(1,t/.018); rel=min(1,max(0,(dur-t)/.06))
-        sig.append(x*a*rel)
-    add(sig,start,.18,amp)
 
-# D Bayati: the second degree is E half-flat (~quarter-tone colour).
-BAYATI=[293.66,320.24,349.23,392.00,440.00,466.16,523.25,587.33]
-SIX=BEAT/4
+def program(ch, num):
+    return bytes([0xC0 | ch, num & 0x7F])
+
+
+def cc(ch, controller, value):
+    return bytes([0xB0 | ch, controller & 0x7F, value & 0x7F])
+
+
+def note_on(ch, note, vel):
+    return bytes([0x90 | ch, note & 0x7F, vel & 0x7F])
+
+
+def note_off(ch, note):
+    return bytes([0x80 | ch, note & 0x7F, 0])
+
+
+def bend(ch, value):
+    value = max(0, min(16383, int(value)))
+    return bytes([0xE0 | ch, value & 0x7F, (value >> 7) & 0x7F])
+
+
+def add_note(events, ch, tick, dur, note, vel=90, bend_value=8192, grace=False):
+    # Default GM pitch bend is normally +/-2 semitones. 6144 is about -50 cents,
+    # giving the characteristic E half-flat colour in D Bayati.
+    events.append((tick, 0, bend(ch, bend_value)))
+    if grace:
+        gdur = max(24, SIXTEENTH // 3)
+        lower = max(0, note - 1)
+        events.append((tick, 1, note_on(ch, lower, max(35, vel - 25))))
+        events.append((tick + gdur, 0, note_off(ch, lower)))
+        tick += gdur
+        dur = max(48, dur - gdur)
+    events.append((tick, 2, note_on(ch, note, vel)))
+    events.append((tick + dur, 0, note_off(ch, note)))
+    events.append((tick + dur, 1, bend(ch, 8192)))
+
+
+def write_midi(path, tracks, total_ticks):
+    header = b'MThd' + struct.pack('>IHHH', 6, 1, len(tracks) + 1, TPQ)
+    body = meta_track(total_ticks) + b''.join(track_chunk(t) for t in tracks)
+    path.write_bytes(header + body)
+
+
+# --- Main menu arrangement: 8 bars / ~19 seconds ---
+BARS = 8
+TOTAL = BARS * BAR
+accordion = []
+lead = []
+organ_bass = []
+drums = []
+
+# GM programs are zero-based: Accordion 21, Drawbar Organ 16, Oboe 68, Finger Bass 33.
+accordion += [(0, 0, program(0, 21)), (0, 1, cc(0, 7, 94)), (0, 2, cc(0, 10, 49))]
+lead += [(0, 0, program(1, 68)), (0, 1, cc(1, 7, 103)), (0, 2, cc(1, 10, 78))]
+organ_bass += [
+    (0, 0, program(2, 16)), (0, 1, cc(2, 7, 70)), (0, 2, cc(2, 10, 43)),
+    (0, 3, program(3, 33)), (0, 4, cc(3, 7, 76)), (0, 5, cc(3, 10, 64)),
+]
+
+# Drum map: 64 low conga ~= DUM, 62/63 high conga ~= TAK, 54 tambourine, 39 clap.
+def drum(tick, note, vel, dur=70):
+    drums.append((tick, 1, note_on(9, note, vel)))
+    drums.append((tick + dur, 0, note_off(9, note)))
+
 for bar in range(BARS):
-    base=bar*4*BEAT
-    for s in (0,4,8,12): dum(base+s*SIX,1.0 if s==0 else .80)
-    for s in (2,6,10,14): tak(base+s*SIX,.95 if s in (6,14) else .72)
-    for s in (1,3,5,7,9,11,13,15): riq(base+s*SIX,.55 if s%4==1 else .36)
-    accordion(146.83,base,4*BEAT,.050)
-    accordion(220.00,base,4*BEAT,.028)
+    base = bar * BAR
+    # Baladi / maqsoum family groove: DUM ... TAK TAK ... DUM ... TAK ...
+    for sub, vel in ((0, 112), (8, 98)):
+        drum(base + sub * SIXTEENTH, 64, vel, 100)
+        drum(base + sub * SIXTEENTH, 36, 52 if sub else 62, 80)
+    for sub, note, vel in ((4, 63, 92), (6, 62, 72), (12, 63, 96), (14, 62, 76)):
+        drum(base + sub * SIXTEENTH, note, vel, 55)
+    for sub in (2, 5, 10, 13):
+        drum(base + sub * SIXTEENTH, 54, 52, 42)
+    for sub in (4, 12):
+        drum(base + sub * SIXTEENTH, 39, 42, 50)
+    # Small fill on alternate bars.
+    if bar % 2 == 1:
+        for j, note in enumerate((62, 63, 62)):
+            drum(base + 15 * SIXTEENTH + j * 38, note, 54 + j * 7, 34)
 
-phrases=((0,1,2,1,0,3,2,1),(0,1,2,3,2,1,0,4))
-EIGHT=BEAT/2
-for bar,p in enumerate(phrases):
-    base=bar*4*BEAT
-    for i,idx in enumerate(p):
-        f=BAYATI[idx]
-        slide=f*(2**(-45/1200)) if i in (1,5) else None
-        arghul(f,base+i*EIGHT,EIGHT*.78,.060 if i in (0,4) else .050,slide)
-    # short shaabi keyboard call-response at the end of each bar
-    for j,f in enumerate((BAYATI[2],BAYATI[1],BAYATI[0])):
-        accordion(f,base+2.55*BEAT+j*.17,.20,.042)
+    # Shaabi organ drone + simple bass keeps the centre on D without westernising Bayati.
+    root = 50  # D3
+    fifth = 57 # A3
+    add_note(organ_bass, 2, base, BAR - 35, root, 48)
+    add_note(organ_bass, 2, base, BAR - 35, fifth, 35)
+    for beat, bass_note, vel in ((0, 38, 72), (2, 38, 66), (3, 45, 54)):
+        add_note(organ_bass, 3, base + beat * TPQ, EIGHTH, bass_note, vel)
 
-# Soft saturation and normalize.
-peak=1e-9
-for i in range(N):
-    L[i]=math.tanh(L[i]*1.35); R[i]=math.tanh(R[i]*1.35)
-    peak=max(peak,abs(L[i]),abs(R[i]))
-scale=.90/peak
-fade=int(.008*SR)
-for i in range(N):
-    f=1.0
-    if i<fade:f=i/fade
-    elif i>=N-fade:f=(N-i-1)/fade
-    L[i]*=scale*f; R[i]*=scale*f
+# D Bayati degrees. E half-flat is MIDI E4 (64) bent down ~50 cents.
+D4 = (62, 8192)
+E_HALF = (64, 6144)
+F4 = (65, 8192)
+G4 = (67, 8192)
+A4 = (69, 8192)
+BB4 = (70, 8192)
+C5 = (72, 8192)
+D5 = (74, 8192)
+EB4 = (63, 8192)
+FS4 = (66, 8192)
 
-out=Path('egypt-life-sim-v2/assets')
-out.mkdir(parents=True,exist_ok=True)
-wav=out/'egyptian-menu-loop.wav'
-with wave.open(str(wav),'w') as w:
-    w.setnchannels(2);w.setsampwidth(2);w.setframerate(SR)
-    frames=bytearray()
-    for a,b in zip(L,R):
-        frames+=struct.pack('<hh',int(max(-1,min(1,a))*32767),int(max(-1,min(1,b))*32767))
-    w.writeframes(frames)
+phrases = [
+    [D4, E_HALF, F4, E_HALF, D4, G4, F4, E_HALF],
+    [D4, D4, A4, G4, F4, E_HALF, D4, None],
+    [D4, E_HALF, F4, G4, F4, E_HALF, D4, A4],
+    [G4, F4, E_HALF, D4, E_HALF, F4, D4, None],
+    [D4, EB4, FS4, G4, FS4, EB4, D4, A4],
+    [D5, C5, BB4, A4, G4, FS4, EB4, D4],
+    [D4, E_HALF, F4, G4, A4, G4, F4, E_HALF],
+    [D4, E_HALF, F4, E_HALF, D4, A4, D5, D4],
+]
 
-# A short unmistakable button sting using the same Bayati/tabla palette.
-D2=.85; M=int(D2*SR); sL=[0.0]*M; sR=[0.0]*M
-oldL,oldR,oldN=L,R,N
-L,R,N=sL,sR,M
-dum(0,1.1);riq(.12,.9);arghul(BAYATI[0],.18,.18,.075);arghul(BAYATI[1],.36,.18,.078,BAYATI[0]);accordion(BAYATI[2],.54,.26,.080)
-peak=max(max(map(abs,L)),max(map(abs,R)),1e-9); sc=.90/peak
-sting=out/'egyptian-button-sting.wav'
-with wave.open(str(sting),'w') as w:
-    w.setnchannels(2);w.setsampwidth(2);w.setframerate(SR)
-    frames=bytearray()
-    for a,b in zip(L,R):frames+=struct.pack('<hh',int(max(-1,min(1,a*sc))*32767),int(max(-1,min(1,b*sc))*32767))
-    w.writeframes(frames)
-print(wav,sting)
+for bar, phrase in enumerate(phrases):
+    base = bar * BAR
+    for i, spec in enumerate(phrase):
+        if spec is None:
+            continue
+        note, pb = spec
+        tick = base + i * EIGHTH
+        add_note(lead, 1, tick, int(EIGHTH * .76), note, 94 if i in (0, 4) else 83,
+                 pb, grace=(i in (1, 5) and bar < 4))
+
+    # Accordion/organ-style shaabi answers. Keep them short and syncopated.
+    replies = [
+        (10, 65, 78), (11, 64, 72), (12, 62, 84),
+        (14, 69 if bar % 2 == 0 else 67, 69), (15, 62, 76),
+    ]
+    for sub, note, vel in replies:
+        pb = 6144 if note == 64 and bar < 4 else 8192
+        add_note(accordion, 0, base + sub * SIXTEENTH, int(SIXTEENTH * .78), note, vel, pb)
+
+# Strong closing pickup that still loops cleanly back to D.
+add_note(accordion, 0, TOTAL - 3 * SIXTEENTH, SIXTEENTH, 65, 74)
+add_note(accordion, 0, TOTAL - 2 * SIXTEENTH, SIXTEENTH, 64, 78, 6144)
+add_note(accordion, 0, TOTAL - SIXTEENTH, SIXTEENTH - 12, 62, 90)
+
+write_midi(OUT / 'egyptian-menu-loop.mid', [accordion, lead, organ_bass, drums], TOTAL)
+
+# --- Button sting: compact D Bayati / tabla signature ---
+STING_TOTAL = int(BAR * .65)
+st_acc = [(0, 0, program(0, 21)), (0, 1, cc(0, 7, 105))]
+st_lead = [(0, 0, program(1, 68)), (0, 1, cc(1, 7, 108))]
+st_drums = []
+
+def sdrum(tick, note, vel, dur=60):
+    st_drums.append((tick, 1, note_on(9, note, vel)))
+    st_drums.append((tick + dur, 0, note_off(9, note)))
+
+sdrum(0, 64, 114, 95)
+sdrum(SIXTEENTH * 2, 54, 65, 45)
+sdrum(SIXTEENTH * 3, 63, 92, 50)
+add_note(st_lead, 1, SIXTEENTH, SIXTEENTH * 2, 62, 102)
+add_note(st_lead, 1, SIXTEENTH * 3, SIXTEENTH * 2, 64, 96, 6144, grace=True)
+add_note(st_acc, 0, SIXTEENTH * 5, SIXTEENTH * 2, 65, 96)
+add_note(st_acc, 0, SIXTEENTH * 7, SIXTEENTH * 2, 62, 104)
+write_midi(OUT / 'egyptian-button-sting.mid', [st_acc, st_lead, st_drums], STING_TOTAL)
+
+print(OUT / 'egyptian-menu-loop.mid', OUT / 'egyptian-button-sting.mid')
