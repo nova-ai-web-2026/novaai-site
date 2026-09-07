@@ -1,0 +1,83 @@
+name: Generate Egyptian menu audio
+
+on:
+  push:
+    branches:
+      - egyptian-sampled-menu-audio-v11-27
+    paths:
+      - 'scripts/generate-egyptian-menu-audio.py'
+      - '.github/workflows/generate-egyptian-menu-audio.yml'
+      - 'egypt-life-sim-v2/game-v11-27-audio-preload.js'
+      - 'egypt-life-sim-v2/game-v11-27-egyptian-audio.js'
+      - 'egypt-life-sim-v2/index.html'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: egyptian-sampled-menu-audio-v11-27
+
+      - name: Install audio renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fluidsynth fluid-soundfont-gm
+
+      - name: Generate original Egyptian MIDI arrangement
+        run: python3 scripts/generate-egyptian-menu-audio.py
+
+      - name: Render instrument timbres and encode lightweight Ogg assets
+        run: |
+          SF2="$(find /usr/share/sounds -type f \( -name 'FluidR3_GM.sf2' -o -name '*.sf2' \) | head -n 1)"
+          test -n "$SF2"
+          echo "Using SoundFont: $SF2"
+          fluidsynth -ni -R 0 -C 1 -g 0.75 "$SF2" egypt-life-sim-v2/assets/egyptian-menu-loop.mid -F egypt-life-sim-v2/assets/egyptian-menu-loop.wav -r 44100
+          fluidsynth -ni -R 0 -C 1 -g 0.85 "$SF2" egypt-life-sim-v2/assets/egyptian-button-sting.mid -F egypt-life-sim-v2/assets/egyptian-button-sting.wav -r 44100
+          ffmpeg -y -hide_banner -loglevel error -i egypt-life-sim-v2/assets/egyptian-menu-loop.wav -af "loudnorm=I=-16:TP=-1.5:LRA=7" -ac 1 -c:a libopus -b:a 30k -vbr on -application audio egypt-life-sim-v2/assets/egyptian-menu-loop.ogg
+          ffmpeg -y -hide_banner -loglevel error -i egypt-life-sim-v2/assets/egyptian-button-sting.wav -af "loudnorm=I=-14:TP=-1.0:LRA=5" -ac 1 -c:a libopus -b:a 36k -vbr on -application audio egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 egypt-life-sim-v2/assets/egyptian-menu-loop.ogg
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          rm egypt-life-sim-v2/assets/*.mid egypt-life-sim-v2/assets/*.wav
+
+      - name: Wire sampled audio into the start menu
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('egypt-life-sim-v2/index.html')
+          s=p.read_text(encoding='utf-8')
+          old='  <script src="game-v11-12-ui.js?v=11.12&release=11.24.0" data-egypt-v1112-ui="true"></script>'
+          pre='  <script src="game-v11-27-audio-preload.js?v=11.27"></script>'
+          post='  <script src="game-v11-27-egyptian-audio.js?v=11.27"></script>'
+          if pre not in s:
+              if old not in s:
+                  raise SystemExit('Could not find the V11.12 UI script tag to patch')
+              s=s.replace(old,pre+'\n'+old+'\n'+post,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Validate V11.27 audio integration
+        run: |
+          node --check egypt-life-sim-v2/game-v11-27-audio-preload.js
+          node --check egypt-life-sim-v2/game-v11-27-egyptian-audio.js
+          test -s egypt-life-sim-v2/assets/egyptian-menu-loop.ogg
+          test -s egypt-life-sim-v2/assets/egyptian-button-sting.ogg
+          grep -Fq 'game-v11-27-audio-preload.js?v=11.27' egypt-life-sim-v2/index.html
+          grep -Fq 'game-v11-27-egyptian-audio.js?v=11.27' egypt-life-sim-v2/index.html
+
+      - name: Commit sampled audio and activation
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add egypt-life-sim-v2/assets/egyptian-menu-loop.ogg egypt-life-sim-v2/assets/egyptian-button-sting.ogg egypt-life-sim-v2/index.html
+          if git diff --cached --quiet; then
+            echo 'Audio assets and menu wiring unchanged.'
+          else
+            git commit -m 'Render Egyptian shaabi menu audio with SoundFont instruments'
+            git push origin HEAD:egyptian-sampled-menu-audio-v11-27
+          fi
