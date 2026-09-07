@@ -1,327 +1,42 @@
 (() => {
-  'use strict';
-
-  const menu=document.getElementById('menu');
-  const soundToggle=document.getElementById('soundToggle');
-  if(!menu)return;
-
-  let previewScene=null,previewCamera=null,gameCamera=null,previewHandle=null,previewTimer=null,menuObserver=null,previewActive=false;
-
-  /*
-   * V11.25 main-menu refresh.
-   * Music is original synthesis: Egyptian maqsoum-style percussion + Hijaz/mizmar-inspired lead.
-   * It never runs during gameplay. Menu button stings use a separate short-lived audio bus.
-   */
-  const SETTINGS_KEY='hayatMasr.menuAudio.v1125';
-  const defaultSettings={enabled:true,mode:'interaction',volume:.78};
-  let menuAudioSettings=loadAudioSettings();
-  let musicCtx=null,musicMaster=null,uiMaster=null,musicTimer=null,noiseBuffer=null;
-  let nextStepTime=0,musicStep=0,musicPlaying=false,musicUnlocked=false;
-  const BPM=108, STEP=(60/BPM)/4;
-
-  function loadAudioSettings(){
-    try{
-      const raw=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
-      if(!raw||typeof raw!=='object')return {...defaultSettings};
-      return {
-        enabled:raw.enabled!==false,
-        mode:raw.mode==='continuous'?'continuous':'interaction',
-        volume:Number.isFinite(+raw.volume)?Math.max(.2,Math.min(1,+raw.volume)):.78
-      };
-    }catch(_){return {...defaultSettings};}
-  }
-  function saveAudioSettings(){
-    try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(menuAudioSettings));}catch(_){}
-    updateSettingsUI();updateMenuAudioBadge();syncMenuMusic();publish();
-  }
-  function globalMuted(){
-    const text=soundToggle?.textContent||'';
-    return text.includes('مكتوم')||text.includes('🔇');
-  }
-  function menuVisible(){
-    const s=getComputedStyle(menu);
-    return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0';
-  }
-  function gameStarted(){return document.body.classList.contains('game-started');}
-
-  function ensureAudio(){
-    if(musicCtx)return musicCtx;
-    const Ctx=window.AudioContext||window.webkitAudioContext;
-    if(!Ctx)return null;
-    musicCtx=new Ctx();
-    musicMaster=musicCtx.createGain();uiMaster=musicCtx.createGain();
-    musicMaster.gain.value=.0001;uiMaster.gain.value=.0001;
-    musicMaster.connect(musicCtx.destination);uiMaster.connect(musicCtx.destination);
-    const n=Math.max(1,Math.floor(musicCtx.sampleRate*.12));
-    noiseBuffer=musicCtx.createBuffer(1,n,musicCtx.sampleRate);
-    const data=noiseBuffer.getChannelData(0);
-    for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*(1-i/n);
-    applyAudioVolume();
-    return musicCtx;
-  }
-  function applyAudioVolume(){
-    if(!musicCtx||!musicMaster||!uiMaster)return;
-    const t=musicCtx.currentTime,vol=menuAudioSettings.volume;
-    try{
-      uiMaster.gain.cancelScheduledValues(t);uiMaster.gain.setTargetAtTime(.27*vol,t,.025);
-      if(musicPlaying){musicMaster.gain.cancelScheduledValues(t);musicMaster.gain.setTargetAtTime(.20*vol,t,.06);}
-    }catch(_){}
-  }
-
-  function makeGain(target,start,duration,bus,attack=.008){
-    const g=musicCtx.createGain();g.gain.setValueAtTime(.0001,start);
-    g.gain.exponentialRampToValueAtTime(Math.max(.0002,target),start+attack);
-    g.gain.exponentialRampToValueAtTime(.0001,start+duration);
-    g.connect(bus);return g;
-  }
-  function tablaDum(start,vol=.13,bus=musicMaster){
-    if(!musicCtx||!bus)return;
-    const o=musicCtx.createOscillator(),g=makeGain(vol,start,.19,bus,.004);
-    o.type='sine';o.frequency.setValueAtTime(165,start);o.frequency.exponentialRampToValueAtTime(62,start+.14);
-    o.connect(g);o.start(start);o.stop(start+.20);
-  }
-  function tablaTek(start,vol=.055,bus=musicMaster){
-    if(!musicCtx||!bus)return;
-    const o=musicCtx.createOscillator(),g=makeGain(vol,start,.085,bus,.003);
-    o.type='triangle';o.frequency.setValueAtTime(610,start);o.frequency.exponentialRampToValueAtTime(265,start+.065);
-    o.connect(g);o.start(start);o.stop(start+.09);
-    if(noiseBuffer){
-      const src=musicCtx.createBufferSource(),hp=musicCtx.createBiquadFilter(),ng=makeGain(vol*.28,start,.045,bus,.002);
-      src.buffer=noiseBuffer;hp.type='highpass';hp.frequency.value=1900;src.connect(hp);hp.connect(ng);src.start(start);src.stop(start+.05);
-    }
-  }
-  function riq(start,vol=.024,bus=musicMaster){
-    if(!musicCtx||!bus||!noiseBuffer)return;
-    const src=musicCtx.createBufferSource(),hp=musicCtx.createBiquadFilter(),g=makeGain(vol,start,.055,bus,.002);
-    src.buffer=noiseBuffer;hp.type='highpass';hp.frequency.value=2600;src.connect(hp);hp.connect(g);src.start(start);src.stop(start+.06);
-    for(const f of [2100,2870,3620]){
-      const o=musicCtx.createOscillator(),og=makeGain(vol*.15,start,.04,bus,.001);o.type='square';o.frequency.value=f;o.connect(og);o.start(start);o.stop(start+.045);
-    }
-  }
-  function drone(freq,start,duration=.45,vol=.018,bus=musicMaster){
-    if(!musicCtx||!bus)return;
-    const o=musicCtx.createOscillator(),lp=musicCtx.createBiquadFilter(),g=makeGain(vol,start,duration,bus,.02);
-    o.type='triangle';o.frequency.value=freq;lp.type='lowpass';lp.frequency.value=340;o.connect(lp);lp.connect(g);o.start(start);o.stop(start+duration+.02);
-  }
-  function mizmar(freq,start,duration=.18,vol=.024,bus=musicMaster,ornament=false){
-    if(!musicCtx||!bus)return;
-    const filter=musicCtx.createBiquadFilter();filter.type='bandpass';filter.frequency.value=1250;filter.Q.value=1.35;
-    const out=makeGain(vol,start,duration,bus,.012);filter.connect(out);
-    const lfo=musicCtx.createOscillator(),lfoGain=musicCtx.createGain();lfo.frequency.value=6.1;lfoGain.gain.value=8.5;lfo.connect(lfoGain);
-    for(const [type,detune,level] of [['sawtooth',-6,.50],['square',6,.25]]){
-      const o=musicCtx.createOscillator(),g=musicCtx.createGain();o.type=type;o.frequency.value=freq;o.detune.value=detune;g.gain.value=level;lfoGain.connect(o.detune);o.connect(g);g.connect(filter);o.start(start);o.stop(start+duration+.025);
-    }
-    lfo.start(start);lfo.stop(start+duration+.025);
-    if(ornament&&duration>.12){
-      const grace=musicCtx.createOscillator(),gg=makeGain(vol*.28,start,.055,bus,.004);grace.type='square';grace.frequency.value=freq*.9439;grace.connect(gg);grace.start(start);grace.stop(start+.06);
-    }
-  }
-
-  // D Hijaz: D, Eb, F#, G, A, Bb, C, D.
-  const HIJAZ=[293.66,311.13,369.99,392.00,440.00,466.16,523.25,587.33];
-  const melody=[0,1,2,3,2,0,2,4,3,2,1,0,4,5,4,3];
-  function scheduleEgyptianStep(step,start){
-    const s=step%32,beatStep=s%16;
-    // Maqsoum-flavoured dum / tak / riq pattern.
-    if([0,8].includes(beatStep))tablaDum(start,beatStep===0?.14:.115);
-    if([4,6,12,14].includes(beatStep))tablaTek(start,[6,14].includes(beatStep)?.045:.06);
-    if([2,10].includes(beatStep))riq(start,.026);
-    if([7,15].includes(beatStep)){tablaTek(start,.035);riq(start+.018,.018);}
-    if(beatStep===0)drone(s<16?73.42:110,start,STEP*4,.019);
-    if(s%2===0){
-      const idx=melody[(s/2)%melody.length];
-      mizmar(HIJAZ[idx],start,s%8===0?.25:.17,s%8===0?.028:.021,musicMaster,[2,4].includes(idx));
-    }
-  }
-  function scheduler(){
-    if(!musicCtx||!musicPlaying)return;
-    while(nextStepTime<musicCtx.currentTime+.55){
-      scheduleEgyptianStep(musicStep,nextStepTime);nextStepTime+=STEP;musicStep=(musicStep+1)%32;
-    }
-  }
-  async function unlockAudio(){
-    const ctx=ensureAudio();if(!ctx)return false;
-    try{if(ctx.state==='suspended')await ctx.resume();}catch(_){}
-    musicUnlocked=ctx.state==='running';
-    if(musicUnlocked&&menuAudioSettings.mode==='continuous')startMenuMusic();
-    publish();return musicUnlocked;
-  }
-  async function startMenuMusic(){
-    if(!menuAudioSettings.enabled||menuAudioSettings.mode!=='continuous'||globalMuted()||gameStarted()||!menuVisible())return false;
-    const ctx=ensureAudio();if(!ctx)return false;
-    try{if(ctx.state==='suspended')await ctx.resume();}catch(_){}
-    if(ctx.state!=='running')return false;
-    musicUnlocked=true;if(musicPlaying)return true;
-    musicPlaying=true;musicStep=0;nextStepTime=ctx.currentTime+.035;
-    const t=ctx.currentTime;musicMaster.gain.cancelScheduledValues(t);musicMaster.gain.setValueAtTime(.0001,t);musicMaster.gain.exponentialRampToValueAtTime(.20*menuAudioSettings.volume,t+.42);
-    scheduler();musicTimer=setInterval(scheduler,90);updateMenuAudioBadge();publish();return true;
-  }
-  function stopMenuMusic(fade=.20){
-    musicPlaying=false;if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
-    if(musicCtx&&musicMaster){const t=musicCtx.currentTime;try{musicMaster.gain.cancelScheduledValues(t);musicMaster.gain.setValueAtTime(Math.max(.0001,musicMaster.gain.value),t);musicMaster.gain.exponentialRampToValueAtTime(.0001,t+fade);}catch(_){}}
-    updateMenuAudioBadge();publish();
-  }
-  function syncMenuMusic(){
-    if(document.hidden||gameStarted()||!menuVisible()||globalMuted()||!menuAudioSettings.enabled||menuAudioSettings.mode!=='continuous')stopMenuMusic(.16);
-    else if(musicUnlocked)startMenuMusic();
-  }
-
-  function playButtonSting(kind='ui'){
-    if(!menuAudioSettings.enabled||globalMuted()||gameStarted())return;
-    unlockAudio().then(ok=>{
-      if(!ok||!musicCtx||!uiMaster)return;
-      const t=musicCtx.currentTime+.008;
-      const phrases={
-        new:[0,2,3,4],continue:[4,3,2,1,0],settings:[0,1,2,3],reset:[0,1,0],ui:[0,2,1]
-      };
-      const notes=phrases[kind]||phrases.ui;
-      tablaDum(t,.075,uiMaster);riq(t+.06,.018,uiMaster);
-      notes.forEach((idx,i)=>mizmar(HIJAZ[idx],t+.07+i*.085,i===notes.length-1?.17:.10,.055,uiMaster,i===1));
-    });
-  }
-  function playEgyptianPreview(){
-    if(!menuAudioSettings.enabled)return;
-    unlockAudio().then(ok=>{
-      if(!ok||!musicCtx||!uiMaster)return;
-      const t=musicCtx.currentTime+.02;
-      [0,.50,1.0,1.50].forEach((beatOffset,i)=>tablaDum(t+beatOffset*.28,i===0?.10:.07,uiMaster));
-      [0,1,2,3,2,4,3,2,1,0].forEach((idx,i)=>mizmar(HIJAZ[idx],t+.04+i*.105,.13,.043,uiMaster,[1,2,4].includes(idx)));
-      [2,4,6,8].forEach(i=>tablaTek(t+i*.105,.035,uiMaster));
-    });
-  }
-
-  function installStyle(){
-    if(document.getElementById('v1125-menu-style'))return;
-    document.getElementById('v1112-ui-style')?.remove();
-    document.getElementById('v1116-ui-style')?.remove();
-    const style=document.createElement('style');style.id='v1125-menu-style';
-    style.textContent=`
-      #game{position:fixed!important;inset:0!important;z-index:0!important;opacity:1!important;visibility:visible!important}
-      #menu{background:linear-gradient(90deg,rgba(6,7,8,.08) 0%,rgba(6,7,8,.16) 38%,rgba(6,7,8,.72) 70%,rgba(6,7,8,.93) 100%)!important}
-      #menu:before{background:linear-gradient(0deg,rgba(4,5,6,.64),transparent 52%),radial-gradient(circle at 78% 32%,rgba(233,184,75,.13),transparent 34%)!important}
-      #menuScene{z-index:0!important;background:transparent!important;box-shadow:inset 0 0 90px rgba(0,0,0,.24)!important}
-      #menuScene:after{opacity:.018!important}
-      #menuContent{z-index:2!important;width:min(520px,92vw)!important;min-height:auto!important;margin:6vh 4vw 6vh auto!important;padding:28px 30px 24px!important;align-self:center!important;border-radius:28px!important;border:1px solid rgba(255,255,255,.12)!important;background:linear-gradient(155deg,rgba(24,22,19,.86),rgba(10,11,12,.75))!important;backdrop-filter:blur(15px)!important;box-shadow:0 28px 80px rgba(0,0,0,.44)!important}
-      .menuTopline{margin-bottom:14px!important}.kicker{color:#f0c76b!important;letter-spacing:1.5px!important}.menuLocation{opacity:.72!important}
-      .logo{font-size:clamp(58px,7vw,84px)!important;line-height:.92!important;letter-spacing:-2px!important;text-shadow:0 8px 32px rgba(0,0,0,.30)!important}
-      .tagline{max-width:440px!important;font-size:14px!important;line-height:1.72!important;margin-top:14px!important;color:#efe4d2!important}
-      .menuRule{width:82px!important;height:3px!important;margin:20px 0 18px!important;background:linear-gradient(90deg,#e9b84b,#f6d784)!important}
-      .menuButtons{width:100%!important;gap:8px!important}
-      .menuBtn{min-height:54px!important;padding:11px 14px!important;border-radius:14px!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.10)!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;transform:none!important;box-shadow:none!important}
-      .menuBtn:hover,.menuBtn:focus-visible{background:rgba(255,255,255,.10)!important;border-color:rgba(233,184,75,.42)!important;transform:translateX(-3px)!important}
-      .menuBtn.primary{background:linear-gradient(135deg,#e7b34a,#f2cf78)!important;color:#1b160f!important;border-color:#f5d68a!important;box-shadow:0 10px 26px rgba(213,158,45,.18)!important}
-      .menuBtn.danger{color:#e8b6ad!important;background:rgba(112,48,40,.16)!important}
-      .menuBtn small{display:block;font-size:9px;font-weight:500;opacity:.62;margin-top:2px}
-      .menuBtn .menuBtnIcon{font-size:18px;opacity:.9}
-      #menuAudioBadge{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);font-size:11px;color:#e9ddc8}
-      #menuAudioBadge strong{color:#f0c76b;font-size:11px}#menuAudioBars{display:flex;gap:2px;align-items:flex-end;height:13px}#menuAudioBars i{display:block;width:2px;background:#e9b84b;border-radius:2px;animation:menuBeat .8s ease-in-out infinite alternate}#menuAudioBars i:nth-child(2){height:11px;animation-delay:.16s}#menuAudioBars i:nth-child(1){height:6px}#menuAudioBars i:nth-child(3){height:8px;animation-delay:.3s}@keyframes menuBeat{to{transform:scaleY(.45);opacity:.55}}
-      .menuMeta{margin-top:12px!important;gap:6px!important}.pill{background:rgba(255,255,255,.04)!important}
-      #menuStatus{margin-top:10px!important;color:#d7c39e!important}.menuFoot{margin-top:12px!important}
-      #v1125Settings{position:absolute;inset:0;z-index:7;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,4,5,.63);backdrop-filter:blur(8px)}#v1125Settings.open{display:flex}
-      #v1125SettingsPanel{width:min(480px,94vw);padding:22px;border-radius:22px;background:linear-gradient(150deg,#211e1a,#111214);border:1px solid rgba(255,255,255,.13);box-shadow:0 28px 90px rgba(0,0,0,.5);color:#fff}
-      .v1125SetHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}.v1125SetHead h2{margin:0;font-size:23px}.v1125Close{border:0;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer}
-      .v1125Setting{padding:13px 0;border-top:1px solid rgba(255,255,255,.08)}.v1125Setting:first-of-type{border-top:0}.v1125SettingTitle{font-weight:900;font-size:13px}.v1125SettingHint{font-size:10px;opacity:.58;margin-top:3px;line-height:1.5}
-      .v1125Seg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.v1125Seg button,.v1125Action{border:1px solid rgba(255,255,255,.10);border-radius:11px;background:rgba(255,255,255,.055);color:#fff;padding:10px;cursor:pointer;font-weight:800}.v1125Seg button.active{background:#e9b84b;color:#1b160f;border-color:#f2cf78}.v1125Action{width:100%;margin-top:10px}.v1125Action.primary{background:#e9b84b;color:#1b160f}
-      #v1125MusicEnabled[aria-pressed="false"]{background:rgba(112,48,40,.24);color:#e8b6ad}.v1125Range{width:100%;accent-color:#e9b84b;margin-top:10px}
-      @media(max-width:760px){
-        #top{top:max(7px,env(safe-area-inset-top))!important;left:8px!important;right:8px!important;gap:6px!important}#stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:46vw!important;min-width:0!important;gap:3px!important;padding:4px!important}.stat{padding:3px 5px!important}.lab{font-size:8px!important}.val{font-size:11px!important}.meter{height:2px!important}#clock{min-width:78px!important;padding:5px 7px!important}.clockMain{font-size:14px!important}.clockSub{font-size:8px!important}#soundToggle{top:63px!important;left:8px!important;width:36px!important;height:36px!important;padding:0!important;border-radius:50%!important;font-size:0!important;display:grid!important;place-items:center!important}#soundToggle:before{content:attr(data-v1112-icon);font-size:16px!important}#mission{right:8px!important;top:82px!important;width:min(46vw,190px)!important;padding:6px 8px!important}.mTitle{font-size:10px!important}.mText{font-size:9px!important}#mapWrap{width:82px!important;height:82px!important;left:8px!important;bottom:146px!important;padding:4px!important}#joy{left:14px!important;bottom:20px!important;width:104px!important;height:104px!important}#knob{left:34px!important;top:34px!important;width:36px!important;height:36px!important}#act{right:16px!important;bottom:28px!important;width:62px!important;height:62px!important}#run{right:27px!important;bottom:100px!important;width:44px!important;height:44px!important}
-        #menu{overflow:hidden!important;background:linear-gradient(0deg,rgba(5,6,7,.88) 0%,rgba(5,6,7,.50) 46%,rgba(5,6,7,.08) 73%,rgba(5,6,7,0) 100%)!important}#menuContent{position:absolute!important;left:10px!important;right:10px!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:auto!important;margin:0!important;padding:16px!important;border-radius:22px!important;max-height:64vh!important;overflow:auto!important}.menuTopline{margin-bottom:7px!important}.kicker,.menuLocation{font-size:8px!important}.logo{font-size:43px!important;letter-spacing:-1px!important}.tagline{font-size:10px!important;line-height:1.45!important;margin:7px 0 0!important}.menuRule{width:48px!important;height:2px!important;margin:9px 0!important}.menuButtons{gap:5px!important}.menuBtn{min-height:43px!important;padding:8px 10px!important;border-radius:11px!important;font-size:11px!important}.menuBtn small{font-size:8px!important}.menuBtn .menuBtnIcon{font-size:15px!important}#menuAudioBadge{margin-top:7px!important;padding:6px 8px!important;font-size:9px!important}.menuMeta{display:none!important}#menuStatus{font-size:8px!important;margin-top:6px!important;min-height:10px!important}.menuFoot{display:none!important}#v1125SettingsPanel{padding:17px!important;border-radius:18px!important}.v1125SetHead h2{font-size:20px!important}
-      }
-    `;document.head.appendChild(style);
-  }
-
-  function setButtonCopy(el,title,sub,icon){
-    if(!el)return;el.innerHTML=`<span><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span><span class="menuBtnIcon">${icon}</span>`;
-  }
-  function installMenuUI(){
-    const content=document.getElementById('menuContent'),buttons=content?.querySelector('.menuButtons');if(!content||!buttons)return;
-    const kicker=content.querySelector('.kicker'),location=content.querySelector('.menuLocation'),tagline=content.querySelector('.tagline'),foot=content.querySelector('.menuFoot');
-    if(kicker)kicker.textContent='HAYAT MASR • القاهرة';if(location)location.textContent='الصبح بدري • الحارة بتصحى';
-    if(tagline)tagline.textContent='ابدأ يومك في مصر — شوارع، محلات، ناس ومشاوير بطابع مصري من أول لحظة.';
-    if(foot)foot.textContent='V11.24 • Main Menu Refresh 11.25';
-    setButtonCopy(document.getElementById('newGameBtn'),'ابدأ يوم جديد','ابدأ المشوار من الأول','←');
-    setButtonCopy(document.getElementById('continueBtn'),'كمّل من آخر حفظ','ارجع لنفس اليوم والمكان','↩');
-    let settingsBtn=document.getElementById('settingsBtn');
-    if(!settingsBtn){settingsBtn=document.createElement('button');settingsBtn.id='settingsBtn';settingsBtn.className='menuBtn';buttons.insertBefore(settingsBtn,document.getElementById('resetBtn'));}
-    setButtonCopy(settingsBtn,'الإعدادات','المزيكا وصوت القائمة','⚙');
-    setButtonCopy(document.getElementById('resetBtn'),'مسح الحفظ','امسح التقدم وابدأ من جديد','×');
-    let badge=document.getElementById('menuAudioBadge');
-    if(!badge){badge=document.createElement('div');badge.id='menuAudioBadge';buttons.after(badge);}updateMenuAudioBadge();
-    installSettingsPanel();
-  }
-  function updateMenuAudioBadge(){
-    const badge=document.getElementById('menuAudioBadge');if(!badge)return;
-    const off=!menuAudioSettings.enabled||globalMuted();
-    const label=off?'المزيكا مقفولة':menuAudioSettings.mode==='continuous'?(musicPlaying?'مزيكا مصرية شغالة':'مزيكا مصرية طول القائمة'):'مزيكا مصرية عند الضغط';
-    badge.innerHTML=`<span><strong>♫ ${label}</strong><br><span style="opacity:.55">مقسوم • طبلة • رق • حجاز</span></span><span id="menuAudioBars"><i></i><i></i><i></i></span>`;
-    const bars=badge.querySelector('#menuAudioBars');if(bars)bars.style.opacity=off?'.25':'1';
-  }
-  function installSettingsPanel(){
-    if(document.getElementById('v1125Settings'))return;
-    const overlay=document.createElement('div');overlay.id='v1125Settings';
-    overlay.innerHTML=`<div id="v1125SettingsPanel" role="dialog" aria-modal="true" aria-label="إعدادات القائمة">
-      <div class="v1125SetHead"><div><h2>الإعدادات</h2><div class="v1125SettingHint">صوت ومزيكا الشاشة الرئيسية فقط</div></div><button class="v1125Close" id="v1125Close" aria-label="إغلاق">×</button></div>
-      <div class="v1125Setting"><div class="v1125SettingTitle">موسيقى القائمة</div><div class="v1125SettingHint">مزيكا أصلية بطابع مصري: مقسوم، طبلة، رق وليد حجاز قريب من روح المزمار الشعبي.</div><button id="v1125MusicEnabled" class="v1125Action" aria-pressed="true">الموسيقى: شغالة</button></div>
-      <div class="v1125Setting"><div class="v1125SettingTitle">طريقة التشغيل</div><div class="v1125SettingHint">اختار تظهر مع ضغطات الأزرار فقط، أو تفضل شغالة طول وجودك في القائمة.</div><div class="v1125Seg"><button id="v1125Interaction">عند الضغط</button><button id="v1125Continuous">طول القائمة</button></div></div>
-      <div class="v1125Setting"><div class="v1125SettingTitle">مستوى صوت المزيكا</div><input id="v1125Volume" class="v1125Range" type="range" min="20" max="100" step="5" value="78"><button id="v1125Preview" class="v1125Action primary">♫ جرّب الطابع المصري</button></div>
-    </div>`;
-    menu.appendChild(overlay);
-    overlay.addEventListener('click',e=>{if(e.target===overlay)closeSettings();});
-    document.getElementById('v1125Close')?.addEventListener('click',()=>{playButtonSting('ui');closeSettings();});
-    document.getElementById('v1125MusicEnabled')?.addEventListener('click',()=>{menuAudioSettings.enabled=!menuAudioSettings.enabled;saveAudioSettings();if(menuAudioSettings.enabled)playButtonSting('settings');else stopMenuMusic(.08);});
-    document.getElementById('v1125Interaction')?.addEventListener('click',()=>{menuAudioSettings.mode='interaction';saveAudioSettings();playButtonSting('settings');});
-    document.getElementById('v1125Continuous')?.addEventListener('click',()=>{menuAudioSettings.mode='continuous';saveAudioSettings();unlockAudio().then(startMenuMusic);playButtonSting('settings');});
-    document.getElementById('v1125Volume')?.addEventListener('input',e=>{menuAudioSettings.volume=Math.max(.2,Math.min(1,+e.target.value/100));applyAudioVolume();saveAudioSettings();});
-    document.getElementById('v1125Preview')?.addEventListener('click',()=>{playButtonSting('settings');setTimeout(playEgyptianPreview,90);});
-    updateSettingsUI();
-  }
-  function updateSettingsUI(){
-    const enabled=document.getElementById('v1125MusicEnabled'),interaction=document.getElementById('v1125Interaction'),continuous=document.getElementById('v1125Continuous'),vol=document.getElementById('v1125Volume');
-    if(enabled){enabled.setAttribute('aria-pressed',String(menuAudioSettings.enabled));enabled.textContent=menuAudioSettings.enabled?'الموسيقى: شغالة':'الموسيقى: مقفولة';}
-    interaction?.classList.toggle('active',menuAudioSettings.mode==='interaction');continuous?.classList.toggle('active',menuAudioSettings.mode==='continuous');if(vol)vol.value=String(Math.round(menuAudioSettings.volume*100));
-  }
-  function openSettings(){document.getElementById('v1125Settings')?.classList.add('open');updateSettingsUI();}
-  function closeSettings(){document.getElementById('v1125Settings')?.classList.remove('open');}
-
-  function syncSoundIcon(){
-    if(!soundToggle)return;const text=soundToggle.textContent||'';soundToggle.dataset.v1112Icon=(text.includes('مكتوم')||text.includes('🔇'))?'🔇':'🔊';syncMenuMusic();updateMenuAudioBadge();
-  }
-  function publish(extra={}){
-    const canvas=document.getElementById('game');
-    window.__V1112_UI={version:'11.12',hardeningVersion:'11.16',menuRefreshVersion:'11.25',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,previewActive,mobileStatsWidthVw:46,mobileMissionWidthVw:46,sceneMeshes:previewScene?.meshes?.length||0,previewCamera:previewCamera?{x:+previewCamera.position.x.toFixed(2),y:+previewCamera.position.y.toFixed(2),z:+previewCamera.position.z.toFixed(2)}:null,canvasVisible:canvas?getComputedStyle(canvas).visibility!=='hidden'&&getComputedStyle(canvas).display!=='none':false,menuMusic:{style:'egyptian-maqsoum-hijaz-mizmar-inspired',bpm:BPM,playing:musicPlaying,unlocked:musicUnlocked,menuOnly:true,mode:menuAudioSettings.mode,enabled:menuAudioSettings.enabled,buttonStings:true,settingsPanel:true},...extra};
-    window.__V1116_START_SCENE=window.__V1112_UI;window.__V1125_MENU=window.__V1112_UI;
-  }
-
-  function stopPreview(){
-    if(previewScene&&previewHandle){try{previewScene.onBeforeRenderObservable.remove(previewHandle);}catch(_){}}
-    if(previewScene&&gameCamera&&previewScene.activeCamera===previewCamera){try{previewScene.activeCamera=gameCamera;}catch(_){}}
-    try{previewCamera?.dispose();}catch(_){}
-    previewHandle=null;previewCamera=null;gameCamera=null;previewScene=null;previewActive=false;publish({stopped:true});
-  }
-  function tryInstallPreview(){
-    if(previewActive)return true;if(gameStarted()||!menuVisible())return false;
-    const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0],active=scene?.activeCamera;
-    if(!scene||!active||!window.BABYLON?.UniversalCamera||!window.BABYLON?.Vector3||scene.meshes.length<40)return false;
-    previewScene=scene;gameCamera=active;previewCamera=new BABYLON.UniversalCamera('v1116PreviewCamera',new BABYLON.Vector3(-24,2.1,-29),scene);previewCamera.minZ=.05;previewCamera.fov=.84;previewCamera.inertia=0;previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));previewCamera.inputs.clear();scene.activeCamera=previewCamera;
-    previewHandle=scene.onBeforeRenderObservable.add(()=>{if(gameStarted()||!menuVisible()){stopPreview();stopMenuMusic(.16);return;}previewCamera.position.set(-24,2.1,-29);previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));if(scene.activeCamera!==previewCamera)scene.activeCamera=previewCamera;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});});
-    previewActive=true;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});return true;
-  }
-
-  installStyle();installMenuUI();syncSoundIcon();publish();
-  if(soundToggle)new MutationObserver(syncSoundIcon).observe(soundToggle,{childList:true,subtree:true,characterData:true});
-  menuObserver=new MutationObserver(()=>{if(!menuVisible()){closeSettings();stopPreview();stopMenuMusic(.15);}else syncMenuMusic();});menuObserver.observe(menu,{attributes:true,attributeFilter:['style','class','hidden']});
-  new MutationObserver(syncMenuMusic).observe(document.body,{attributes:true,attributeFilter:['class']});
-
-  const gesture=window.PointerEvent?'pointerdown':'touchstart';
-  window.addEventListener(gesture,()=>{unlockAudio();},{capture:true,passive:true});window.addEventListener('keydown',unlockAudio,{capture:true});
-  const settingsBtn=document.getElementById('settingsBtn');settingsBtn?.addEventListener('click',()=>{playButtonSting('settings');openSettings();});
-  document.getElementById('newGameBtn')?.addEventListener('pointerdown',()=>playButtonSting('new'),{capture:true});
-  document.getElementById('continueBtn')?.addEventListener('pointerdown',()=>playButtonSting('continue'),{capture:true});
-  document.getElementById('resetBtn')?.addEventListener('pointerdown',()=>playButtonSting('reset'),{capture:true});
-  for(const id of ['newGameBtn','continueBtn'])document.getElementById(id)?.addEventListener('click',()=>{closeSettings();stopPreview();stopMenuMusic(.18);},{capture:true});
-
-  previewTimer=setInterval(()=>{if(tryInstallPreview()&&previewTimer){clearInterval(previewTimer);previewTimer=null;}},100);tryInstallPreview();
-  document.addEventListener('visibilitychange',syncMenuMusic);syncMenuMusic();
-  window.__egyptDebug=window.__egyptDebug||{};window.__egyptDebug.v1116StartSceneState=()=>({...window.__V1116_START_SCENE});window.__egyptDebug.v1125MenuState=()=>({...window.__V1125_MENU});
-  window.addEventListener('pagehide',()=>stopMenuMusic(.04));window.addEventListener('beforeunload',()=>{if(previewTimer)clearInterval(previewTimer);menuObserver?.disconnect();stopMenuMusic(.04);stopPreview();},{once:true});
+'use strict';
+const menu=document.getElementById('menu'),soundToggle=document.getElementById('soundToggle');if(!menu)return;
+let previewScene=null,previewCamera=null,gameCamera=null,previewHandle=null,previewTimer=null,menuObserver=null,bodyObserver=null,soundObserver=null,previewActive=false;
+const KEY='hayatMasr.menuAudio.v1126',OLD='hayatMasr.menuAudio.v1125',defaults={enabled:true,mode:'interaction',volume:.72};
+let prefs=loadPrefs(),ctx=null,musicBus=null,uiBus=null,timer=null,noise=null,next=0,step=0,playing=false,unlocked=false;
+const BPM=104,STEP=(60/BPM)/4;
+function loadPrefs(){try{const r=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLD)||'null');return r&&typeof r==='object'?{enabled:r.enabled!==false,mode:r.mode==='continuous'?'continuous':'interaction',volume:Number.isFinite(+r.volume)?Math.max(.2,Math.min(1,+r.volume)):.72}:{...defaults};}catch(_){return {...defaults};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch(_){}syncSettings();badge();syncMusic();publish();}
+function muted(){const t=soundToggle?.textContent||'';return t.includes('مكتوم')||t.includes('🔇');}
+function menuVisible(){const s=getComputedStyle(menu);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0';}
+function started(){return document.body.classList.contains('game-started');}
+function ensureAudio(){if(ctx)return ctx;const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ctx=new C({latencyHint:'interactive'});musicBus=ctx.createGain();uiBus=ctx.createGain();musicBus.gain.value=.0001;uiBus.gain.value=.0001;musicBus.connect(ctx.destination);uiBus.connect(ctx.destination);const n=Math.max(1,Math.floor(ctx.sampleRate*.08));noise=ctx.createBuffer(1,n,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);volume();return ctx;}
+function volume(){if(!ctx)return;const t=ctx.currentTime;uiBus.gain.setTargetAtTime(.22*prefs.volume,t,.02);if(playing)musicBus.gain.setTargetAtTime(.17*prefs.volume,t,.05);}
+function env(v,t,d,b,a=.005){const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(b);return g;}
+function dum(t,v=.12,b=musicBus){if(!ctx||!b)return;const o=ctx.createOscillator(),g=env(v,t,.15,b,.003);o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(58,t+.11);o.connect(g);o.start(t);o.stop(t+.16);}
+function tek(t,v=.048,b=musicBus){if(!ctx||!b)return;const o=ctx.createOscillator(),g=env(v,t,.065,b,.002);o.type='triangle';o.frequency.setValueAtTime(700,t);o.frequency.exponentialRampToValueAtTime(315,t+.05);o.connect(g);o.start(t);o.stop(t+.07);if(noise){const s=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),ng=env(v*.2,t,.03,b,.001);s.buffer=noise;hp.type='highpass';hp.frequency.value=2200;s.connect(hp);hp.connect(ng);s.start(t);s.stop(t+.035);}}
+function riq(t,v=.017,b=musicBus){if(!ctx||!b||!noise)return;const s=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),g=env(v,t,.035,b,.001);s.buffer=noise;hp.type='highpass';hp.frequency.value=3000;s.connect(hp);hp.connect(g);s.start(t);s.stop(t+.04);}
+function accordion(f,t,d=.17,v=.017,b=musicBus){if(!ctx||!b)return;const lp=ctx.createBiquadFilter(),out=env(v,t,d,b,.01);lp.type='lowpass';lp.frequency.value=1500;lp.connect(out);for(const [type,detune,level] of [['sawtooth',-7,.42],['triangle',7,.58]]){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=f;o.detune.value=detune;g.gain.value=level;o.connect(g);g.connect(lp);o.start(t);o.stop(t+d+.02);}}
+function mizmar(f,t,d=.15,v=.02,b=musicBus,slide=null){if(!ctx||!b)return;const bp=ctx.createBiquadFilter(),out=env(v,t,d,b,.007),o=ctx.createOscillator(),lfo=ctx.createOscillator(),lg=ctx.createGain();bp.type='bandpass';bp.frequency.value=1380;bp.Q.value=1.7;bp.connect(out);o.type='sawtooth';if(slide){o.frequency.setValueAtTime(slide,t);o.frequency.exponentialRampToValueAtTime(f,t+.04);}else o.frequency.value=f;lfo.frequency.value=6.4;lg.gain.value=7;lfo.connect(lg);lg.connect(o.detune);o.connect(bp);o.start(t);lfo.start(t);o.stop(t+d+.02);lfo.stop(t+d+.02);}
+const BAYATI=[293.66,320.24,349.23,392,440,466.16,523.25,587.33],HIJAZ=[293.66,311.13,369.99,392,440,466.16,523.25,587.33],PHRASE=[0,1,2,1,0,3,2,1,0,4,3,2,1,0,2,3];
+function schedule(s,t){const b=s%16,scale=s<16?BAYATI:HIJAZ;if(b===0||b===8)dum(t,b===0?.13:.10);if([4,6,12,14].includes(b))tek(t,[6,14].includes(b)?.038:.052);if([2,10,15].includes(b))riq(t);if(s%4===0)accordion(scale[s<16?0:4]/2,t,STEP*3,.012);if(s%2===0){const i=PHRASE[(s/2)%PHRASE.length],f=scale[i];mizmar(f,t,s%8===0?.21:.135,s%8===0?.023:.017,musicBus,i===1?f*.965:null);}}
+function scheduler(){if(!ctx||!playing)return;const h=ctx.currentTime+.32;while(next<h){schedule(step,next);next+=STEP;step=(step+1)%32;}}
+async function unlock(){const c=ensureAudio();if(!c)return false;try{if(c.state==='suspended')await c.resume();}catch(_){}unlocked=c.state==='running';if(unlocked&&prefs.mode==='continuous')startMusic();publish();return unlocked;}
+async function startMusic(){if(!prefs.enabled||prefs.mode!=='continuous'||muted()||started()||!menuVisible())return false;const c=ensureAudio();if(!c)return false;try{if(c.state==='suspended')await c.resume();}catch(_){}if(c.state!=='running')return false;unlocked=true;if(playing)return true;playing=true;step=0;next=c.currentTime+.03;const t=c.currentTime;musicBus.gain.cancelScheduledValues(t);musicBus.gain.setValueAtTime(.0001,t);musicBus.gain.exponentialRampToValueAtTime(.17*prefs.volume,t+.28);scheduler();timer=setInterval(scheduler,160);badge();publish();return true;}
+function stopMusic(f=.12){const was=playing;playing=false;if(timer){clearInterval(timer);timer=null;}if(ctx&&musicBus&&was){const t=ctx.currentTime;try{musicBus.gain.cancelScheduledValues(t);musicBus.gain.setValueAtTime(Math.max(.0001,musicBus.gain.value),t);musicBus.gain.exponentialRampToValueAtTime(.0001,t+f);}catch(_){}}badge();publish();}
+function syncMusic(){if(document.hidden||started()||!menuVisible()||muted()||!prefs.enabled||prefs.mode!=='continuous')stopMusic(.10);else if(unlocked)startMusic();}
+function sting(k='ui'){if(!prefs.enabled||muted()||started())return;unlock().then(ok=>{if(!ok)return;const t=ctx.currentTime+.006,p={new:[0,1,3],continue:[3,2,1,0],settings:[0,2,1],reset:[0,1,0],ui:[0,1,0]}[k]||[0,1,0];dum(t,.05,uiBus);p.forEach((i,n)=>{const f=BAYATI[i];n===1?accordion(f,t+.05+n*.075,.09,.034,uiBus):mizmar(f,t+.05+n*.075,.09,.033,uiBus,i===1?f*.97:null);});});}
+function previewTune(){if(!prefs.enabled)return;unlock().then(ok=>{if(!ok)return;const t=ctx.currentTime+.02;[0,.55,1.1].forEach((x,i)=>dum(t+x*.30,i?.06:.085,uiBus));[0,1,2,3,2,1,0,4,3,2,1,0].forEach((i,n)=>{const f=(n<6?BAYATI:HIJAZ)[i];n%3===1?accordion(f,t+.04+n*.095,.11,.03,uiBus):mizmar(f,t+.04+n*.095,.10,.034,uiBus,i===1?f*.97:null);});[2,4,7,9].forEach(i=>tek(t+i*.095,.026,uiBus));});}
+function style(){document.getElementById('v1125-menu-style')?.remove();document.getElementById('v1126-menu-style')?.remove();document.getElementById('v1112-ui-style')?.remove();document.getElementById('v1116-ui-style')?.remove();const s=document.createElement('style');s.id='v1126-menu-style';s.textContent=`#game{position:fixed!important;inset:0!important;z-index:0!important;opacity:1!important;visibility:visible!important}#menu{background:linear-gradient(90deg,rgba(5,6,7,.02),rgba(5,6,7,.05) 45%,rgba(5,6,7,.65) 76%,rgba(5,6,7,.88))!important}#menu:before{background:linear-gradient(0deg,rgba(4,5,6,.46),transparent 50%)!important}#menuScene{z-index:0!important;background:transparent!important;box-shadow:inset 0 0 42px rgba(0,0,0,.13)!important}#menuContent{z-index:2!important;width:min(420px,88vw)!important;min-height:auto!important;margin:auto 4vw auto auto!important;padding:21px 22px 18px!important;border-radius:20px!important;border:1px solid rgba(255,255,255,.09)!important;background:rgba(15,15,14,.82)!important;backdrop-filter:blur(5px)!important;box-shadow:0 16px 44px rgba(0,0,0,.30)!important}.menuTopline{margin-bottom:7px!important}.kicker{color:#eac063!important}.menuLocation{opacity:.58!important}.logo{font-size:clamp(50px,6vw,68px)!important;line-height:.95!important;letter-spacing:-1px!important}.tagline{font-size:11px!important;line-height:1.5!important;margin-top:7px!important;opacity:.78!important}.menuRule{width:46px!important;height:2px!important;margin:10px 0!important;background:#e9b84b!important}.menuButtons{gap:5px!important}.menuBtn{min-height:44px!important;padding:8px 11px!important;border-radius:11px!important;background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.07)!important;display:flex!important;align-items:center!important;justify-content:space-between!important;box-shadow:none!important;transform:none!important}.menuBtn:hover,.menuBtn:focus-visible{background:rgba(255,255,255,.08)!important;border-color:rgba(233,184,75,.30)!important;transform:translateX(-2px)!important}.menuBtn.primary{background:#e6b44f!important;color:#17130d!important;border-color:#edc56e!important}.menuBtn small{display:none!important}.menuBtn .menuBtnIcon{font-size:15px;opacity:.8}.menuBtn.danger{min-height:31px!important;font-size:9px!important;opacity:.68!important;background:transparent!important;border-style:dashed!important}#menuAudioBadge{margin-top:6px;display:flex;justify-content:space-between;padding:6px 8px;border-radius:9px;background:rgba(0,0,0,.16);font-size:9px;color:#dfd2bd}#menuAudioBadge strong{color:#edc56e}.audioDetail,.menuMeta,.menuFoot{display:none!important}#menuStatus{margin-top:5px!important;font-size:8px!important;min-height:9px!important;color:#cdbb9c!important}#v1126Settings{position:absolute;inset:0;z-index:7;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(3,4,5,.58)}#v1126Settings.open{display:flex}#v1126SettingsPanel{width:min(420px,94vw);padding:17px;border-radius:17px;background:#171716;border:1px solid rgba(255,255,255,.11);color:#fff}.v1126Head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}.v1126Head h2{margin:0;font-size:19px}.v1126Close{border:0;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);color:#fff}.v1126Row{padding:9px 0;border-top:1px solid rgba(255,255,255,.07)}.v1126Title{font-weight:850;font-size:11px}.v1126Hint{font-size:8px;opacity:.55;margin-top:2px;line-height:1.4}.v1126Seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.v1126Seg button,.v1126Action{border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;padding:8px;font-weight:800}.v1126Seg button.active,.v1126Action.primary{background:#e6b44f;color:#17130d}.v1126Action{width:100%;margin-top:7px}.v1126Range{width:100%;accent-color:#e6b44f;margin-top:7px}@media(max-width:760px){#menu{background:linear-gradient(0deg,rgba(5,6,7,.82),rgba(5,6,7,.28) 48%,rgba(5,6,7,0) 78%)!important}#menuContent{position:absolute!important;left:10px!important;right:10px!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:auto!important;margin:0!important;padding:12px 13px!important;border-radius:16px!important;max-height:51vh!important;overflow:auto!important;background:rgba(14,14,13,.92)!important;backdrop-filter:none!important;box-shadow:0 10px 28px rgba(0,0,0,.24)!important}.menuTopline{margin-bottom:3px!important}.kicker,.menuLocation{font-size:7px!important}.logo{font-size:36px!important}.tagline{display:none!important}.menuRule{width:32px!important;margin:6px 0!important}.menuButtons{gap:4px!important}.menuBtn{min-height:37px!important;padding:6px 8px!important;border-radius:9px!important;font-size:10px!important}.menuBtn.danger{min-height:28px!important}#menuAudioBadge{margin-top:4px!important;padding:4px 6px!important;font-size:8px!important}#menuStatus{display:none!important}#v1126SettingsPanel{padding:14px!important}#top{top:max(7px,env(safe-area-inset-top))!important;left:8px!important;right:8px!important;gap:6px!important}#stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:46vw!important;min-width:0!important;gap:3px!important;padding:4px!important}.stat{padding:3px 5px!important}.lab{font-size:8px!important}.val{font-size:11px!important}.meter{height:2px!important}#clock{min-width:78px!important;padding:5px 7px!important}.clockMain{font-size:14px!important}.clockSub{font-size:8px!important}#soundToggle{top:63px!important;left:8px!important;width:36px!important;height:36px!important;padding:0!important;border-radius:50%!important;font-size:0!important;display:grid!important;place-items:center!important}#soundToggle:before{content:attr(data-v1112-icon);font-size:16px!important}#mission{right:8px!important;top:82px!important;width:min(46vw,190px)!important;padding:6px 8px!important}.mTitle{font-size:10px!important}.mText{font-size:9px!important}#mapWrap{width:82px!important;height:82px!important;left:8px!important;bottom:146px!important;padding:4px!important}#joy{left:14px!important;bottom:20px!important;width:104px!important;height:104px!important}#knob{left:34px!important;top:34px!important;width:36px!important;height:36px!important}#act{right:16px!important;bottom:28px!important;width:62px!important;height:62px!important}#run{right:27px!important;bottom:100px!important;width:44px!important;height:44px!important}}`;document.head.appendChild(s);}
+function button(el,title,icon){if(el)el.innerHTML=`<span><b>${title}</b></span><span class="menuBtnIcon">${icon}</span>`;}
+function installUI(){const c=document.getElementById('menuContent'),bs=c?.querySelector('.menuButtons');if(!c||!bs)return;const k=c.querySelector('.kicker'),l=c.querySelector('.menuLocation'),tag=c.querySelector('.tagline'),foot=c.querySelector('.menuFoot');if(k)k.textContent='HAYAT MASR • القاهرة';if(l)l.textContent='يوم جديد في مصر';if(tag)tag.textContent='اختار وابدأ يومك.';if(foot)foot.textContent='V11.24 • Menu 11.26';button(document.getElementById('newGameBtn'),'ابدأ يوم جديد','←');button(document.getElementById('continueBtn'),'كمّل','↩');let set=document.getElementById('settingsBtn');if(!set){set=document.createElement('button');set.id='settingsBtn';set.className='menuBtn';bs.insertBefore(set,document.getElementById('resetBtn'));}button(set,'الإعدادات','⚙');button(document.getElementById('resetBtn'),'مسح الحفظ','×');let b=document.getElementById('menuAudioBadge');if(!b){b=document.createElement('div');b.id='menuAudioBadge';bs.after(b);}badge();settingsPanel();}
+function badge(){const b=document.getElementById('menuAudioBadge');if(!b)return;const off=!prefs.enabled||muted(),label=off?'المزيكا مقفولة':prefs.mode==='continuous'?(playing?'المزيكا المصرية شغالة':'المزيكا طول القائمة'):'المزيكا عند الضغط';b.innerHTML=`<strong>♫ ${label}</strong><span class="audioDetail">بلدي • طبلة • أورج • بياتي</span>`;}
+function settingsPanel(){document.getElementById('v1125Settings')?.remove();if(document.getElementById('v1126Settings'))return;const o=document.createElement('div');o.id='v1126Settings';o.innerHTML=`<div id="v1126SettingsPanel"><div class="v1126Head"><h2>الإعدادات</h2><button class="v1126Close" id="v1126Close">×</button></div><div class="v1126Row"><div class="v1126Title">موسيقى الشاشة الرئيسية</div><div class="v1126Hint">مقسوم بلدي، طبلة، رق، أورج/أكورديون ومقامات بياتي وحجاز.</div><button id="v1126MusicEnabled" class="v1126Action">الموسيقى: شغالة</button></div><div class="v1126Row"><div class="v1126Title">طريقة التشغيل</div><div class="v1126Seg"><button id="v1126Interaction">عند الضغط</button><button id="v1126Continuous">طول القائمة</button></div></div><div class="v1126Row"><div class="v1126Title">الصوت</div><input id="v1126Volume" class="v1126Range" type="range" min="20" max="100" step="5" value="72"><button id="v1126Preview" class="v1126Action primary">♫ جرّب المزيكا</button></div></div>`;menu.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)closeSettings();});document.getElementById('v1126Close')?.addEventListener('click',()=>{sting();closeSettings();});document.getElementById('v1126MusicEnabled')?.addEventListener('click',()=>{prefs.enabled=!prefs.enabled;save();if(prefs.enabled)sting('settings');else stopMusic(.05);});document.getElementById('v1126Interaction')?.addEventListener('click',()=>{prefs.mode='interaction';save();sting('settings');});document.getElementById('v1126Continuous')?.addEventListener('click',()=>{prefs.mode='continuous';save();unlock().then(startMusic);sting('settings');});document.getElementById('v1126Volume')?.addEventListener('input',e=>{prefs.volume=Math.max(.2,Math.min(1,+e.target.value/100));volume();save();});document.getElementById('v1126Preview')?.addEventListener('click',previewTune);syncSettings();}
+function syncSettings(){const e=document.getElementById('v1126MusicEnabled'),i=document.getElementById('v1126Interaction'),c=document.getElementById('v1126Continuous'),v=document.getElementById('v1126Volume');if(e)e.textContent=prefs.enabled?'الموسيقى: شغالة':'الموسيقى: مقفولة';i?.classList.toggle('active',prefs.mode==='interaction');c?.classList.toggle('active',prefs.mode==='continuous');if(v)v.value=String(Math.round(prefs.volume*100));}
+function openSettings(){document.getElementById('v1126Settings')?.classList.add('open');syncSettings();}function closeSettings(){document.getElementById('v1126Settings')?.classList.remove('open');}
+function syncIcon(){if(!soundToggle)return;const t=soundToggle.textContent||'';soundToggle.dataset.v1112Icon=(t.includes('مكتوم')||t.includes('🔇'))?'🔇':'🔊';syncMusic();badge();}
+function publish(extra={}){const canvas=document.getElementById('game');window.__V1112_UI={version:'11.12',hardeningVersion:'11.16',menuRefreshVersion:'11.26',liveStartScene:true,dedicatedPreviewCamera:true,compactMobileHud:true,previewActive,mobileStatsWidthVw:46,mobileMissionWidthVw:46,sceneMeshes:previewScene?.meshes?.length||0,previewCamera:previewCamera?{x:+previewCamera.position.x.toFixed(2),y:+previewCamera.position.y.toFixed(2),z:+previewCamera.position.z.toFixed(2)}:null,canvasVisible:!!canvas,menuMusic:{style:'egyptian-baladi-bayati-hijaz',bpm:BPM,playing,unlocked,menuOnly:true,mode:prefs.mode,enabled:prefs.enabled,buttonStings:true,settingsPanel:true},performance:{noPerFramePublish:true,lightMenuEffects:true,audioLookaheadMs:320},...extra};window.__V1116_START_SCENE=window.__V1112_UI;window.__V1125_MENU=window.__V1112_UI;window.__V1126_MENU=window.__V1112_UI;}
+function stopPreview(){if(previewScene&&previewHandle){try{previewScene.onBeforeRenderObservable.remove(previewHandle);}catch(_){}}if(previewScene&&gameCamera&&previewScene.activeCamera===previewCamera){try{previewScene.activeCamera=gameCamera;}catch(_){}}try{previewCamera?.dispose();}catch(_){}previewHandle=null;previewCamera=null;gameCamera=null;previewScene=null;previewActive=false;publish({stopped:true});}
+function installPreview(){if(previewActive)return true;if(started()||!menuVisible())return false;const scene=window.BABYLON?.Engine?.LastCreatedEngine?.scenes?.[0],active=scene?.activeCamera;if(!scene||!active||!window.BABYLON?.UniversalCamera||!window.BABYLON?.Vector3||scene.meshes.length<40)return false;previewScene=scene;gameCamera=active;previewCamera=new BABYLON.UniversalCamera('v1116PreviewCamera',new BABYLON.Vector3(-24,2.1,-29),scene);previewCamera.minZ=.05;previewCamera.fov=.84;previewCamera.inertia=0;previewCamera.setTarget(new BABYLON.Vector3(-12,1.55,-16));previewCamera.inputs.clear();scene.activeCamera=previewCamera;previewHandle=scene.onBeforeRenderObservable.add(()=>{if(started()||!menuVisible()){stopPreview();stopMusic(.10);return;}if(scene.activeCamera!==previewCamera)scene.activeCamera=previewCamera;});previewActive=true;publish({previewTarget:'street--24',cameraMoving:false,stablePreview:true});return true;}
+style();installUI();syncIcon();publish();if(soundToggle){soundObserver=new MutationObserver(syncIcon);soundObserver.observe(soundToggle,{childList:true,subtree:true,characterData:true});}menuObserver=new MutationObserver(()=>{if(!menuVisible()){closeSettings();stopPreview();stopMusic(.10);}else syncMusic();});menuObserver.observe(menu,{attributes:true,attributeFilter:['style','class','hidden']});bodyObserver=new MutationObserver(syncMusic);bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});const gesture=window.PointerEvent?'pointerdown':'touchstart';window.addEventListener(gesture,unlock,{capture:true,passive:true});window.addEventListener('keydown',unlock,{capture:true});document.getElementById('settingsBtn')?.addEventListener('click',()=>{sting('settings');openSettings();});document.getElementById('newGameBtn')?.addEventListener('pointerdown',()=>sting('new'),{capture:true});document.getElementById('continueBtn')?.addEventListener('pointerdown',()=>sting('continue'),{capture:true});document.getElementById('resetBtn')?.addEventListener('pointerdown',()=>sting('reset'),{capture:true});for(const id of ['newGameBtn','continueBtn'])document.getElementById(id)?.addEventListener('click',()=>{closeSettings();stopPreview();stopMusic(.12);},{capture:true});previewTimer=setInterval(()=>{if(installPreview()&&previewTimer){clearInterval(previewTimer);previewTimer=null;}},220);installPreview();document.addEventListener('visibilitychange',syncMusic);syncMusic();window.__egyptDebug=window.__egyptDebug||{};window.__egyptDebug.v1116StartSceneState=()=>({...window.__V1116_START_SCENE});window.__egyptDebug.v1125MenuState=()=>({...window.__V1125_MENU});window.__egyptDebug.v1126MenuState=()=>({...window.__V1126_MENU});window.addEventListener('pagehide',()=>stopMusic(.03));window.addEventListener('beforeunload',()=>{if(previewTimer)clearInterval(previewTimer);menuObserver?.disconnect();bodyObserver?.disconnect();soundObserver?.disconnect();stopMusic(.03);stopPreview();},{once:true});
 })();
