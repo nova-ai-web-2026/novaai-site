@@ -38,11 +38,11 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace
 
       - name: Rename APK
-        run: cp android-wrapper/app/build/outputs/apk/debug/app-debug.apk Hayat-Masr-v11.27.0.apk
+        run: cp android-wrapper/app/build/outputs/apk/debug/app-debug.apk Hayat-Masr-v11.28.0.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Hayat-Masr-v11.27.0-APK
-          path: Hayat-Masr-v11.27.0.apk
+          name: Hayat-Masr-v11.28.0-APK
+          path: Hayat-Masr-v11.28.0.apk
           if-no-files-found: error
