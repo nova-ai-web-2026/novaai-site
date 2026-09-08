@@ -10,7 +10,7 @@ android {
         applicationId 'com.novaai.hayatmasr'
         minSdk 23
         targetSdk 35
-        versionCode 112800
-        versionName '11.28.0'
+        versionCode 112900
+        versionName '11.29.0'
     }
 }
