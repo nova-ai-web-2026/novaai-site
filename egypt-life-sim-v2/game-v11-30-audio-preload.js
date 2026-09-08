@@ -16,26 +16,49 @@
         volume:Number.isFinite(+prior?.volume)?Math.max(.2,Math.min(1,+prior.volume)):.78
       }));
     }
-    // Keep every legacy menu-audio preference disabled. The gameplay audio system is untouched.
     localStorage.setItem('hayatMasr.menuAudio.v1126',JSON.stringify({enabled:false,mode:'interaction',volume:.2}));
   } catch (_) {}
 
-  // Explicit signal consumed by the legacy menu UI: it must never create menu audio.
   window.__EGYPT_MENU_AUDIO_EXTERNAL=true;
   window.__EGYPT_MENU_AUDIO_OWNER='11.30';
 
-  // Stop any menu-audio singleton left by an older controller in the same document.
   for(const key of ['__V1129_AUDIO_SINGLETON','__V1127_AUDIO_SINGLETON']){
     try{
       const old=window[key];
-      old?.stop?.();
-      old?.music?.pause?.();
-      old?.buttonAudio?.pause?.();
+      old?.stop?.(); old?.music?.pause?.(); old?.buttonAudio?.pause?.();
       if(old)old.active=false;
     }catch(_){}
   }
 
-  // Keep the V11.28 performance/stability layer loaded before the scene grows.
+  // Hard-lock WebAudio only while the start menu boots. This prevents the legacy
+  // V11.26 synthesizer closure from waking up on a later menu tap. Gameplay gets
+  // the real constructors back as soon as body.game-started appears.
+  const nativeAudioContext=window.AudioContext;
+  const nativeWebkitAudioContext=window.webkitAudioContext;
+  let restored=false;
+  window.__EGYPT_MENU_AUDIO_RESTORE_CONTEXT=()=>{
+    if(restored)return;
+    restored=true;
+    try{if(nativeAudioContext)window.AudioContext=nativeAudioContext;}catch(_){}
+    try{if(nativeWebkitAudioContext)window.webkitAudioContext=nativeWebkitAudioContext;}catch(_){}
+    window.__EGYPT_MENU_AUDIO_CONTEXT_RESTORED=true;
+  };
+  try{if(nativeAudioContext)window.AudioContext=undefined;}catch(_){}
+  try{if(nativeWebkitAudioContext)window.webkitAudioContext=undefined;}catch(_){}
+
+  const restoreWhenGameplayStarts=()=>{
+    if(document.body?.classList?.contains('game-started')){
+      window.__EGYPT_MENU_AUDIO_RESTORE_CONTEXT?.();
+      return true;
+    }
+    return false;
+  };
+  if(!restoreWhenGameplayStarts()){
+    const mo=new MutationObserver(()=>{if(restoreWhenGameplayStarts())mo.disconnect();});
+    const begin=()=>{if(document.body)mo.observe(document.body,{attributes:true,attributeFilter:['class']});};
+    if(document.body)begin(); else document.addEventListener('DOMContentLoaded',begin,{once:true});
+  }
+
   if(!document.querySelector('script[data-egypt-v1128-performance]')){
     const perf=document.createElement('script');
     perf.src='game-v11-28-performance.js?v=11.28.0';
