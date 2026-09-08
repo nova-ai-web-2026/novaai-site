@@ -4,17 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <meta name="theme-color" content="#171512" />
-  <title>شوارع النور — نموذج أولي</title>
+  <title>شوارع النور — نسخة موبايل تجريبية</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="./styles.css" />
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
 </head>
 <body>
-  <canvas id="game"></canvas>
+  <canvas id="game" tabindex="0" aria-label="شوارع النور"></canvas>
 
   <div id="boot" class="overlay">
     <div class="panel hero">
-      <div class="eyebrow">نموذج لعب أصلي — Vertical Slice</div>
+      <div class="eyebrow">نسخة لعب أصلية — Recovery Build</div>
       <h1>شوارع <span>النور</span></h1>
       <p>ابدأ يومك في حي «عزبة النور»، انزل هات الفطار، واتعامل مع شارع حي بيتغيّر مع الوقت والناس والمرور.</p>
       <div class="menu-actions">
@@ -22,7 +21,7 @@
         <button id="continueGame">كمل من آخر حفظ</button>
         <button id="howTo">التحكم</button>
       </div>
-      <div id="bootStatus" class="muted"></div>
+      <div id="bootStatus" class="muted">جاري تجهيز اللعبة…</div>
     </div>
   </div>
 
@@ -51,9 +50,15 @@
       <p id="dialogueText"></p>
     </div>
 
-    <div class="controls glass">
+    <div class="controls glass desktop-controls">
       <span>WASD حركة</span><span>Shift جري</span><span>E تفاعل</span><span>R إعادة</span>
       <button id="saveBtn">حفظ</button>
+    </div>
+
+    <div id="mobileControls" aria-label="تحكم الموبايل">
+      <div id="joy" aria-label="عصاية الحركة"><div id="knob"></div></div>
+      <button id="run" aria-label="جري">جري</button>
+      <button id="act" aria-label="تفاعل">تفاعل</button>
     </div>
   </div>
 
@@ -65,6 +70,14 @@
     </div>
   </div>
 
-  <script type="module" src="./src/game.js"></script>
+  <div id="fatalError" class="fatal-error" hidden role="alert">
+    <div class="fatal-card">
+      <strong>اللعبة ما اشتغلتش</strong>
+      <p id="fatalErrorText">حصل خطأ أثناء التشغيل.</p>
+      <button id="fatalRetry" class="primary">جرّب تاني</button>
+    </div>
+  </div>
+
+  <script src="./src/bootstrap.js?v=mobile-recovery-1"></script>
 </body>
 </html>
