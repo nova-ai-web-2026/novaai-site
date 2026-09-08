@@ -4,10 +4,15 @@ const B=window.BABYLON;
 function mat(scene,name,color,rough=1){const m=new B.PBRMaterial(name,scene);m.albedoColor=B.Color3.FromHexString(color);m.roughness=rough;m.metallic=0;return m;}
 function box(scene,name,size,pos,material,collides=true){const m=B.MeshBuilder.CreateBox(name,{width:size.x,height:size.y,depth:size.z},scene);m.position.set(pos.x,pos.y,pos.z);m.material=material;m.checkCollisions=collides;return m;}
 function sign(scene,text,pos){const plane=B.MeshBuilder.CreatePlane('sign',{width:4.2,height:1.1},scene);plane.position.set(pos.x,pos.y,pos.z);plane.rotation.y=Math.PI;const tex=new B.DynamicTexture('signTex',{width:1024,height:256},scene,true);tex.hasAlpha=true;tex.drawText(text,undefined,170,'bold 96px Tahoma','#fff','#3a2414',true,true);plane.material=new B.StandardMaterial('signMat',scene);plane.material.diffuseTexture=tex;plane.material.emissiveColor=new B.Color3(.25,.18,.1);return plane;}
-function shell(scene,prefix,cx,cz,w,d,h,frontDoorX,frontDoorW,material){
-  const wall=.35;box(scene,`${prefix}-back`,{x:w,y:h,z:wall},{x:cx,y:h/2,z:cz+d/2},material);box(scene,`${prefix}-left`,{x:wall,y:h,z:d},{x:cx-w/2,y:h/2,z:cz},material);box(scene,`${prefix}-right`,{x:wall,y:h,z:d},{x:cx+w/2,y:h/2,z:cz},material);
-  const minX=cx-w/2,maxX=cx+w/2,gapL=frontDoorX-frontDoorW/2,gapR=frontDoorX+frontDoorW/2;const leftW=Math.max(.2,gapL-minX),rightW=Math.max(.2,maxX-gapR);
-  box(scene,`${prefix}-frontL`,{x:leftW,y:h,z:wall},{x:minX+leftW/2,y:h/2,z:cz-d/2},material);box(scene,`${prefix}-frontR`,{x:rightW,y:h,z:wall},{x:gapR+rightW/2,y:h/2,z:cz-d/2},material);box(scene,`${prefix}-roof`,{x:w,y:.25,z:d},{x:cx,y:h,z:cz},material,false);
+function shell(scene,prefix,cx,cz,w,d,h,doorX,doorW,material,doorSide='south'){
+  const wall=.35,minX=cx-w/2,maxX=cx+w/2,gapL=doorX-doorW/2,gapR=doorX+doorW/2,leftW=Math.max(.2,gapL-minX),rightW=Math.max(.2,maxX-gapR);
+  box(scene,`${prefix}-left`,{x:wall,y:h,z:d},{x:cx-w/2,y:h/2,z:cz},material);
+  box(scene,`${prefix}-right`,{x:wall,y:h,z:d},{x:cx+w/2,y:h/2,z:cz},material);
+  const doorZ=doorSide==='north'?cz+d/2:cz-d/2,solidZ=doorSide==='north'?cz-d/2:cz+d/2;
+  box(scene,`${prefix}-solidWall`,{x:w,y:h,z:wall},{x:cx,y:h/2,z:solidZ},material);
+  box(scene,`${prefix}-doorWallL`,{x:leftW,y:h,z:wall},{x:minX+leftW/2,y:h/2,z:doorZ},material);
+  box(scene,`${prefix}-doorWallR`,{x:rightW,y:h,z:wall},{x:gapR+rightW/2,y:h/2,z:doorZ},material);
+  box(scene,`${prefix}-roof`,{x:w,y:.25,z:d},{x:cx,y:h,z:cz},material,false);
 }
 
 export function createWorld(scene){
@@ -17,11 +22,11 @@ export function createWorld(scene){
   box(scene,'road',{x:90,y:.12,z:8},{x:0,y:.02,z:0},mats.road,false);box(scene,'sidewalkA',{x:90,y:.22,z:4},{x:0,y:.12,z:-6},mats.walk,false);box(scene,'sidewalkB',{x:90,y:.22,z:4},{x:0,y:.12,z:6},mats.walk,false);
   for(let i=-3;i<=3;i++)box(scene,'cross',{x:1.2,y:.03,z:.8},{x:WORLD.crossingX,y:.1,z:i*1.05},mats.white,false);
 
-  shell(scene,'apartment',-22,-15,14,9,5,-18,2.4,mats.wall);sign(scene,'عمارة ١٢ — عزبة النور',{x:-22,y:4.4,z:-10.35});
+  shell(scene,'apartment',-22,-15,14,9,5,-18,2.4,mats.wall,'north');sign(scene,'عمارة ١٢ — عزبة النور',{x:-22,y:4.4,z:-10.35});
   const aptDoor=box(scene,'aptDoor',{x:2.25,y:2.7,z:.18},{x:-18,y:1.35,z:-10.48},mats.wood,true);aptDoor.metadata={kind:'door',id:'apartment_exit',open:false,closedPos:{x:-18,z:-10.48},openPos:{x:-16.85,z:-10.48}};
   box(scene,'bed',{x:2.2,y:.55,z:4},{x:-25.5,y:.28,z:-16},mats.white,true);box(scene,'table',{x:1.8,y:.9,z:1.1},{x:-19.5,y:.45,z:-16.5},mats.wood,true);
 
-  shell(scene,'shop',20,13,11,8,4.6,18,2.4,mats.shop);sign(scene,'فول عم صابر',{x:20,y:4.1,z:8.85});
+  shell(scene,'shop',20,13,11,8,4.6,18,2.4,mats.shop,'south');sign(scene,'فول عم صابر',{x:20,y:4.1,z:8.85});
   const shopDoor=box(scene,'shopDoor',{x:2.25,y:2.7,z:.18},{x:18,y:1.35,z:9.02},mats.wood,true);shopDoor.metadata={kind:'door',id:'shop_door',open:false,closedPos:{x:18,z:9.02},openPos:{x:19.18,z:9.02}};
   const counter=box(scene,'counter',{x:5,y:1.15,z:1},{x:21,y:.58,z:13.2},mats.wood,true);
   const cashier=B.MeshBuilder.CreateCapsule('cashier',{height:1.75,radius:.36},scene);cashier.position.set(21,.9,14.2);cashier.material=mat(scene,'cashierMat','#8a6a45');cashier.metadata={kind:'cashier',name:'عم صابر'};
