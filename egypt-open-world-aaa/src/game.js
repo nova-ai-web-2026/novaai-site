@@ -129,6 +129,17 @@ window.__SHWARE3_DEBUG={
   interact:()=>interact()
 };
 
-engine.runRenderLoop(()=>{const dt=Math.min(engine.getDeltaTime()/1000,.05);if(started){timeSystem.update(dt);trafficSystem.update(dt);world.trafficLight.set(trafficSystem.carGreen);playerMove(dt);updatePedestrians(world.pedestrians,dt,world.player,showNpcLine);updateTraffic(world.traffic,dt,trafficSystem);detectIncidents();witnessSystem.update(dt,policeSystem);policeSystem.update(dt,inVehicle?world.driveCar.position:world.player.position);updatePolice(world,policeSystem,dt);updateMission();updatePrompt();applyDayNight();updateHud();if(dialogTimer>0&&(dialogTimer-=dt)<=0)$('dialogue').hidden=true;if(toastTimer>0&&(toastTimer-=dt)<=0)$('toast').classList.remove('show');}scene.render();});
+engine.runRenderLoop(()=>{
+  const frameDt=Math.min(Math.max(engine.getDeltaTime()/1000,0),.2);
+  if(started){
+    const steps=Math.max(1,Math.min(4,Math.ceil(frameDt/.05))),dt=frameDt/steps;
+    for(let i=0;i<steps;i++){
+      timeSystem.update(dt);trafficSystem.update(dt);playerMove(dt);updatePedestrians(world.pedestrians,dt,world.player,showNpcLine);updateTraffic(world.traffic,dt,trafficSystem);detectIncidents();witnessSystem.update(dt,policeSystem);policeSystem.update(dt,inVehicle?world.driveCar.position:world.player.position);updatePolice(world,policeSystem,dt);updateMission();
+    }
+    world.trafficLight.set(trafficSystem.carGreen);updatePrompt();applyDayNight();updateHud();
+    if(dialogTimer>0&&(dialogTimer-=frameDt)<=0)$('dialogue').hidden=true;if(toastTimer>0&&(toastTimer-=frameDt)<=0)$('toast').classList.remove('show');
+  }
+  scene.render();
+});
 scene.executeWhenReady(()=>{window.__SHWARE3_READY=true;window.__SHWARE3_BOOT_FAILED=false;for(const id of ['newGame','continueGame','howTo']){const b=$(id);if(b)b.disabled=false;}$('bootStatus').textContent=touchDevice?'جاهزة — استخدم العصاية وزر تفاعل':'جاهزة — اضغط لعبة جديدة';const fatal=$('fatalError');if(fatal)fatal.hidden=true;});
 window.addEventListener('beforeunload',()=>{if(started)saveGame(false);});
