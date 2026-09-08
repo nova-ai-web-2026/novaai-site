@@ -6,12 +6,15 @@
   const fatal = $('fatalError');
   const fatalText = $('fatalErrorText');
   const retry = $('fatalRetry');
+  const bootButtons = ['newGame','continueGame','howTo'].map($).filter(Boolean);
+  for (const button of bootButtons) button.disabled = true;
 
   const showFatal = message => {
     window.__SHWARE3_BOOT_FAILED = true;
     if (status) status.textContent = 'حصلت مشكلة أثناء تشغيل اللعبة.';
     if (fatalText) fatalText.textContent = message;
     if (fatal) fatal.hidden = false;
+    for (const button of bootButtons) button.disabled = true;
   };
 
   if (retry) retry.addEventListener('click', () => location.reload());
@@ -28,6 +31,18 @@
     'https://cdn.jsdelivr.net/npm/babylonjs/babylon.js',
     'https://unpkg.com/babylonjs/babylon.js'
   ];
+
+  const launchGame = engineSource => {
+    if (window.__SHWARE3_MODULE_LOADING) return;
+    window.__SHWARE3_MODULE_LOADING = true;
+    window.__SHWARE3_ENGINE_SOURCE = engineSource;
+    if (status) status.textContent = 'جاري تجهيز الحارة…';
+    const module = document.createElement('script');
+    module.type = 'module';
+    module.src = './src/game.js?v=mobile-recovery-1';
+    module.onerror = () => showFatal('ملفات اللعبة اتحملت ناقصة. اعمل إعادة تحميل للصفحة.');
+    document.body.appendChild(module);
+  };
 
   const loadEngine = index => {
     if (window.BABYLON?.Engine) return launchGame(`cached-${index}`);
@@ -46,18 +61,6 @@
     };
     script.onerror = () => loadEngine(index + 1);
     document.head.appendChild(script);
-  };
-
-  const launchGame = engineSource => {
-    if (window.__SHWARE3_MODULE_LOADING) return;
-    window.__SHWARE3_MODULE_LOADING = true;
-    window.__SHWARE3_ENGINE_SOURCE = engineSource;
-    if (status) status.textContent = 'جاري تجهيز الحارة…';
-    const module = document.createElement('script');
-    module.type = 'module';
-    module.src = `./src/game.js?v=mobile-recovery-1`;
-    module.onerror = () => showFatal('ملفات اللعبة اتحملت ناقصة. اعمل إعادة تحميل للصفحة.');
-    document.body.appendChild(module);
   };
 
   loadEngine(0);
