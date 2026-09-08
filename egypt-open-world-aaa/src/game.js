@@ -4,13 +4,25 @@ import {createWorld,setDoorOpen,updatePedestrians,updateTraffic,updatePolice} fr
 
 const B=window.BABYLON;
 const $=id=>document.getElementById(id);
+const isMobile=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0||innerWidth<800;
+if(!B){window.__showGameFatal?.('محرك اللعبة ما اتحمّلش. اعمل تحديث للصفحة وجرب تاني.');throw new Error('BABYLON_ENGINE_NOT_AVAILABLE');}
 const canvas=$('game');
-const engine=new B.Engine(canvas,true,{preserveDrawingBuffer:false,stencil:true});
-const scene=new B.Scene(engine);scene.gravity=new B.Vector3(0,-.35,0);
+let engine;
+try{
+  engine=new B.Engine(canvas,true,{preserveDrawingBuffer:false,stencil:false,disableWebGL2Support:false});
+  if(isMobile)engine.setHardwareScalingLevel(1.65);
+}catch(error){
+  window.__showGameFatal?.('الجهاز أو المتصفح مش قادر يشغّل WebGL المطلوب للعبة. جرّب فتح الرابط في Chrome وتأكد إن توفير البطارية الشديد مقفول.');
+  throw error;
+}
+const scene=new B.Scene(engine);scene.gravity=new B.Vector3(0,-.35,0);scene.skipPointerMovePicking=true;
 const hemi=new B.HemisphericLight('hemi',new B.Vector3(0,1,0),scene);hemi.intensity=.88;
 const sun=new B.DirectionalLight('sun',new B.Vector3(-.5,-1,.35),scene);sun.position=new B.Vector3(30,45,-25);sun.intensity=1.1;
-const shadow=new B.ShadowGenerator(1024,sun);shadow.useBlurExponentialShadowMap=true;shadow.blurKernel=24;
-const world=createWorld(scene);[world.player,...world.pedestrians,...world.traffic,world.driveCar].forEach(m=>shadow.addShadowCaster(m));world.ground.receiveShadows=true;
+let shadow=null;
+if(!isMobile){shadow=new B.ShadowGenerator(1024,sun);shadow.useBlurExponentialShadowMap=true;shadow.blurKernel=24;}
+const world=createWorld(scene);
+if(shadow)[world.player,...world.pedestrians,...world.traffic,world.driveCar].forEach(m=>shadow.addShadowCaster(m));
+world.ground.receiveShadows=!!shadow;
 const camera=new B.FollowCamera('camera',new B.Vector3(0,5,-8),scene);camera.radius=7;camera.heightOffset=3;camera.rotationOffset=180;camera.cameraAcceleration=.08;camera.maxCameraSpeed=12;camera.lockedTarget=world.player;scene.activeCamera=camera;
 
 const timeSystem=new TimeSystem(WORLD.startTime),economy=new EconomySystem(),mission=new MissionSystem(),trafficSystem=new TrafficSystem(),witnessSystem=new WitnessSystem(),policeSystem=new PoliceSystem(),saveSystem=new SaveSystem();
@@ -63,7 +75,7 @@ function openShop(){
   const body=$('modalBody');body.innerHTML=`<p><strong>${SHOP.cashier}:</strong> صباح الفل يا باشا، أطلبلك إيه؟</p><p>${SHOP.items[0].name} — <strong>${SHOP.items[0].price} جنيه</strong></p><button id="buyBreakfast" class="primary">هات الفطار</button>`;$('modalTitle').textContent=SHOP.name;$('modal').hidden=false;
   $('buyBreakfast').onclick=()=>{if(breakfastBought){showToast('الفطار معاك خلاص');return;}if(!economy.pay(SHOP.items[0].price)){showToast('معاكش فلوس كفاية');return;}breakfastBought=true;if(mission.current()?.id==='buy_breakfast')mission.advance('buy_breakfast');$('modal').hidden=true;showDialogue('عم صابر','اتفضل يا باشا. خلي بالك من نفسك وإنت راجع.',4);showToast('خدت الفطار — ارجع ناحية البيت');};
 }
-function updatePrompt(){const i=nearestInteraction();if(!i){hidePrompt();return;}if(i.type==='car')showPrompt(STRINGS.enterCar);else if(i.type==='car_exit')showPrompt(STRINGS.exitCar);else if(i.type==='apt_door'||i.type==='shop_door')showPrompt(i.type==='apt_door'?(world.aptDoor.metadata.open?'اضغط E تقفل باب الشقة':'اضغط E تفتح باب الشقة'):(world.shopDoor.metadata.open?'اضغط E تقفل باب المحل':'اضغط E تفتح باب المحل'));else if(i.type==='cashier')showPrompt('اضغط E واتكلم مع عم صابر');}
+function updatePrompt(){const i=nearestInteraction();if(!i){hidePrompt();return;}const action=isMobile?'اضغط تفاعل':'اضغط E';if(i.type==='car')showPrompt(isMobile?'اضغط تفاعل واركب العربية':STRINGS.enterCar);else if(i.type==='car_exit')showPrompt(isMobile?'اضغط تفاعل وانزل من العربية':STRINGS.exitCar);else if(i.type==='apt_door'||i.type==='shop_door')showPrompt(i.type==='apt_door'?(world.aptDoor.metadata.open?`${action} وتقفل باب الشقة`:`${action} وتفتح باب الشقة`):(world.shopDoor.metadata.open?`${action} وتقفل باب المحل`:`${action} وتفتح باب المحل`));else if(i.type==='cashier')showPrompt(`${action} واتكلم مع عم صابر`);}
 
 function detectIncidents(){if(!inVehicle)return;const now=performance.now();for(const p of world.pedestrians){if(dist2D(p.position,world.driveCar.position)<1.4&&now-lastNpcIncident>5000){lastNpcIncident=now;showNpcLine(p.metadata.name,'إيه يا عم براحة!');witnessSystem.report('reckless_driving',world.driveCar.position,1);showToast('حد بلغ عن سواقة متهورة');break;}}}
 function resetMission(){mission.reset();breakfastBought=false;inVehicle=false;world.player.setEnabled(true);world.player.position.set(WORLD.playerStart.x,WORLD.playerStart.y,WORLD.playerStart.z);world.driveCar.position.set(-7,.82,-7);world.driveCar.metadata.speed=0;policeSystem.heat=0;policeSystem.active=false;setDoorOpen(world.aptDoor,false);setDoorOpen(world.shopDoor,false);camera.lockedTarget=world.player;showToast('بدأت المهمة من الأول');}
@@ -71,8 +83,15 @@ function saveGame(notify=true){saveSystem.save(makeSnapshot({player:world.player
 function loadGame(){const s=saveSystem.load();if(!s){$('bootStatus').textContent=STRINGS.noSave;return false;}restoreSnapshot(s,{player:world.player,mission,economy,time:timeSystem,police:policeSystem});breakfastBought=mission.index>=5||mission.completed;inVehicle=false;world.player.setEnabled(true);setDoorOpen(world.aptDoor,mission.index>=1);setDoorOpen(world.shopDoor,mission.index>=4||world.player.position.z>9.2);showToast(STRINGS.load);return true;}
 function start(load=false){if(load&&!loadGame())return;started=true;$('boot').hidden=true;$('hud').hidden=false;canvas.focus();updateHud();}
 
-$('newGame').onclick=()=>{resetMission();start(false);};$('continueGame').onclick=()=>start(true);$('saveBtn').onclick=()=>saveGame();
-$('howTo').onclick=()=>{$('modalTitle').textContent='التحكم';$('modalBody').innerHTML='<p><strong>WASD / الأسهم:</strong> حركة<br><strong>Shift:</strong> جري<br><strong>E:</strong> تفاعل أو فتح الأبواب أو ركوب/نزول العربية<br><strong>R:</strong> إعادة المهمة<br><strong>F5:</strong> حفظ سريع</p>';$('modal').hidden=false;};$('closeModal').onclick=()=>{$('modal').hidden=true;};
+function bindHold(id,code){const el=$(id);if(!el)return;const down=e=>{e.preventDefault();keys.add(code);};const up=e=>{e.preventDefault();keys.delete(code);};el.addEventListener('pointerdown',down);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('pointerleave',up);}
+bindHold('touchUp','KeyW');bindHold('touchDown','KeyS');bindHold('touchLeft','KeyA');bindHold('touchRight','KeyD');bindHold('touchRun','ShiftLeft');
+$('touchAct')?.addEventListener('pointerdown',e=>{e.preventDefault();if(started)interact();});
+window.addEventListener('pointerup',()=>{if(isMobile){keys.delete('KeyW');keys.delete('KeyS');keys.delete('KeyA');keys.delete('KeyD');keys.delete('ShiftLeft');}});
 
+$('newGame').onclick=()=>{resetMission();start(false);};$('continueGame').onclick=()=>start(true);$('saveBtn').onclick=()=>saveGame();
+$('howTo').onclick=()=>{$('modalTitle').textContent='التحكم';$('modalBody').innerHTML=isMobile?'<p><strong>الأسهم:</strong> حركة<br><strong>جري:</strong> دوس مطوّل<br><strong>تفاعل:</strong> فتح الأبواب وركوب العربية والكلام مع الناس</p>':'<p><strong>WASD / الأسهم:</strong> حركة<br><strong>Shift:</strong> جري<br><strong>E:</strong> تفاعل أو فتح الأبواب أو ركوب/نزول العربية<br><strong>R:</strong> إعادة المهمة<br><strong>F5:</strong> حفظ سريع</p>';$('modal').hidden=false;};$('closeModal').onclick=()=>{$('modal').hidden=true;};
+
+$('bootStatus').textContent=isMobile?'المحرك جاهز — التحكم باللمس متاح':'المحرك جاهز';
+window.__EGYPT_OPEN_WORLD_READY={mobile:isMobile,webglVersion:engine.webGLVersion,hardwareScaling:engine.getHardwareScalingLevel()};
 engine.runRenderLoop(()=>{const dt=Math.min(engine.getDeltaTime()/1000,.05);if(started){timeSystem.update(dt);trafficSystem.update(dt);world.trafficLight.set(trafficSystem.carGreen);playerMove(dt);updatePedestrians(world.pedestrians,dt,world.player,showNpcLine);updateTraffic(world.traffic,dt,trafficSystem);detectIncidents();witnessSystem.update(dt,policeSystem);policeSystem.update(dt,inVehicle?world.driveCar.position:world.player.position);updatePolice(world,policeSystem,dt);updateMission();updatePrompt();applyDayNight();updateHud();if(dialogTimer>0&&(dialogTimer-=dt)<=0)$('dialogue').hidden=true;if(toastTimer>0&&(toastTimer-=dt)<=0)$('toast').classList.remove('show');}scene.render();});
 window.addEventListener('beforeunload',()=>{if(started)saveGame(false);});
