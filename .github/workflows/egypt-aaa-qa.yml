@@ -36,8 +36,10 @@ jobs:
           grep -q 'id="act"' egypt-open-world-aaa/index.html
           grep -q 'fatalError' egypt-open-world-aaa/index.html
           grep -q './vendor/babylon.js' egypt-open-world-aaa/src/bootstrap.js
-          grep -q '__BUILD_SHA__' egypt-open-world-aaa/index.html
-          grep -q '__BUILD_SHA__' egypt-open-world-aaa/src/bootstrap.js
+          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/index.html
+          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'mobile-recovery-3' egypt-open-world-aaa/index.html
+          grep -q 'mobile-recovery-3' egypt-open-world-aaa/src/bootstrap.js
           grep -q '__SHWARE3_READY' egypt-open-world-aaa/src/game.js
           grep -q "doorSide='south'" egypt-open-world-aaa/src/world.js
           grep -q 'المهمة خلصت' egypt-open-world-aaa/src/data.js
@@ -48,9 +50,44 @@ jobs:
           grep -q 'PoliceSystem' egypt-open-world-aaa/src/systems.js
           grep -q 'setDoorOpen' egypt-open-world-aaa/src/game.js
 
-  deploy:
+  persist-vendor:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: qa
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.vendor.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: vendor
+        name: Ensure Babylon exists in repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=egypt-open-world-aaa/vendor/babylon.js
+          if [ -s "$FILE" ] && [ "$(wc -c < "$FILE")" -gt 1000000 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Babylon vendor already persisted in repository."
+            exit 0
+          fi
+          mkdir -p "$(dirname "$FILE")"
+          curl --fail --location --retry 5 --retry-delay 2 --connect-timeout 20 --max-time 120 \
+            https://cdn.babylonjs.com/babylon.js -o "$FILE"
+          test "$(wc -c < "$FILE")" -gt 1000000
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "build: persist Babylon engine for Egyptian open world"
+          git push origin HEAD:main
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "Vendor committed; the follow-up main run will deploy and verify it."
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.persist-vendor.outputs.ready == 'true'
+    needs: [qa, persist-vendor]
     permissions:
       contents: read
       pages: write
@@ -66,16 +103,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Vendor Babylon locally and stamp build
+      - name: Verify persistent local engine
         run: |
-          mkdir -p egypt-open-world-aaa/vendor
-          curl --fail --location --retry 5 --retry-delay 2 --connect-timeout 20 --max-time 120 \
-            https://cdn.babylonjs.com/babylon.js \
-            -o egypt-open-world-aaa/vendor/babylon.js
+          test -s egypt-open-world-aaa/vendor/babylon.js
           test "$(wc -c < egypt-open-world-aaa/vendor/babylon.js)" -gt 1000000
-          sed -i "s/__BUILD_SHA__/${GITHUB_SHA}/g" egypt-open-world-aaa/index.html egypt-open-world-aaa/src/bootstrap.js
-          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/index.html
-          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/src/bootstrap.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload complete site
@@ -87,7 +118,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   published-browser:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.deploy.result == 'success'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10

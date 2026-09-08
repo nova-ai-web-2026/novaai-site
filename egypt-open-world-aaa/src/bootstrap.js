@@ -27,7 +27,7 @@
   });
 
   const sources = [
-    './vendor/babylon.js?v=__BUILD_SHA__',
+    './vendor/babylon.js?v=mobile-recovery-3',
     'https://cdn.babylonjs.com/babylon.js',
     'https://cdn.jsdelivr.net/npm/babylonjs/babylon.js',
     'https://unpkg.com/babylonjs/babylon.js'
@@ -40,7 +40,7 @@
     if (status) status.textContent = 'جاري تجهيز الحارة…';
     const module = document.createElement('script');
     module.type = 'module';
-    module.src = './src/game.js?v=__BUILD_SHA__';
+    module.src = './src/game.js?v=mobile-recovery-3';
     module.onerror = () => showFatal('ملفات اللعبة اتحملت ناقصة. اعمل إعادة تحميل للصفحة.');
     document.body.appendChild(module);
   };
