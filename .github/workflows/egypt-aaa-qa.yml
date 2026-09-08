@@ -4,10 +4,16 @@ on:
   push:
     paths:
       - 'egypt-open-world-aaa/**'
+      - 'scripts/test-egypt-open-world-published.mjs'
       - '.github/workflows/egypt-aaa-qa.yml'
   pull_request:
     paths:
       - 'egypt-open-world-aaa/**'
+      - 'scripts/test-egypt-open-world-published.mjs'
+      - '.github/workflows/egypt-aaa-qa.yml'
+
+permissions:
+  contents: read
 
 jobs:
   qa:
@@ -20,6 +26,7 @@ jobs:
           node --check egypt-open-world-aaa/src/systems.js
           node --check egypt-open-world-aaa/src/world.js
           node --check egypt-open-world-aaa/src/game.js
+          node --check scripts/test-egypt-open-world-published.mjs
       - name: Required Arabic UI and first-build checks
         run: |
           grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
@@ -31,3 +38,55 @@ jobs:
           grep -q 'SaveSystem' egypt-open-world-aaa/src/systems.js
           grep -q 'PoliceSystem' egypt-open-world-aaa/src/systems.js
           grep -q 'setDoorOpen' egypt-open-world-aaa/src/game.js
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: qa
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload complete site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  published-browser:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GAME_TEST_URL: ${{ needs.deploy.outputs.page_url }}egypt-open-world-aaa/
+      GAME_EXPECTED_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare browser verification
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Verify published page and playable startup
+        run: node scripts/test-egypt-open-world-published.mjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egypt-open-world-published-browser
+          path: |
+            egypt-open-world-published.png
+            egypt-open-world-browser-report.json
+          if-no-files-found: ignore
