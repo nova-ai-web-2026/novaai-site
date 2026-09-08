@@ -6,8 +6,28 @@
   <meta name="theme-color" content="#171512" />
   <title>شوارع النور — نموذج أولي</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="./styles.css" />
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <link rel="stylesheet" href="./styles.css?v=__BUILD_SHA__" />
+  <script>
+    window.__showGameFatal = function(message){
+      const paint=()=>{
+        const fatal=document.getElementById('fatal');
+        const text=document.getElementById('fatalText');
+        if(text) text.textContent=message||'حصلت مشكلة أثناء تشغيل اللعبة.';
+        if(fatal) fatal.hidden=false;
+        const boot=document.getElementById('boot');
+        if(boot) boot.hidden=true;
+      };
+      if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',paint,{once:true}); else paint();
+    };
+    window.addEventListener('error',event=>{
+      const msg=String(event?.message||'');
+      if(msg&&msg!=='Script error.') window.__showGameFatal('اللعبة وقفت أثناء التشغيل. جرّب تحديث الصفحة. التفاصيل: '+msg.slice(0,180));
+    });
+    window.addEventListener('unhandledrejection',event=>{
+      const msg=String(event?.reason?.message||event?.reason||'خطأ غير معروف');
+      window.__showGameFatal('اللعبة وقفت أثناء التشغيل. جرّب تحديث الصفحة. التفاصيل: '+msg.slice(0,180));
+    });
+  </script>
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -22,7 +42,15 @@
         <button id="continueGame">كمل من آخر حفظ</button>
         <button id="howTo">التحكم</button>
       </div>
-      <div id="bootStatus" class="muted"></div>
+      <div id="bootStatus" class="muted">بيتم تجهيز المحرك…</div>
+    </div>
+  </div>
+
+  <div id="fatal" class="overlay fatal" hidden>
+    <div class="panel">
+      <h2>تعذّر تشغيل اللعبة</h2>
+      <p id="fatalText">حصلت مشكلة أثناء تشغيل اللعبة.</p>
+      <button class="primary" onclick="location.reload()">إعادة التحميل</button>
     </div>
   </div>
 
@@ -55,6 +83,19 @@
       <span>WASD حركة</span><span>Shift جري</span><span>E تفاعل</span><span>R إعادة</span>
       <button id="saveBtn">حفظ</button>
     </div>
+
+    <div id="mobileControls" aria-label="تحكم اللمس">
+      <div class="dpad">
+        <button id="touchUp" aria-label="قدام">▲</button>
+        <button id="touchLeft" aria-label="شمال">◀</button>
+        <button id="touchDown" aria-label="ورا">▼</button>
+        <button id="touchRight" aria-label="يمين">▶</button>
+      </div>
+      <div class="touchActions">
+        <button id="touchRun">جري</button>
+        <button id="touchAct" class="primary">تفاعل</button>
+      </div>
+    </div>
   </div>
 
   <div id="modal" class="overlay" hidden>
@@ -65,6 +106,7 @@
     </div>
   </div>
 
-  <script type="module" src="./src/game.js"></script>
+  <script src="./vendor/babylon.js?v=__BUILD_SHA__" onerror="window.__showGameFatal('فشل تحميل محرك اللعبة من السيرفر. اعمل تحديث للصفحة وجرب تاني.')"></script>
+  <script type="module" src="./src/game.js?v=__BUILD_SHA__"></script>
 </body>
 </html>
