@@ -27,6 +27,7 @@
   });
 
   const sources = [
+    './vendor/babylon.js?v=__BUILD_SHA__',
     'https://cdn.babylonjs.com/babylon.js',
     'https://cdn.jsdelivr.net/npm/babylonjs/babylon.js',
     'https://unpkg.com/babylonjs/babylon.js'
@@ -39,7 +40,7 @@
     if (status) status.textContent = 'جاري تجهيز الحارة…';
     const module = document.createElement('script');
     module.type = 'module';
-    module.src = './src/game.js?v=mobile-recovery-1';
+    module.src = './src/game.js?v=__BUILD_SHA__';
     module.onerror = () => showFatal('ملفات اللعبة اتحملت ناقصة. اعمل إعادة تحميل للصفحة.');
     document.body.appendChild(module);
   };
@@ -47,14 +48,14 @@
   const loadEngine = index => {
     if (window.BABYLON?.Engine) return launchGame(`cached-${index}`);
     if (index >= sources.length) {
-      showFatal('تعذر تحميل محرك الرسوم. جرّب فتح الرابط في Chrome أو تأكد إن الاتصال بالإنترنت مش بيمنع ملفات المحرك.');
+      showFatal('تعذر تحميل محرك الرسوم. جرّب إعادة تحميل الصفحة أو فتح الرابط في Chrome.');
       return;
     }
-    if (status) status.textContent = `جاري تحميل محرك اللعبة… (${index + 1}/${sources.length})`;
+    if (status) status.textContent = index === 0 ? 'جاري تحميل محرك اللعبة من نفس السيرفر…' : `جاري تجربة مصدر احتياطي… (${index}/${sources.length - 1})`;
     const script = document.createElement('script');
     script.src = sources[index];
     script.async = true;
-    script.crossOrigin = 'anonymous';
+    if (sources[index].startsWith('http')) script.crossOrigin = 'anonymous';
     script.onload = () => {
       if (window.BABYLON?.Engine) launchGame(sources[index]);
       else loadEngine(index + 1);

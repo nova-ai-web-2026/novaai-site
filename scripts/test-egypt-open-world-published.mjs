@@ -8,6 +8,7 @@ const expected=process.env.GAME_EXPECTED_COMMIT||'unknown';
 const executablePath=process.env.CHROME_PATH||'/usr/bin/google-chrome';
 const browser=await chromium.launch({headless:true,executablePath,args:['--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
 const report={base,expected,desktop:{},mobile:{},ok:false};
+const externalEngine=/https:\/\/(cdn\.babylonjs\.com|cdn\.jsdelivr\.net|unpkg\.com)\//;
 
 function diagnostics(page,target){
   target.errors=[];target.consoleErrors=[];target.failedRequests=[];target.httpErrors=[];
@@ -18,12 +19,14 @@ function diagnostics(page,target){
 }
 
 async function openReady(page,target){
+  await page.route(externalEngine,route=>route.abort());
   const response=await page.goto(`${base}?verify=${expected}`,{waitUntil:'domcontentloaded',timeout:60000});
   assert.ok(response&&response.ok(),`Published page returned HTTP ${response?.status()}`);
   target.http=response.status();
   await page.locator('#boot').waitFor({state:'visible',timeout:15000});
   await page.waitForFunction(()=>window.__SHWARE3_READY===true,null,{timeout:60000});
   target.engineSource=await page.evaluate(()=>window.__SHWARE3_ENGINE_SOURCE);
+  assert.match(String(target.engineSource),/vendor\/babylon\.js/,`Local Babylon engine was not used: ${target.engineSource}`);
   assert.equal(await page.locator('#fatalError').isVisible(),false,'Fatal startup screen is visible');
   assert.equal(await page.locator('#newGame').isEnabled(),true,'New game stayed disabled after boot');
 }
@@ -81,5 +84,5 @@ try{
   report.mobile.runtime=await runtimeState(mobile);assert.equal(report.mobile.runtime.hudHidden,false,'Mobile HUD hidden');assert.equal(report.mobile.runtime.fatalVisible,false,'Mobile fatal screen visible');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation was not detected as touch device');
   await mobile.screenshot({path:'egypt-open-world-mobile.png',fullPage:true});assertClean(report.mobile,'Mobile');await mobile.close();
 
-  report.ok=true;console.log('Published Egyptian open-world recovery build verified on desktop and Android touch',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement}));
+  report.ok=true;console.log('Published Egyptian open-world recovery build verified on desktop and Android touch using only local engine assets',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement,engine:report.mobile.engineSource}));
 }catch(error){report.failure=error.stack||error.message;console.error(error);throw error;}finally{fs.writeFileSync('egypt-open-world-browser-report.json',JSON.stringify(report,null,2));await browser.close();}
