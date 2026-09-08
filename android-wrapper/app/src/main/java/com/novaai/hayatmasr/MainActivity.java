@@ -12,7 +12,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
-    private static final String GAME_URL = "https://nova-ai-web-2026.github.io/novaai-site/egypt-life-sim-v2/v11-29.html?v=11.29.0&audio=single-owner&perf=1";
+    private static final String GAME_URL = "https://nova-ai-web-2026.github.io/novaai-site/egypt-life-sim-v2/v11-30.html?v=11.30.0&audio=hard-single-owner&perf=1";
     private WebView webView;
 
     @Override
