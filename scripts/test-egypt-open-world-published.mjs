@@ -12,7 +12,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist']
 });
 
-const report = { base, expected, errors: [], consoleErrors: [], failedRequests: [], checks: {} };
+const report = { base, expected, errors: [], consoleErrors: [], failedRequests: [], httpErrors: [], checks: {} };
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on('pageerror', error => report.errors.push(error.message));
@@ -21,6 +21,9 @@ try {
   });
   page.on('requestfailed', request => {
     report.failedRequests.push({ url: request.url(), error: request.failure()?.errorText || 'request failed' });
+  });
+  page.on('response', response => {
+    if (response.status() >= 400) report.httpErrors.push({ url: response.url(), status: response.status() });
   });
 
   const response = await page.goto(`${base}?verify=${expected}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -67,8 +70,9 @@ try {
 
   await page.screenshot({ path: 'egypt-open-world-published.png', fullPage: true });
   assert.deepEqual(report.errors, [], `Page errors: ${report.errors.join(' | ')}`);
-  assert.deepEqual(report.consoleErrors, [], `Console errors: ${report.consoleErrors.join(' | ')}`);
   assert.deepEqual(report.failedRequests, [], `Failed requests: ${JSON.stringify(report.failedRequests)}`);
+  assert.deepEqual(report.httpErrors, [], `HTTP errors: ${JSON.stringify(report.httpErrors)}`);
+  assert.deepEqual(report.consoleErrors, [], `Console errors: ${report.consoleErrors.join(' | ')}`);
 
   report.ok = true;
   console.log('Published Egyptian open-world build verified', JSON.stringify(runtime));
