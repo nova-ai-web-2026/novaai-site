@@ -32,10 +32,10 @@ export const SHOP={
 
 export const WORLD={
   startTime:7.75,
-  playerStart:{x:-20,y:1.05,z:-9},
-  apartmentExit:{x:-14,z:-9},
+  playerStart:{x:-22,y:1.05,z:-15},
+  apartmentExit:{x:-18,z:-10.4},
   shop:{x:18,z:9},
-  homeReturn:{x:-16,z:-8},
+  homeReturn:{x:-18,z:-10.5},
   road:{z:0,width:8},
   crossingX:7
 };
