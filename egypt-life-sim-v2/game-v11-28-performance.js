@@ -217,24 +217,6 @@
     sample();
     const timer = setInterval(sample, 1500);
     window.addEventListener('beforeunload', () => clearInterval(timer), { once:true });
-
-    // Street signal/UI bookkeeping does not need 60 updates per second. Preserve
-    // accumulated dt so all timings and rules remain identical while reducing GC.
-    for (let i=0;i<200 && !window.EgyptStreetLife?.ready;i++) await sleep(100);
-    const street = window.EgyptStreetLife;
-    if (street?.ready && typeof street.tick === 'function' && !street.tick.__egypt1128Throttled) {
-      const original = street.tick.bind(street);
-      let accumulated = 0;
-      const wrapped = (dt, playing) => {
-        accumulated += Math.max(0, dt || 0);
-        if (playing && accumulated < 1/30) return;
-        const use = Math.min(accumulated || dt || 0, .12);
-        accumulated = 0;
-        return original(use, playing);
-      };
-      wrapped.__egypt1128Throttled = true;
-      street.tick = wrapped;
-    }
   }
 
   try { installCollisionCache(); } catch (error) { console.warn('V11.28 collision optimization skipped', error); }
