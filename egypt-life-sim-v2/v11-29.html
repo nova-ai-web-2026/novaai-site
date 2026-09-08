@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#11100e" />
+  <title>حياة مصر — V11.29</title>
+  <style>html,body{margin:0;width:100%;height:100%;background:#151412;color:#fff;font-family:Tahoma,Arial,sans-serif;display:grid;place-items:center}.boot{opacity:.75;font-size:14px}</style>
+</head>
+<body>
+  <div class="boot">جاري تشغيل حياة مصر V11.29…</div>
+  <script>
+  (async()=>{
+    try{
+      const r=await fetch('index.html?bootstrap=11.29.0',{cache:'no-store'});
+      if(!r.ok)throw new Error('index '+r.status);
+      let html=await r.text();
+      html=html.replace('game-v11-27-audio-preload.js?v=11.27','game-v11-29-audio-preload.js?v=11.29.0')
+               .replace('game-v11-12-ui.js?v=11.12&release=11.24.0','game-v11-12-ui.js?v=11.12&release=11.24.0&audioOwner=11.29.0')
+               .replace('game-v11-27-egyptian-audio.js?v=11.27','game-v11-29-egyptian-audio.js?v=11.29.0')
+               .replace('HAYAT MASR • V11.24.0','HAYAT MASR • V11.29.0')
+               .replace('V11.24.0 — مشوار الفطار — شنطة وحفظ وحوار العيلة','V11.29.0 — Single menu audio owner');
+      document.open();
+      document.write(html);
+      document.close();
+    }catch(err){
+      document.body.innerHTML='<div class="boot">تعذر تشغيل V11.29: '+String(err)+'</div>';
+    }
+  })();
+  </script>
+</body>
+</html>
