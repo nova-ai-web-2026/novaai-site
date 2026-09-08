@@ -1,0 +1,33 @@
+name: Egypt AAA Vertical Slice QA
+
+on:
+  push:
+    paths:
+      - 'egypt-open-world-aaa/**'
+      - '.github/workflows/egypt-aaa-qa.yml'
+  pull_request:
+    paths:
+      - 'egypt-open-world-aaa/**'
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check egypt-open-world-aaa/src/data.js
+          node --check egypt-open-world-aaa/src/systems.js
+          node --check egypt-open-world-aaa/src/world.js
+          node --check egypt-open-world-aaa/src/game.js
+      - name: Required Arabic UI and first-build checks
+        run: |
+          grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
+          grep -q 'هات الفطار' egypt-open-world-aaa/index.html
+          grep -q 'المهمة خلصت' egypt-open-world-aaa/src/data.js
+          grep -q 'خلي بالك يا ابني' egypt-open-world-aaa/src/data.js
+          grep -q 'for(let i=0;i<12;i++)' egypt-open-world-aaa/src/world.js
+          grep -q "kind:'driveable'" egypt-open-world-aaa/src/world.js
+          grep -q 'SaveSystem' egypt-open-world-aaa/src/systems.js
+          grep -q 'PoliceSystem' egypt-open-world-aaa/src/systems.js
+          grep -q 'setDoorOpen' egypt-open-world-aaa/src/game.js
