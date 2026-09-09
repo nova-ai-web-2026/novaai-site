@@ -27,8 +27,9 @@ jobs:
           node --check egypt-open-world-aaa/src/systems.js
           node --check egypt-open-world-aaa/src/world.js
           node --check egypt-open-world-aaa/src/game.js
+          node --check egypt-open-world-aaa/src/v32-polish.js
           node --check scripts/test-egypt-open-world-published.mjs
-      - name: Required Arabic UI and V3.1 motion/home/camera checks
+      - name: Required Arabic UI and V3.2 visual-motion checks
         run: |
           grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
           grep -q 'هات الفطار' egypt-open-world-aaa/index.html
@@ -36,11 +37,19 @@ jobs:
           grep -q 'id="act"' egypt-open-world-aaa/index.html
           grep -q 'fatalError' egypt-open-world-aaa/index.html
           grep -q './vendor/babylon.js' egypt-open-world-aaa/src/bootstrap.js
-          grep -q 'v3-motion-home-2' egypt-open-world-aaa/index.html
-          grep -q 'v3-motion-home-2' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v32-visual-motion-polish-1' egypt-open-world-aaa/index.html
+          grep -q 'v32-visual-motion-polish-1' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v32-polish.js' egypt-open-world-aaa/src/bootstrap.js
           grep -q "build:'v3-motion-home-2'" egypt-open-world-aaa/src/game.js
           grep -q 'camera.checkCollisions=true' egypt-open-world-aaa/src/game.js
           grep -q 'camera.collisionRadius' egypt-open-world-aaa/src/game.js
+          grep -q "BUILD='v32-visual-motion-polish-1'" egypt-open-world-aaa/src/v32-polish.js
+          grep -q 'v32-home-wall' egypt-open-world-aaa/src/v32-polish.js
+          grep -q 'v32-living-rug' egypt-open-world-aaa/src/v32-polish.js
+          grep -q 'pickWithRay' egypt-open-world-aaa/src/v32-polish.js
+          grep -q '_v32BaseZ' egypt-open-world-aaa/src/v32-polish.js
+          grep -q 'wheel.rotation.y' egypt-open-world-aaa/src/v32-polish.js
+          grep -q '__SHWARE3_POLISH_READY' egypt-open-world-aaa/src/v32-polish.js
           grep -q "name}-joint" egypt-open-world-aaa/src/world.js
           grep -q 'sofa-base' egypt-open-world-aaa/src/world.js
           grep -q 'kitchen-run' egypt-open-world-aaa/src/world.js
@@ -125,7 +134,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install --no-save playwright-core@1.55.0
-      - name: Verify published desktop and Android V3.1 gameplay with camera collision
+      - name: Verify published desktop and Android V3.2 visual-motion polish
         run: node scripts/test-egypt-open-world-published.mjs
       - name: Upload browser evidence
         if: always()
