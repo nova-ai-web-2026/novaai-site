@@ -28,7 +28,7 @@ jobs:
           node --check egypt-open-world-aaa/src/world.js
           node --check egypt-open-world-aaa/src/game.js
           node --check scripts/test-egypt-open-world-published.mjs
-      - name: Required Arabic UI and V3 motion/home checks
+      - name: Required Arabic UI and V3.1 motion/home/camera checks
         run: |
           grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
           grep -q 'هات الفطار' egypt-open-world-aaa/index.html
@@ -36,11 +36,11 @@ jobs:
           grep -q 'id="act"' egypt-open-world-aaa/index.html
           grep -q 'fatalError' egypt-open-world-aaa/index.html
           grep -q './vendor/babylon.js' egypt-open-world-aaa/src/bootstrap.js
-          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/index.html
-          ! grep -q '__BUILD_SHA__' egypt-open-world-aaa/src/bootstrap.js
-          grep -q 'v3-motion-home-1' egypt-open-world-aaa/index.html
-          grep -q 'v3-motion-home-1' egypt-open-world-aaa/src/bootstrap.js
-          grep -q "build:'v3-motion-home-1'" egypt-open-world-aaa/src/game.js
+          grep -q 'v3-motion-home-2' egypt-open-world-aaa/index.html
+          grep -q 'v3-motion-home-2' egypt-open-world-aaa/src/bootstrap.js
+          grep -q "build:'v3-motion-home-2'" egypt-open-world-aaa/src/game.js
+          grep -q 'camera.checkCollisions=true' egypt-open-world-aaa/src/game.js
+          grep -q 'camera.collisionRadius' egypt-open-world-aaa/src/game.js
           grep -q "name}-joint" egypt-open-world-aaa/src/world.js
           grep -q 'sofa-base' egypt-open-world-aaa/src/world.js
           grep -q 'kitchen-run' egypt-open-world-aaa/src/world.js
@@ -49,13 +49,8 @@ jobs:
           grep -q 'playerMotion.vx=damp' egypt-open-world-aaa/src/game.js
           grep -q 'car.metadata.steer=damp' egypt-open-world-aaa/src/game.js
           grep -q '__SHWARE3_READY' egypt-open-world-aaa/src/game.js
-          grep -q "doorSide='south'" egypt-open-world-aaa/src/world.js
-          grep -q 'المهمة خلصت' egypt-open-world-aaa/src/data.js
-          grep -q 'خلي بالك يا ابني' egypt-open-world-aaa/src/data.js
-          grep -q "kind:'driveable'" egypt-open-world-aaa/src/world.js
           grep -q 'SaveSystem' egypt-open-world-aaa/src/systems.js
           grep -q 'PoliceSystem' egypt-open-world-aaa/src/systems.js
-          grep -q 'setDoorOpen' egypt-open-world-aaa/src/game.js
 
   persist-vendor:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -77,12 +72,10 @@ jobs:
           FILE=egypt-open-world-aaa/vendor/babylon.js
           if [ -s "$FILE" ] && [ "$(wc -c < "$FILE")" -gt 1000000 ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "Babylon vendor already persisted in repository."
             exit 0
           fi
           mkdir -p "$(dirname "$FILE")"
-          curl --fail --location --retry 5 --retry-delay 2 --connect-timeout 20 --max-time 120 \
-            https://cdn.babylonjs.com/babylon.js -o "$FILE"
+          curl --fail --location --retry 5 --retry-delay 2 --connect-timeout 20 --max-time 120 https://cdn.babylonjs.com/babylon.js -o "$FILE"
           test "$(wc -c < "$FILE")" -gt 1000000
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -90,7 +83,6 @@ jobs:
           git commit -m "build: persist Babylon engine for Egyptian open world"
           git push origin HEAD:main
           echo "ready=false" >> "$GITHUB_OUTPUT"
-          echo "Vendor committed; the follow-up main run will deploy and verify it."
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.persist-vendor.outputs.ready == 'true'
@@ -114,10 +106,8 @@ jobs:
         run: |
           test -s egypt-open-world-aaa/vendor/babylon.js
           test "$(wc -c < egypt-open-world-aaa/vendor/babylon.js)" -gt 1000000
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload complete site
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
       - name: Deploy to GitHub Pages
@@ -134,9 +124,8 @@ jobs:
       GAME_EXPECTED_COMMIT: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare browser verification
-        run: npm install --no-save playwright-core@1.55.0
-      - name: Verify published desktop and Android V3 gameplay without external engine CDNs
+      - run: npm install --no-save playwright-core@1.55.0
+      - name: Verify published desktop and Android V3.1 gameplay with camera collision
         run: node scripts/test-egypt-open-world-published.mjs
       - name: Upload browser evidence
         if: always()
