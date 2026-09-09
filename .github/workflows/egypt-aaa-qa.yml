@@ -23,12 +23,13 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check egypt-open-world-aaa/src/bootstrap.js
+          node --check egypt-open-world-aaa/src/camera-guard.js
           node --check egypt-open-world-aaa/src/data.js
           node --check egypt-open-world-aaa/src/systems.js
           node --check egypt-open-world-aaa/src/world.js
           node --check egypt-open-world-aaa/src/game.js
           node --check scripts/test-egypt-open-world-published.mjs
-      - name: Required Arabic UI and V3.1 motion/home/camera checks
+      - name: Required Arabic UI and V3.2 motion/home/camera checks
         run: |
           grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
           grep -q 'هات الفطار' egypt-open-world-aaa/index.html
@@ -36,11 +37,12 @@ jobs:
           grep -q 'id="act"' egypt-open-world-aaa/index.html
           grep -q 'fatalError' egypt-open-world-aaa/index.html
           grep -q './vendor/babylon.js' egypt-open-world-aaa/src/bootstrap.js
-          grep -q 'v3-motion-home-2' egypt-open-world-aaa/index.html
-          grep -q 'v3-motion-home-2' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v3-motion-home-3' egypt-open-world-aaa/index.html
+          grep -q 'camera-guard.js?v=v3-motion-home-3' egypt-open-world-aaa/index.html
+          grep -q '__SHWARE3_CAMERA_GUARD' egypt-open-world-aaa/src/camera-guard.js
+          grep -q 'camera.rotationOffset = 0' egypt-open-world-aaa/src/camera-guard.js
           grep -q "build:'v3-motion-home-2'" egypt-open-world-aaa/src/game.js
           grep -q 'camera.checkCollisions=true' egypt-open-world-aaa/src/game.js
-          grep -q 'camera.collisionRadius' egypt-open-world-aaa/src/game.js
           grep -q "name}-joint" egypt-open-world-aaa/src/world.js
           grep -q 'sofa-base' egypt-open-world-aaa/src/world.js
           grep -q 'kitchen-run' egypt-open-world-aaa/src/world.js
@@ -125,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install --no-save playwright-core@1.55.0
-      - name: Verify published desktop and Android V3.1 gameplay with camera collision
+      - name: Verify published desktop and Android V3.2 with street-side camera
         run: node scripts/test-egypt-open-world-published.mjs
       - name: Upload browser evidence
         if: always()
