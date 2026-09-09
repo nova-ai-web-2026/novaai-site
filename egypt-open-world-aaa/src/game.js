@@ -1,6 +1,6 @@
-import {STRINGS,MISSION,SHOP,WORLD} from './data.js?v=v2-visual-1';
-import {TimeSystem,EconomySystem,MissionSystem,TrafficSystem,WitnessSystem,PoliceSystem,SaveSystem,makeSnapshot,restoreSnapshot,uiTextForMission} from './systems.js?v=v2-visual-1';
-import {createWorld,setDoorOpen,updatePedestrians,updateTraffic,updatePolice} from './world.js?v=v2-visual-1';
+import {STRINGS,MISSION,SHOP,WORLD} from './data.js?v=motion-house-v3';
+import {TimeSystem,EconomySystem,MissionSystem,TrafficSystem,WitnessSystem,PoliceSystem,SaveSystem,makeSnapshot,restoreSnapshot,uiTextForMission} from './systems.js?v=motion-house-v3';
+import {createWorld,setDoorOpen,updatePedestrians,updateTraffic,updatePolice} from './world.js?v=motion-house-v3';
 
 const B=window.BABYLON;
 const $=id=>document.getElementById(id);
@@ -13,17 +13,18 @@ const hemi=new B.HemisphericLight('hemi',new B.Vector3(0,1,0),scene);hemi.intens
 const sun=new B.DirectionalLight('sun',new B.Vector3(-.5,-1,.35),scene);sun.position=new B.Vector3(30,45,-25);sun.intensity=1.1;
 const shadow=new B.ShadowGenerator(touchDevice?512:1024,sun);shadow.useBlurExponentialShadowMap=true;shadow.blurKernel=touchDevice?12:24;
 const world=createWorld(scene);[world.player,...world.pedestrians,...world.traffic,world.driveCar].forEach(m=>shadow.addShadowCaster(m,true));world.ground.receiveShadows=true;
-const camera=new B.FollowCamera('camera',new B.Vector3(0,4,-7),scene);camera.radius=5.6;camera.heightOffset=2.35;camera.rotationOffset=180;camera.cameraAcceleration=.12;camera.maxCameraSpeed=18;camera.fov=.92;camera.lockedTarget=world.player;scene.activeCamera=camera;
+const camera=new B.FollowCamera('camera',new B.Vector3(0,4,-7),scene);camera.radius=5.9;camera.heightOffset=2.45;camera.rotationOffset=180;camera.cameraAcceleration=.065;camera.maxCameraSpeed=10;camera.fov=.9;camera.lockedTarget=world.player;scene.activeCamera=camera;
 
 const timeSystem=new TimeSystem(WORLD.startTime),economy=new EconomySystem(),mission=new MissionSystem(),trafficSystem=new TrafficSystem(),witnessSystem=new WitnessSystem(),policeSystem=new PoliceSystem(),saveSystem=new SaveSystem();
 const keys=new Set();
 const touch={x:0,z:0,run:false,pointer:null};
+const playerVelocity=new B.Vector3(0,0,0);
 let started=false,inVehicle=false,lastInteraction=0,lastNpcIncident=0,dialogTimer=0,toastTimer=0,breakfastBought=false,stamina=100,health=100;
 
 window.addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='KeyE'&&started)interact();if(e.code==='KeyR'&&started)resetMission();if(e.code==='F5'&&started){e.preventDefault();saveGame();}});
 window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('resize',()=>engine.resize());
-document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();touch.x=0;touch.z=0;touch.run=false;resetKnob();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();touch.x=0;touch.z=0;touch.run=false;playerVelocity.set(0,0,0);resetKnob();}});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
 const dist2D=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -74,12 +75,39 @@ function inputAxes(){
 function playerMove(dt){
   const p=world.player,{x,z}=inputAxes(),running=(keys.has('ShiftLeft')||keys.has('ShiftRight')||touch.run);
   if(inVehicle){
-    const car=world.driveCar,accel=z,keyboardSteer=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0),steer=Math.max(-1,Math.min(1,keyboardSteer-touch.x));
-    car.metadata.speed+=(accel*8-car.metadata.speed*1.8)*dt;car.metadata.speed=Math.max(-4,Math.min(9,car.metadata.speed));if(Math.abs(car.metadata.speed)>.2)car.metadata.heading+=steer*dt*1.6*Math.sign(car.metadata.speed);
-    const dir=new B.Vector3(Math.sin(car.metadata.heading),0,Math.cos(car.metadata.heading));car.moveWithCollisions(dir.scale(car.metadata.speed*dt));car.rotation.y=car.metadata.heading;p.position.copyFrom(car.position);camera.lockedTarget=car;return;
+    playerVelocity.set(0,0,0);
+    const car=world.driveCar,m=car.metadata,throttle=z;
+    const keyboardSteer=(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)-(keys.has('KeyD')||keys.has('ArrowRight')?1:0);
+    const steerInput=Math.max(-1,Math.min(1,keyboardSteer-touch.x));
+    m.steer+=(steerInput-m.steer)*(1-Math.exp(-7*dt));
+    if(Math.abs(throttle)>.04)m.speed+=throttle*(throttle>0?6.8:5.0)*dt;
+    else m.speed*=Math.exp(-1.75*dt);
+    m.speed=Math.max(-3.6,Math.min(9.5,m.speed));
+    if(Math.abs(m.speed)>.18){
+      const speedFactor=Math.min(1,Math.abs(m.speed)/5.5);
+      m.heading+=m.steer*(1.15+.55*(1-speedFactor))*dt*Math.sign(m.speed);
+    }
+    car.rotation.y=world.smoothAngle(car.rotation.y,m.heading,9,dt);
+    const dir=new B.Vector3(Math.cos(m.heading),0,-Math.sin(m.heading));
+    car.moveWithCollisions(dir.scale(m.speed*dt));
+    world.spinCarWheels(car,dt);
+    p.position.copyFrom(car.position);camera.lockedTarget=car;return;
   }
-  const speed=running&&stamina>1?5.2:3.1;
-  if(Math.abs(x)>.03||Math.abs(z)>.03){const v=new B.Vector3(x,0,z).scale(speed*dt);p.moveWithCollisions(v);p.rotation.y=Math.atan2(v.x,v.z);if(running)stamina=Math.max(0,stamina-dt*12);}else stamina=Math.min(100,stamina+dt*9);camera.lockedTarget=p;
+
+  const hasInput=Math.abs(x)>.03||Math.abs(z)>.03;
+  const targetSpeed=running&&stamina>1?5.35:3.25;
+  const desired=hasInput?new B.Vector3(x,0,z).scale(targetSpeed):B.Vector3.Zero();
+  const response=1-Math.exp(-(hasInput?11:8)*dt);
+  playerVelocity.x+=(desired.x-playerVelocity.x)*response;
+  playerVelocity.z+=(desired.z-playerVelocity.z)*response;
+  if(playerVelocity.lengthSquared()<.0005)playerVelocity.set(0,0,0);
+  if(playerVelocity.lengthSquared()>.0001){
+    p.moveWithCollisions(playerVelocity.scale(dt));
+    const heading=Math.atan2(playerVelocity.x,playerVelocity.z);
+    p.rotation.y=world.smoothAngle(p.rotation.y,heading,11,dt);
+  }
+  if(running&&hasInput&&stamina>1)stamina=Math.max(0,stamina-dt*12);else stamina=Math.min(100,stamina+dt*9);
+  camera.lockedTarget=p;
 }
 
 function updateMission(){
@@ -97,8 +125,8 @@ function nearestInteraction(){
 }
 function interact(){
   const now=performance.now();if(now-lastInteraction<220)return;lastInteraction=now;const i=nearestInteraction();if(!i){showToast('مفيش حاجة تتفاعل معاها هنا',1.4);return;}
-  if(i.type==='car'){inVehicle=true;world.player.setEnabled(false);world.driveCar.metadata.speed=0;showToast('ركبت العربية');}
-  else if(i.type==='car_exit'){inVehicle=false;world.player.setEnabled(true);world.player.position.copyFrom(world.driveCar.position.add(new B.Vector3(2,0,0)));world.player.position.y=WORLD.playerStart.y;camera.lockedTarget=world.player;showToast('نزلت من العربية');}
+  if(i.type==='car'){inVehicle=true;playerVelocity.set(0,0,0);world.player.setEnabled(false);world.driveCar.metadata.speed=0;world.driveCar.metadata.steer=0;showToast('ركبت العربية');}
+  else if(i.type==='car_exit'){inVehicle=false;world.player.setEnabled(true);world.player.position.copyFrom(world.driveCar.position.add(new B.Vector3(2,0,0)));world.player.position.y=WORLD.playerStart.y;playerVelocity.set(0,0,0);camera.lockedTarget=world.player;showToast('نزلت من العربية');}
   else if(i.type==='apt_door'){setDoorOpen(world.aptDoor,!world.aptDoor.metadata.open);showToast(world.aptDoor.metadata.open?'فتحت الباب':'قفلت الباب');}
   else if(i.type==='shop_door'){setDoorOpen(world.shopDoor,!world.shopDoor.metadata.open);showToast(world.shopDoor.metadata.open?'فتحت باب المحل':'قفلت باب المحل');}
   else if(i.type==='cashier')openShop();
@@ -116,16 +144,16 @@ function updatePrompt(){
 }
 
 function detectIncidents(){if(!inVehicle)return;const now=performance.now();for(const p of world.pedestrians){if(dist2D(p.position,world.driveCar.position)<1.4&&now-lastNpcIncident>5000){lastNpcIncident=now;showNpcLine(p.metadata.name,'إيه يا عم براحة!');witnessSystem.report('reckless_driving',world.driveCar.position,1);showToast('حد بلغ عن سواقة متهورة');break;}}}
-function resetMission(){mission.reset();breakfastBought=false;inVehicle=false;world.player.setEnabled(true);world.player.position.set(WORLD.playerStart.x,WORLD.playerStart.y,WORLD.playerStart.z);world.driveCar.position.set(-7,.49,-7);world.driveCar.metadata.speed=0;policeSystem.heat=0;policeSystem.active=false;setDoorOpen(world.aptDoor,false);setDoorOpen(world.shopDoor,false);camera.lockedTarget=world.player;showToast('بدأت المهمة من الأول');}
+function resetMission(){mission.reset();breakfastBought=false;inVehicle=false;playerVelocity.set(0,0,0);world.player.setEnabled(true);world.player.position.set(WORLD.playerStart.x,WORLD.playerStart.y,WORLD.playerStart.z);world.driveCar.position.set(-7,.49,-7);world.driveCar.rotation.y=0;world.driveCar.metadata.speed=0;world.driveCar.metadata.heading=0;world.driveCar.metadata.steer=0;policeSystem.heat=0;policeSystem.active=false;setDoorOpen(world.aptDoor,false);setDoorOpen(world.shopDoor,false);camera.lockedTarget=world.player;showToast('بدأت المهمة من الأول');}
 function saveGame(notify=true){saveSystem.save(makeSnapshot({player:world.player,mission,economy,time:timeSystem,police:policeSystem,inVehicle}));if(notify)showToast(STRINGS.save);}
-function loadGame(){const s=saveSystem.load();if(!s){$('bootStatus').textContent=STRINGS.noSave;return false;}restoreSnapshot(s,{player:world.player,mission,economy,time:timeSystem,police:policeSystem});breakfastBought=mission.index>=5||mission.completed;inVehicle=false;world.player.setEnabled(true);world.player.position.y=WORLD.playerStart.y;setDoorOpen(world.aptDoor,mission.index>=1);setDoorOpen(world.shopDoor,mission.index>=4||world.player.position.z>9.2);showToast(STRINGS.load);return true;}
+function loadGame(){const s=saveSystem.load();if(!s){$('bootStatus').textContent=STRINGS.noSave;return false;}restoreSnapshot(s,{player:world.player,mission,economy,time:timeSystem,police:policeSystem});breakfastBought=mission.index>=5||mission.completed;inVehicle=false;playerVelocity.set(0,0,0);world.player.setEnabled(true);world.player.position.y=WORLD.playerStart.y;setDoorOpen(world.aptDoor,mission.index>=1);setDoorOpen(world.shopDoor,mission.index>=4||world.player.position.z>9.2);showToast(STRINGS.load);return true;}
 function start(load=false){if(load&&!loadGame())return;started=true;$('boot').hidden=true;$('hud').hidden=false;canvas.focus();updateHud();}
 
 $('newGame').onclick=()=>{resetMission();start(false);};$('continueGame').onclick=()=>start(true);$('saveBtn').onclick=()=>saveGame();
 $('howTo').onclick=()=>{$('modalTitle').textContent='التحكم';$('modalBody').innerHTML=touchDevice?'<p><strong>العصاية:</strong> حركة<br><strong>جري:</strong> اضغط واستمر<br><strong>تفاعل:</strong> افتح الأبواب واركب العربية واتكلم</p>':'<p><strong>WASD / الأسهم:</strong> حركة<br><strong>Shift:</strong> جري<br><strong>E:</strong> تفاعل أو فتح الأبواب أو ركوب/نزول العربية<br><strong>R:</strong> إعادة المهمة<br><strong>F5:</strong> حفظ سريع</p>';$('modal').hidden=false;};$('closeModal').onclick=()=>{$('modal').hidden=true;};
 
 window.__SHWARE3_DEBUG={
-  state:()=>({build:'v2-visual-1',ready:!!window.__SHWARE3_READY,started,inVehicle,touchDevice,engineSource:window.__SHWARE3_ENGINE_SOURCE,player:{x:world.player.position.x,y:world.player.position.y,z:world.player.position.z},mission:mission.current()?.id||null,meshes:scene.meshes.length}),
+  state:()=>({build:'motion-house-v3',ready:!!window.__SHWARE3_READY,started,inVehicle,touchDevice,engineSource:window.__SHWARE3_ENGINE_SOURCE,player:{x:world.player.position.x,y:world.player.position.y,z:world.player.position.z},mission:mission.current()?.id||null,meshes:scene.meshes.length,playerSpeed:Math.hypot(playerVelocity.x,playerVelocity.z),npcMoving:world.pedestrians.filter(p=>Math.hypot(p.metadata.velocity?.x||0,p.metadata.velocity?.z||0)>.05).length,trafficMoving:world.traffic.filter(v=>(v.metadata.speed||0)>.05).length}),
   interact:()=>interact()
 };
 
@@ -141,5 +169,5 @@ engine.runRenderLoop(()=>{
   }
   scene.render();
 });
-scene.executeWhenReady(()=>{window.__SHWARE3_READY=true;window.__SHWARE3_BOOT_FAILED=false;for(const id of ['newGame','continueGame','howTo']){const b=$(id);if(b)b.disabled=false;}$('bootStatus').textContent=touchDevice?'V2 جاهزة — استخدم العصاية وزر تفاعل':'V2 جاهزة — اضغط لعبة جديدة';const fatal=$('fatalError');if(fatal)fatal.hidden=true;});
+scene.executeWhenReady(()=>{window.__SHWARE3_READY=true;window.__SHWARE3_BOOT_FAILED=false;for(const id of ['newGame','continueGame','howTo']){const b=$(id);if(b)b.disabled=false;}$('bootStatus').textContent=touchDevice?'V3 جاهزة — حركة أنعم وبيت جديد':'V3 جاهزة — اضغط لعبة جديدة';const fatal=$('fatalError');if(fatal)fatal.hidden=true;});
 window.addEventListener('beforeunload',()=>{if(started)saveGame(false);});
