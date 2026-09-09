@@ -29,7 +29,7 @@ jobs:
           node --check egypt-open-world-aaa/src/game.js
           node --check egypt-open-world-aaa/src/v32-polish.js
           node --check scripts/test-egypt-open-world-published.mjs
-      - name: Required Arabic UI and V3.2 visual-motion checks
+      - name: Required Arabic UI and V3.2 controls/visual checks
         run: |
           grep -q 'dir="rtl"' egypt-open-world-aaa/index.html
           grep -q 'هات الفطار' egypt-open-world-aaa/index.html
@@ -39,6 +39,11 @@ jobs:
           grep -q './vendor/babylon.js' egypt-open-world-aaa/src/bootstrap.js
           grep -q 'v32-visual-motion-polish-1' egypt-open-world-aaa/index.html
           grep -q 'v32-visual-motion-polish-1' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v32-controls-direction-1' egypt-open-world-aaa/index.html
+          grep -q "GAME_BUILD='v32-controls-direction-1'" egypt-open-world-aaa/src/bootstrap.js
+          grep -q "controlsBuild:'v32-controls-direction-1'" egypt-open-world-aaa/src/game.js
+          grep -q 'screenRelativeVector' egypt-open-world-aaa/src/game.js
+          grep -q 'const car=world.driveCar,steer=Math.max(-1,Math.min(1,x))' egypt-open-world-aaa/src/game.js
           grep -q 'v32-polish.js' egypt-open-world-aaa/src/bootstrap.js
           grep -q "build:'v3-motion-home-2'" egypt-open-world-aaa/src/game.js
           grep -q 'camera.checkCollisions=true' egypt-open-world-aaa/src/game.js
@@ -134,7 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install --no-save playwright-core@1.55.0
-      - name: Verify published desktop and Android V3.2 visual-motion polish
+      - name: Verify published desktop and Android V3.2 controls + visual polish
         run: node scripts/test-egypt-open-world-published.mjs
       - name: Upload browser evidence
         if: always()
