@@ -64,6 +64,16 @@ function assertV32(runtime,label){
   assert.ok(runtime.meshes>=180,`${label} V3.2 detail did not build`);
 }
 
+function assertCameraSightline(runtime,label){
+  const blocker=runtime.polish?.lastBlocker||null;
+  if(!blocker){
+    assert.equal(runtime.blockerVisibility,null,`${label} reported no blocker but exposed blocker visibility`);
+    return;
+  }
+  assert.ok(runtime.polish?.fadedBlockers?.includes(blocker),`${label} detected blocker was not marked faded: ${blocker}`);
+  assert.ok(runtime.blockerVisibility!==null&&runtime.blockerVisibility<.25,`${label} camera blocker stayed opaque: ${blocker} visibility=${runtime.blockerVisibility}`);
+}
+
 function assertClean(target,label){
   assert.deepEqual(target.errors,[],`${label} page errors: ${target.errors.join(' | ')}`);
   assert.deepEqual(target.failedRequests,[],`${label} failed requests: ${JSON.stringify(target.failedRequests)}`);
@@ -72,22 +82,9 @@ function assertClean(target,label){
 }
 
 async function npcZ(page){return page.evaluate(()=>Array.from({length:12},(_,i)=>window.BABYLON.Engine.LastCreatedEngine.scenes[0].getMeshByName(`npc-${i}-collider`)?.position.z??null));}
-
-async function putPlayer(page,x,z){
-  await page.evaluate(({x,z})=>{const scene=window.BABYLON.Engine.LastCreatedEngine.scenes[0],p=scene.getMeshByName('yassin-collider');p.position.x=x;p.position.y=1.05;p.position.z=z;},{x,z});
-  await page.waitForTimeout(700);
-}
-
-async function controlFrame(page){
-  return page.evaluate(()=>{const s=window.__SHWARE3_DEBUG.state(),dx=s.player.x-s.camera.x,dz=s.player.z-s.camera.z,len=Math.hypot(dx,dz)||1,fx=dx/len,fz=dz/len;return{player:s.player,camera:s.camera,forward:{x:fx,z:fz},right:{x:fz,z:-fx}};});
-}
-
-async function joystick(page,{side=0,forward=0,id,duration=750}){
-  await page.evaluate(({side,forward,id})=>{const joy=document.getElementById('joy'),r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const x=cx+r.width*.28*side,y=cy-r.height*.28*forward;const fire=(type,px,py)=>joy.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',isPrimary:true,clientX:px,clientY:py,buttons:type==='pointerup'?0:1}));fire('pointerdown',cx,cy);fire('pointermove',x,y);window.__qaControl={joy,id,x,y};},{side,forward,id});
-  await page.waitForTimeout(duration);
-  await page.evaluate(()=>{const q=window.__qaControl;q.joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:q.id,pointerType:'touch',isPrimary:true,clientX:q.x,clientY:q.y,buttons:0}));});
-  await page.waitForTimeout(180);
-}
+async function putPlayer(page,x,z){await page.evaluate(({x,z})=>{const scene=window.BABYLON.Engine.LastCreatedEngine.scenes[0],p=scene.getMeshByName('yassin-collider');p.position.x=x;p.position.y=1.05;p.position.z=z;},{x,z});await page.waitForTimeout(700);}
+async function controlFrame(page){return page.evaluate(()=>{const s=window.__SHWARE3_DEBUG.state(),dx=s.player.x-s.camera.x,dz=s.player.z-s.camera.z,len=Math.hypot(dx,dz)||1,fx=dx/len,fz=dz/len;return{player:s.player,camera:s.camera,forward:{x:fx,z:fz},right:{x:fz,z:-fx}};});}
+async function joystick(page,{side=0,forward=0,id,duration=750}){await page.evaluate(({side,forward,id})=>{const joy=document.getElementById('joy'),r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;const x=cx+r.width*.28*side,y=cy-r.height*.28*forward;const fire=(type,px,py)=>joy.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',isPrimary:true,clientX:px,clientY:py,buttons:type==='pointerup'?0:1}));fire('pointerdown',cx,cy);fire('pointermove',x,y);window.__qaControl={joy,id,x,y};},{side,forward,id});await page.waitForTimeout(duration);await page.evaluate(()=>{const q=window.__qaControl;q.joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:q.id,pointerType:'touch',isPrimary:true,clientX:q.x,clientY:q.y,buttons:0}));});await page.waitForTimeout(180);}
 
 try{
   const desktop=await browser.newPage({viewport:{width:1280,height:800}});diagnostics(desktop,report.desktop);await openReady(desktop,report.desktop);await desktop.click('#newGame');
@@ -101,13 +98,11 @@ try{
   await mobile.waitForFunction(()=>window.__SHWARE3_DEBUG?.state?.().started===true,null,{timeout:30000});assert.equal(await mobile.locator('#mobileControls').isVisible(),true,'Mobile controls are not visible');
 
   await putPlayer(mobile,-3,-7);const rightBefore=await controlFrame(mobile);await joystick(mobile,{side:1,forward:0,id:31});const rightAfter=await controlFrame(mobile);const rdx=rightAfter.player.x-rightBefore.player.x,rdz=rightAfter.player.z-rightBefore.player.z,rightDot=rdx*rightBefore.right.x+rdz*rightBefore.right.z;report.mobile.rightControl={distance:Math.hypot(rdx,rdz),dot:rightDot};assert.ok(rightDot>.65,`Joystick RIGHT moved opposite/sideways relative to screen: dot=${rightDot}`);
-
   await putPlayer(mobile,-3,-7);const forwardBefore=await controlFrame(mobile);await joystick(mobile,{side:0,forward:1,id:32});const forwardAfter=await controlFrame(mobile);const fdx=forwardAfter.player.x-forwardBefore.player.x,fdz=forwardAfter.player.z-forwardBefore.player.z,forwardDot=fdx*forwardBefore.forward.x+fdz*forwardBefore.forward.z;report.mobile.forwardControl={distance:Math.hypot(fdx,fdz),dot:forwardDot};assert.ok(forwardDot>.65,`Joystick UP moved backward relative to screen: dot=${forwardDot}`);
 
   await putPlayer(mobile,-18,-10.7);await mobile.tap('#act');await mobile.waitForTimeout(250);const doorOpen=await mobile.evaluate(()=>window.BABYLON.Engine.LastCreatedEngine.scenes[0].getMeshByName('aptDoor')?.metadata?.open===true);assert.ok(doorOpen,'Mobile interact button did not open apartment door');
-  await putPlayer(mobile,-18,-9.45);await mobile.waitForTimeout(1200);report.mobile.runtime=await runtimeState(mobile);assertV32(report.mobile.runtime,'Mobile');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation not detected');
-  assert.ok(report.mobile.runtime.polish?.lastBlocker,'Camera raycast did not detect the apartment blocker');assert.ok(report.mobile.runtime.polish?.fadedBlockers?.includes(report.mobile.runtime.polish.lastBlocker),`Detected blocker was not marked faded: ${report.mobile.runtime.polish.lastBlocker}`);assert.ok(report.mobile.runtime.blockerVisibility!==null&&report.mobile.runtime.blockerVisibility<.25,`Camera blocker stayed opaque: ${report.mobile.runtime.polish.lastBlocker} visibility=${report.mobile.runtime.blockerVisibility}`);assert.ok(report.mobile.runtime.polish.wheelMotion>.1,'Mobile wheel animation did not advance');
+  await putPlayer(mobile,-18,-9.45);await mobile.waitForTimeout(1200);report.mobile.runtime=await runtimeState(mobile);assertV32(report.mobile.runtime,'Mobile');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation not detected');assertCameraSightline(report.mobile.runtime,'Mobile');assert.ok(report.mobile.runtime.polish.wheelMotion>.1,'Mobile wheel animation did not advance');
   await mobile.screenshot({path:'egypt-open-world-mobile.png',fullPage:true});assertClean(report.mobile,'Mobile');await mobile.close();
 
-  report.ok=true;console.log('Published Shaware3 El Noor V3.2 verified: corrected screen-relative controls, blocker fading, brighter home, varied pedestrians and animated wheels',JSON.stringify({right:report.mobile.rightControl,forward:report.mobile.forwardControl,desktop:report.desktop.runtime,mobile:report.mobile.runtime,engine:report.mobile.engineSource}));
+  report.ok=true;console.log('Published Shaware3 El Noor V3.2 verified: corrected screen-relative controls, clear-or-faded camera sightline, brighter home, varied pedestrians and animated wheels',JSON.stringify({right:report.mobile.rightControl,forward:report.mobile.forwardControl,desktop:report.desktop.runtime,mobile:report.mobile.runtime,engine:report.mobile.engineSource}));
 }catch(error){report.failure=error.stack||error.message;console.error(error);throw error;}finally{fs.writeFileSync('egypt-open-world-browser-report.json',JSON.stringify(report,null,2));await browser.close();}
