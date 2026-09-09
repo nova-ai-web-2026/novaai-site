@@ -27,7 +27,7 @@
   });
 
   const sources = [
-    './vendor/babylon.js?v=mobile-recovery-3',
+    './vendor/babylon.js?v=v2-visual-1',
     'https://cdn.babylonjs.com/babylon.js',
     'https://cdn.jsdelivr.net/npm/babylonjs/babylon.js',
     'https://unpkg.com/babylonjs/babylon.js'
@@ -37,10 +37,10 @@
     if (window.__SHWARE3_MODULE_LOADING) return;
     window.__SHWARE3_MODULE_LOADING = true;
     window.__SHWARE3_ENGINE_SOURCE = engineSource;
-    if (status) status.textContent = 'جاري تجهيز الحارة…';
+    if (status) status.textContent = 'جاري تجهيز شوارع النور V2…';
     const module = document.createElement('script');
     module.type = 'module';
-    module.src = './src/game.js?v=mobile-recovery-3';
+    module.src = './src/game.js?v=v2-visual-1';
     module.onerror = () => showFatal('ملفات اللعبة اتحملت ناقصة. اعمل إعادة تحميل للصفحة.');
     document.body.appendChild(module);
   };
