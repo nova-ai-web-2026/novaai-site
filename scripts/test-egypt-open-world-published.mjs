@@ -34,10 +34,20 @@ async function openReady(page,target){
 async function runtimeState(page){
   return page.evaluate(()=>{
     const engine=window.BABYLON?.Engine?.LastCreatedEngine,scene=engine?.scenes?.[0],canvas=document.getElementById('game'),rect=canvas?.getBoundingClientRect();
-    return {debug:window.__SHWARE3_DEBUG?.state?.(),meshes:scene?.meshes?.length||0,fps:engine?.getFps?.()||0,canvas:rect?{width:rect.width,height:rect.height}:null,hudHidden:document.getElementById('hud')?.hidden,objective:document.getElementById('objective')?.textContent||'',fatalVisible:!document.getElementById('fatalError')?.hidden};
+    const playerHead=scene?.getMeshByName('yassin-head');
+    const playerTorso=scene?.getMeshByName('yassin-torso');
+    const wheelCount=scene?.meshes?.filter(m=>m.name.includes('-wheel')).length||0;
+    return {debug:window.__SHWARE3_DEBUG?.state?.(),meshes:scene?.meshes?.length||0,fps:engine?.getFps?.()||0,canvas:rect?{width:rect.width,height:rect.height}:null,hudHidden:document.getElementById('hud')?.hidden,objective:document.getElementById('objective')?.textContent||'',fatalVisible:!document.getElementById('fatalError')?.hidden,playerHead:!!playerHead,playerTorso:!!playerTorso,wheelCount};
   });
 }
 
+function assertV2(runtime,label){
+  assert.equal(runtime.debug?.build,'v2-visual-1',`${label} is not running V2 visual build`);
+  assert.equal(runtime.playerHead,true,`${label} V2 player head missing`);
+  assert.equal(runtime.playerTorso,true,`${label} V2 player torso missing`);
+  assert.ok(runtime.wheelCount>=16,`${label} upgraded vehicle wheels missing: ${runtime.wheelCount}`);
+  assert.ok(runtime.meshes>=120,`${label} V2 street detail did not build: ${runtime.meshes} meshes`);
+}
 function assertClean(target,label){
   assert.deepEqual(target.errors,[],`${label} page errors: ${target.errors.join(' | ')}`);
   assert.deepEqual(target.failedRequests,[],`${label} failed requests: ${JSON.stringify(target.failedRequests)}`);
@@ -48,9 +58,9 @@ function assertClean(target,label){
 try{
   const desktop=await browser.newPage({viewport:{width:1280,height:800}});diagnostics(desktop,report.desktop);await openReady(desktop,report.desktop);
   await desktop.click('#newGame');
-  await desktop.waitForFunction(()=>document.getElementById('hud')?.hidden===false&&window.__SHWARE3_DEBUG?.state?.().meshes>=20,null,{timeout:30000});
+  await desktop.waitForFunction(()=>document.getElementById('hud')?.hidden===false&&window.__SHWARE3_DEBUG?.state?.().meshes>=120,null,{timeout:30000});
   report.desktop.runtime=await runtimeState(desktop);
-  assert.ok(report.desktop.runtime.meshes>=20,'Desktop world did not build');assert.equal(report.desktop.runtime.hudHidden,false,'Desktop HUD hidden');assert.equal(report.desktop.runtime.fatalVisible,false,'Desktop fatal screen visible');
+  assertV2(report.desktop.runtime,'Desktop');assert.equal(report.desktop.runtime.hudHidden,false,'Desktop HUD hidden');assert.equal(report.desktop.runtime.fatalVisible,false,'Desktop fatal screen visible');
   await desktop.screenshot({path:'egypt-open-world-desktop.png',fullPage:true});assertClean(report.desktop,'Desktop');await desktop.close();
 
   const mobile=await browser.newPage({viewport:{width:412,height:915},deviceScaleFactor:2.625,isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36'});
@@ -81,8 +91,8 @@ try{
   await mobile.waitForTimeout(650);
   await mobile.evaluate(()=>{const q=window.__qaJoy2;q.joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:q.id,pointerType:'touch',isPrimary:true,clientX:q.cx,clientY:q.cy-q.r.height*.30,buttons:0}));});
   await mobile.waitForFunction(()=>window.__SHWARE3_DEBUG?.state?.().mission==='reach_shop_side',null,{timeout:5000});
-  report.mobile.runtime=await runtimeState(mobile);assert.equal(report.mobile.runtime.hudHidden,false,'Mobile HUD hidden');assert.equal(report.mobile.runtime.fatalVisible,false,'Mobile fatal screen visible');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation was not detected as touch device');
+  report.mobile.runtime=await runtimeState(mobile);assertV2(report.mobile.runtime,'Mobile');assert.equal(report.mobile.runtime.hudHidden,false,'Mobile HUD hidden');assert.equal(report.mobile.runtime.fatalVisible,false,'Mobile fatal screen visible');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation was not detected as touch device');
   await mobile.screenshot({path:'egypt-open-world-mobile.png',fullPage:true});assertClean(report.mobile,'Mobile');await mobile.close();
 
-  report.ok=true;console.log('Published Egyptian open-world recovery build verified on desktop and Android touch using only local engine assets',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement,engine:report.mobile.engineSource}));
+  report.ok=true;console.log('Published Shaware3 El Noor V2 verified on desktop and Android touch using only local engine assets',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement,engine:report.mobile.engineSource}));
 }catch(error){report.failure=error.stack||error.message;console.error(error);throw error;}finally{fs.writeFileSync('egypt-open-world-browser-report.json',JSON.stringify(report,null,2));await browser.close();}
