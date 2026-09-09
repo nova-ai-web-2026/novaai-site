@@ -4,17 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <meta name="theme-color" content="#171512" />
-  <meta name="game-build" content="v3-motion-home-2" />
-  <title>شوارع النور V3.1 — حركة وبيت وكاميرا محسّنة</title>
+  <meta name="game-build" content="v3-motion-home-3" />
+  <title>شوارع النور V3.2 — حركة وبيت وكاميرا محسّنة</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="./styles.css?v=v3-motion-home-2" />
+  <link rel="stylesheet" href="./styles.css?v=v3-motion-home-3" />
 </head>
 <body>
-  <canvas id="game" tabindex="0" aria-label="شوارع النور V3.1"></canvas>
-  <div id="boot" class="overlay"><div class="panel hero"><div class="eyebrow">V3.1 — حركة طبيعية وبيت جديد وكاميرا محسّنة</div><h1>شوارع <span>النور</span></h1><p>نسخة جديدة بحركة أنعم للناس والعربيات، مفاصل صحيحة للشخصيات، شقة مصرية بتفاصيل أكتر، وكاميرا ما تدخلش في الحيطان.</p><div class="menu-actions"><button id="newGame" class="primary">لعبة جديدة</button><button id="continueGame">كمل من آخر حفظ</button><button id="howTo">التحكم</button></div><div id="bootStatus" class="muted">جاري تجهيز شوارع النور V3.1…</div></div></div>
+  <canvas id="game" tabindex="0" aria-label="شوارع النور V3.2"></canvas>
+  <div id="boot" class="overlay"><div class="panel hero"><div class="eyebrow">V3.2 — حركة طبيعية وبيت جديد وكاميرا ناحية الشارع</div><h1>شوارع <span>النور</span></h1><p>حركة أنعم للناس والعربيات، مفاصل صحيحة للشخصيات، شقة مصرية بتفاصيل أكتر، وكاميرا تتحول تلقائيًا للناحية المفتوحة عند باب العمارة.</p><div class="menu-actions"><button id="newGame" class="primary">لعبة جديدة</button><button id="continueGame">كمل من آخر حفظ</button><button id="howTo">التحكم</button></div><div id="bootStatus" class="muted">جاري تجهيز شوارع النور V3.2…</div></div></div>
   <div id="hud" hidden><div class="topbar"><div class="stats glass"><div><small>الفلوس</small><strong id="money">٣٠٠ ج</strong></div><div><small>الصحة</small><strong id="health">١٠٠٪</strong></div><div><small>الطاقة</small><strong id="stamina">١٠٠٪</strong></div><div><small>الشرطة</small><strong id="heat">هادية</strong></div></div><div class="clock glass"><strong id="time">٠٧:٤٥</strong><small id="day">اليوم ١</small></div></div><section class="mission glass"><small>المهمة الحالية</small><h2 id="missionTitle">هات الفطار</h2><p id="objective">اخرج من الشقة</p><div id="objectiveProgress" class="progress"></div></section><div id="prompt" class="prompt glass"></div><div id="toast" class="toast glass"></div><div id="dialogue" class="dialogue glass" hidden><strong id="speaker"></strong><p id="dialogueText"></p></div><div class="controls glass desktop-controls"><span>WASD حركة</span><span>Shift جري</span><span>E تفاعل</span><span>R إعادة</span><button id="saveBtn">حفظ</button></div><div id="mobileControls" aria-label="تحكم الموبايل"><div id="joy" aria-label="عصاية الحركة"><div id="knob"></div></div><button id="run" aria-label="جري">جري</button><button id="act" aria-label="تفاعل">تفاعل</button></div></div>
   <div id="modal" class="overlay" hidden><div class="panel"><h2 id="modalTitle">التحكم</h2><div id="modalBody"></div><button id="closeModal" class="primary">تمام</button></div></div>
   <div id="fatalError" class="fatal-error" hidden role="alert"><div class="fatal-card"><strong>اللعبة ما اشتغلتش</strong><p id="fatalErrorText">حصل خطأ أثناء التشغيل.</p><button id="fatalRetry" class="primary">جرّب تاني</button></div></div>
-  <script src="./src/bootstrap.js?v=v3-motion-home-2"></script>
+  <script src="./src/bootstrap.js?v=v3-motion-home-3"></script>
+  <script src="./src/camera-guard.js?v=v3-motion-home-3"></script>
 </body>
 </html>
