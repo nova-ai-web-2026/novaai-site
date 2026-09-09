@@ -37,16 +37,23 @@ async function runtimeState(page){
     const playerHead=scene?.getMeshByName('yassin-head');
     const playerTorso=scene?.getMeshByName('yassin-torso');
     const wheelCount=scene?.meshes?.filter(m=>m.name.includes('-wheel')).length||0;
-    return {debug:window.__SHWARE3_DEBUG?.state?.(),meshes:scene?.meshes?.length||0,fps:engine?.getFps?.()||0,canvas:rect?{width:rect.width,height:rect.height}:null,hudHidden:document.getElementById('hud')?.hidden,objective:document.getElementById('objective')?.textContent||'',fatalVisible:!document.getElementById('fatalError')?.hidden,playerHead:!!playerHead,playerTorso:!!playerTorso,wheelCount};
+    const apartmentSofa=scene?.getMeshByName('apartment-sofa');
+    const apartmentKitchen=scene?.getMeshByName('apartment-kitchen-lower');
+    const apartmentTv=scene?.getMeshByName('apartment-tv');
+    return {debug:window.__SHWARE3_DEBUG?.state?.(),meshes:scene?.meshes?.length||0,fps:engine?.getFps?.()||0,canvas:rect?{width:rect.width,height:rect.height}:null,hudHidden:document.getElementById('hud')?.hidden,objective:document.getElementById('objective')?.textContent||'',fatalVisible:!document.getElementById('fatalError')?.hidden,playerHead:!!playerHead,playerTorso:!!playerTorso,wheelCount,apartmentSofa:!!apartmentSofa,apartmentKitchen:!!apartmentKitchen,apartmentTv:!!apartmentTv};
   });
 }
 
-function assertV2(runtime,label){
-  assert.equal(runtime.debug?.build,'v2-visual-1',`${label} is not running V2 visual build`);
-  assert.equal(runtime.playerHead,true,`${label} V2 player head missing`);
-  assert.equal(runtime.playerTorso,true,`${label} V2 player torso missing`);
-  assert.ok(runtime.wheelCount>=16,`${label} upgraded vehicle wheels missing: ${runtime.wheelCount}`);
-  assert.ok(runtime.meshes>=120,`${label} V2 street detail did not build: ${runtime.meshes} meshes`);
+function assertV3(runtime,label){
+  assert.equal(runtime.debug?.build,'motion-house-v3',`${label} is not running V3 motion-house build`);
+  assert.equal(runtime.playerHead,true,`${label} player head missing`);
+  assert.equal(runtime.playerTorso,true,`${label} player torso missing`);
+  assert.ok(runtime.wheelCount>=16,`${label} vehicle wheels missing: ${runtime.wheelCount}`);
+  assert.equal(runtime.apartmentSofa,true,`${label} rebuilt apartment sofa missing`);
+  assert.equal(runtime.apartmentKitchen,true,`${label} rebuilt apartment kitchen missing`);
+  assert.equal(runtime.apartmentTv,true,`${label} rebuilt apartment TV missing`);
+  assert.ok(runtime.meshes>=150,`${label} V3 world detail did not build: ${runtime.meshes} meshes`);
+  assert.ok((runtime.debug?.trafficMoving||0)>=1,`${label} traffic is not moving`);
 }
 function assertClean(target,label){
   assert.deepEqual(target.errors,[],`${label} page errors: ${target.errors.join(' | ')}`);
@@ -58,9 +65,12 @@ function assertClean(target,label){
 try{
   const desktop=await browser.newPage({viewport:{width:1280,height:800}});diagnostics(desktop,report.desktop);await openReady(desktop,report.desktop);
   await desktop.click('#newGame');
-  await desktop.waitForFunction(()=>document.getElementById('hud')?.hidden===false&&window.__SHWARE3_DEBUG?.state?.().meshes>=120,null,{timeout:30000});
+  await desktop.waitForFunction(()=>document.getElementById('hud')?.hidden===false&&window.__SHWARE3_DEBUG?.state?.().meshes>=150,null,{timeout:30000});
+  await desktop.waitForTimeout(1200);
   report.desktop.runtime=await runtimeState(desktop);
-  assertV2(report.desktop.runtime,'Desktop');assert.equal(report.desktop.runtime.hudHidden,false,'Desktop HUD hidden');assert.equal(report.desktop.runtime.fatalVisible,false,'Desktop fatal screen visible');
+  assertV3(report.desktop.runtime,'Desktop');
+  assert.ok((report.desktop.runtime.debug?.npcMoving||0)>=1,'Desktop pedestrians are not using smooth moving state');
+  assert.equal(report.desktop.runtime.hudHidden,false,'Desktop HUD hidden');assert.equal(report.desktop.runtime.fatalVisible,false,'Desktop fatal screen visible');
   await desktop.screenshot({path:'egypt-open-world-desktop.png',fullPage:true});assertClean(report.desktop,'Desktop');await desktop.close();
 
   const mobile=await browser.newPage({viewport:{width:412,height:915},deviceScaleFactor:2.625,isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S926B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36'});
@@ -74,7 +84,7 @@ try{
     const fire=(type,x,y)=>joy.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,buttons:type==='pointerup'?0:1}));
     fire('pointerdown',cx,cy);fire('pointermove',cx+r.width*.24,cy-r.height*.24);window.__qaJoy={joy,id,cx,cy,r};
   });
-  await mobile.waitForTimeout(1800);
+  await mobile.waitForTimeout(1900);
   await mobile.evaluate(()=>{const q=window.__qaJoy;q.joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:q.id,pointerType:'touch',isPrimary:true,clientX:q.cx+q.r.width*.24,clientY:q.cy-q.r.height*.24,buttons:0}));});
   const nearDoor=await mobile.evaluate(()=>window.__SHWARE3_DEBUG.state());
   const moved=Math.hypot(nearDoor.player.x-before.player.x,nearDoor.player.z-before.player.z);report.mobile.joystickMovement=moved;assert.ok(moved>3.8,`Touch joystick did not move player enough: ${moved}`);
@@ -88,11 +98,11 @@ try{
     const fire=(type,x,y)=>joy.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,buttons:type==='pointerup'?0:1}));
     fire('pointerdown',cx,cy);fire('pointermove',cx,cy-r.height*.30);window.__qaJoy2={joy,id,cx,cy,r};
   });
-  await mobile.waitForTimeout(650);
+  await mobile.waitForTimeout(750);
   await mobile.evaluate(()=>{const q=window.__qaJoy2;q.joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:q.id,pointerType:'touch',isPrimary:true,clientX:q.cx,clientY:q.cy-q.r.height*.30,buttons:0}));});
   await mobile.waitForFunction(()=>window.__SHWARE3_DEBUG?.state?.().mission==='reach_shop_side',null,{timeout:5000});
-  report.mobile.runtime=await runtimeState(mobile);assertV2(report.mobile.runtime,'Mobile');assert.equal(report.mobile.runtime.hudHidden,false,'Mobile HUD hidden');assert.equal(report.mobile.runtime.fatalVisible,false,'Mobile fatal screen visible');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation was not detected as touch device');
+  report.mobile.runtime=await runtimeState(mobile);assertV3(report.mobile.runtime,'Mobile');assert.equal(report.mobile.runtime.hudHidden,false,'Mobile HUD hidden');assert.equal(report.mobile.runtime.fatalVisible,false,'Mobile fatal screen visible');assert.equal(report.mobile.runtime.debug.touchDevice,true,'Android emulation was not detected as touch device');
   await mobile.screenshot({path:'egypt-open-world-mobile.png',fullPage:true});assertClean(report.mobile,'Mobile');await mobile.close();
 
-  report.ok=true;console.log('Published Shaware3 El Noor V2 verified on desktop and Android touch using only local engine assets',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement,engine:report.mobile.engineSource}));
+  report.ok=true;console.log('Published Shaware3 El Noor V3 natural-motion build verified on desktop and Android touch using only local engine assets',JSON.stringify({desktop:report.desktop.runtime,mobile:report.mobile.runtime,moved:report.mobile.joystickMovement,engine:report.mobile.engineSource}));
 }catch(error){report.failure=error.stack||error.message;console.error(error);throw error;}finally{fs.writeFileSync('egypt-open-world-browser-report.json',JSON.stringify(report,null,2));await browser.close();}
