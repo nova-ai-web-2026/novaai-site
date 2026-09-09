@@ -1,0 +1,38 @@
+name: Shaware3 V3.3 Grounding QA
+
+on:
+  push:
+    paths:
+      - 'egypt-open-world-aaa/src/v33-grounding.js'
+      - 'egypt-open-world-aaa/src/bootstrap.js'
+      - 'egypt-open-world-aaa/index.html'
+      - '.github/workflows/v33-grounding-qa.yml'
+  pull_request:
+    paths:
+      - 'egypt-open-world-aaa/src/v33-grounding.js'
+      - 'egypt-open-world-aaa/src/bootstrap.js'
+      - 'egypt-open-world-aaa/index.html'
+      - '.github/workflows/v33-grounding-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  grounding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check egypt-open-world-aaa/src/v33-grounding.js
+          node --check egypt-open-world-aaa/src/bootstrap.js
+      - name: Ground-contact invariants
+        run: |
+          grep -q "BUILD='v33-ground-contact-1'" egypt-open-world-aaa/src/v33-grounding.js
+          grep -q 'surfaceHeightAt' egypt-open-world-aaa/src/v33-grounding.js
+          grep -q 'soleMinY' egypt-open-world-aaa/src/v33-grounding.js
+          grep -q 'minimumWorld' egypt-open-world-aaa/src/v33-grounding.js
+          grep -q '__SHWARE3_GROUNDING_READY' egypt-open-world-aaa/src/v33-grounding.js
+          grep -q "GROUND_BUILD='v33-ground-contact-1'" egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v33-grounding.js' egypt-open-world-aaa/src/bootstrap.js
+          grep -q 'v33-ground-contact-1' egypt-open-world-aaa/index.html
