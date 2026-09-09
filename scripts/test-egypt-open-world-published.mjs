@@ -93,7 +93,7 @@ try{
   const desktop=await browser.newPage({viewport:{width:1280,height:800}});diagnostics(desktop,report.desktop);await openReady(desktop,report.desktop);await desktop.click('#newGame');
   await desktop.waitForFunction(()=>document.getElementById('hud')?.hidden===false&&window.__SHWARE3_DEBUG?.state?.().meshes>=170,null,{timeout:30000});
   const trafficBefore=await desktop.evaluate(()=>window.__SHWARE3_DEBUG.state().traffic.map(v=>({...v}))),npcBefore=await npcZ(desktop);await desktop.waitForTimeout(1200);const trafficAfter=await desktop.evaluate(()=>window.__SHWARE3_DEBUG.state().traffic.map(v=>({...v}))),npcAfter=await npcZ(desktop);
-  report.desktop.trafficTravel=trafficAfter.map((v,i)=>Math.abs(v.x-trafficBefore[i].x));report.desktop.npcLateralTravel=npcAfter.map((z,i)=>Math.abs((z??0)-(npcBefore[i]??0));
+  report.desktop.trafficTravel=trafficAfter.map((v,i)=>Math.abs(v.x-trafficBefore[i].x));report.desktop.npcLateralTravel=npcAfter.map((z,i)=>Math.abs((z??0)-(npcBefore[i]??0)));
   assert.ok(report.desktop.trafficTravel.some(v=>v>.4),'Traffic did not move');assert.ok(trafficAfter.every(v=>Math.abs(v.z)<=2.3),'Traffic left its lane');assert.ok(report.desktop.npcLateralTravel.some(v=>v>.015),`Pedestrians did not gain V3.2 lateral variation: ${report.desktop.npcLateralTravel}`);
   report.desktop.runtime=await runtimeState(desktop);assertV32(report.desktop.runtime,'Desktop');assert.ok(report.desktop.runtime.polish.wheelMotion>.1,'Desktop wheel animation did not advance');await desktop.screenshot({path:'egypt-open-world-desktop.png',fullPage:true});assertClean(report.desktop,'Desktop');await desktop.close();
 
