@@ -1,0 +1,83 @@
+name: Fix NovaBeat style differentiation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-novabeat-styles.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make styles audibly distinct
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('music-ai/models-v2.js')
+          s=p.read_text()
+
+          old="const STYLE={trap:{bpm:92,bass:'sine',lead:'triangle',kick:[0,2.5],snare:[1,3]},pop:{bpm:116,bass:'triangle',lead:'sine',kick:[0,2],snare:[1,3]},lofi:{bpm:80,bass:'triangle',lead:'triangle',kick:[0,2.25],snare:[1,3]},edm:{bpm:128,bass:'sawtooth',lead:'sawtooth',kick:[0,1,2,3],snare:[1,3]},cinematic:{bpm:96,bass:'sine',lead:'triangle',kick:[0,2],snare:[1,3]}};"
+          new="const STYLE={trap:{bpm:90,bass:'sine',lead:'triangle',kick:[0,1.75,2.5],snare:[1,3],hatEvery:1,hatGain:.042,kickGain:1.08,snareGain:.92,chord:.80,chordWave:'triangle',chordCut:2200,bassGain:1.18,bassCut:760,bassPattern:'trap',leadGain:.90,leadStep:.55,leadRest:.23,leadOct:.74,shaker:false},pop:{bpm:116,bass:'triangle',lead:'sine',kick:[0,2,2.75],snare:[1,3],hatEvery:2,hatGain:.034,kickGain:.92,snareGain:1.02,chord:1.12,chordWave:'triangle',chordCut:3600,bassGain:.86,bassCut:1250,bassPattern:'pop',leadGain:1.10,leadStep:.50,leadRest:.12,leadOct:.86,shaker:true},lofi:{bpm:78,bass:'triangle',lead:'triangle',kick:[0,2.25],snare:[1,3],hatEvery:4,hatGain:.018,kickGain:.68,snareGain:.68,chord:1.02,chordWave:'sine',chordCut:1800,bassGain:.70,bassCut:760,bassPattern:'lofi',leadGain:.68,leadStep:1.0,leadRest:.30,leadOct:.95,shaker:false},edm:{bpm:128,bass:'sawtooth',lead:'sawtooth',kick:[0,1,2,3],snare:[1,3],hatEvery:2,hatGain:.050,kickGain:1.06,snareGain:.98,chord:.90,chordWave:'triangle',chordCut:4200,bassGain:1.02,bassCut:1650,bassPattern:'edm',leadGain:1.12,leadStep:.50,leadRest:.10,leadOct:.78,shaker:true},cinematic:{bpm:84,bass:'sine',lead:'triangle',kick:[0,2],snare:[3],hatEvery:8,hatGain:.010,kickGain:.60,snareGain:.52,chord:1.34,chordWave:'sine',chordCut:2600,bassGain:.62,bassCut:620,bassPattern:'cinematic',leadGain:.62,leadStep:1.50,leadRest:.32,leadOct:.92,shaker:false}};"
+          if old not in s: raise SystemExit('STYLE pattern not found')
+          s=s.replace(old,new,1)
+
+          old="const MOOD={dark:{root:1,scale:[0,2,3,5,7,8,10],prog:[0,5,3,6]},uplifting:{root:0,scale:[0,2,4,5,7,9,11],prog:[0,4,5,3]},dreamy:{root:9,scale:[0,2,4,7,9],prog:[0,3,5,4]},epic:{root:2,scale:[0,2,3,5,7,8,10],prog:[0,5,6,4]},calm:{root:5,scale:[0,2,4,5,7,9,11],prog:[0,3,4,0]}};"
+          new="const MOOD={dark:{root:1,scale:[0,2,3,5,7,8,10],prog:[0,5,3,6],chord:.92,lead:.84},uplifting:{root:0,scale:[0,2,4,5,7,9,11],prog:[0,4,5,3],chord:1.08,lead:1.08},dreamy:{root:9,scale:[0,2,4,7,9],prog:[0,3,5,4],chord:1.12,lead:.76},epic:{root:2,scale:[0,2,3,5,7,8,10],prog:[0,5,6,4],chord:1.16,lead:.96},calm:{root:5,scale:[0,2,4,5,7,9,11],prog:[0,3,4,0],chord:.90,lead:.66}};"
+          if old not in s: raise SystemExit('MOOD pattern not found')
+          s=s.replace(old,new,1)
+
+          old="for(let t=0,barIdx=0;t<end;t+=bar,barIdx++){const deg=prog[barIdx%prog.length]%scale.length,notes=chordNotes(base,scale,deg,opts.model==='ultra'),intro=t<opts.duration*.15,amp=intro?.025:(opts.model==='lite'?.038:opts.model==='studio'?.05:.056);notes.forEach((n,i)=>{const p=channels===1?0:(i-(notes.length-1)/2)*.2;tone(ctx,bus,t,Math.min(bar+.12,end-t),midi(n),opts.style==='cinematic'?'sine':(opts.model==='lite'?'triangle':opts.model==='studio'?'triangle':'triangle'),amp/notes.length,p,opts.model==='ultra'?(i%2?5:-5):0,opts.model==='ultra'?3300:2600);if(opts.model==='ultra')tone(ctx,bus,t+.008,Math.min(bar,end-t),midi(n+12),'triangle',amp/(notes.length*2.8),-p,(i%2?-8:8),5200)})}"
+          new="for(let t=0,barIdx=0;t<end;t+=bar,barIdx++){const deg=prog[barIdx%prog.length]%scale.length,notes=chordNotes(base,scale,deg,opts.model==='ultra'),intro=t<opts.duration*.15,baseAmp=intro?.025:(opts.model==='lite'?.038:opts.model==='studio'?.05:.056),amp=baseAmp*style.chord*mood.chord;notes.forEach((n,i)=>{const p=channels===1?0:(i-(notes.length-1)/2)*.2;tone(ctx,bus,t,Math.min(bar+.12,end-t),midi(n),style.chordWave,amp/notes.length,p,opts.model==='ultra'?(i%2?5:-5):0,style.chordCut);if(opts.model==='ultra'&&opts.style!=='lofi')tone(ctx,bus,t+.008,Math.min(bar,end-t),midi(n+12),'triangle',amp/(notes.length*3.2),-p,(i%2?-8:8),Math.min(5200,style.chordCut+1400))})}"
+          if old not in s: raise SystemExit('chord loop not found')
+          s=s.replace(old,new,1)
+
+          old="for(let t=0,step=0;t<end;t+=beat/2,step++){const barIdx=Math.floor(t/bar),deg=prog[barIdx%prog.length]%scale.length,root=base-12+scale[deg],hit=opts.model==='lite'?step%2===0:(opts.model==='studio'?(step%2===0||step%8===5):(step%2===0||step%8===3||step%8===7));if(!hit||t<opts.duration*.08)continue;const len=opts.model==='ultra'?beat*.42:beat*.34,ht=humanTime(r,model.human);tone(ctx,bus,Math.max(0,t+ht),len,midi(root),style.bass,opts.model==='lite'?.085:opts.model==='studio'?.09:.095,0,0,opts.model==='ultra'?950:1250);if(opts.model==='ultra')tone(ctx,bus,Math.max(0,t+ht),len*.8,midi(root-12),'sine',.055,0,0,420)}"
+          new="for(let t=0,step=0;t<end;t+=beat/2,step++){const barIdx=Math.floor(t/bar),deg=prog[barIdx%prog.length]%scale.length,root=base-12+scale[deg],slot=step%8,hit=style.bassPattern==='trap'?(slot===0||slot===3||slot===5||slot===7):style.bassPattern==='pop'?(step%2===0):style.bassPattern==='lofi'?(slot===0||slot===5):style.bassPattern==='edm'?(step%2===1):(step%4===0);if(!hit||t<opts.duration*.08)continue;const len=(opts.model==='ultra'?beat*.42:beat*.34)*(opts.style==='cinematic'?1.65:opts.style==='lofi'?1.25:1),ht=humanTime(r,model.human),bassAmp=(opts.model==='lite'?.085:opts.model==='studio'?.09:.095)*style.bassGain;tone(ctx,bus,Math.max(0,t+ht),len,midi(root),style.bass,bassAmp,0,0,style.bassCut);if(opts.model==='ultra'&&opts.style==='trap')tone(ctx,bus,Math.max(0,t+ht),len*.9,midi(root-12),'sine',.044,0,0,360)}"
+          if old not in s: raise SystemExit('bass loop not found')
+          s=s.replace(old,new,1)
+
+          old="for(let t=0,step=0;t<end;t+=beat/4,step++){const pos=(step%16)/4,phase=t/opts.duration,intro=phase<.13,outro=phase>.9;if(!intro){if(style.kick.some(x=>Math.abs(pos-x)<.08))kick(ctx,bus,Math.max(0,t+humanTime(r,model.human)),opts.model==='ultra'?.62:.55);if(style.snare.some(x=>Math.abs(pos-x)<.08))snare(ctx,bus,Math.max(0,t+humanTime(r,model.human)),opts.model==='ultra'?.19:.17,channels===1?0:.04)}if(opts.model!=='lite'&&!outro&&step%2===0)hat(ctx,bus,Math.max(0,t+humanTime(r,model.human)),opts.model==='ultra'?.045:.035,channels===1?0:(step%4?-.28:.28));if(opts.model==='ultra'&&!intro&&step%2===1)shaker(ctx,bus,Math.max(0,t+humanTime(r,model.human)),.021,step%4===1?-.48:.48)}"
+          new="for(let t=0,step=0;t<end;t+=beat/4,step++){const pos=(step%16)/4,phase=t/opts.duration,intro=phase<.13,outro=phase>.9;if(!intro){if(style.kick.some(x=>Math.abs(pos-x)<.08))kick(ctx,bus,Math.max(0,t+humanTime(r,model.human)),(opts.model==='ultra'?.62:.55)*style.kickGain);if(style.snare.some(x=>Math.abs(pos-x)<.08))snare(ctx,bus,Math.max(0,t+humanTime(r,model.human)),(opts.model==='ultra'?.19:.17)*style.snareGain,channels===1?0:.04)}if(opts.model!=='lite'&&!outro&&step%style.hatEvery===0)hat(ctx,bus,Math.max(0,t+humanTime(r,model.human)),style.hatGain*(opts.model==='ultra'?1:.82),channels===1?0:(step%4?-.24:.24));if(opts.model==='ultra'&&style.shaker&&!intro&&step%4===1)shaker(ctx,bus,Math.max(0,t+humanTime(r,model.human)),opts.style==='edm'?.019:.014,step%8===1?-.38:.38)}"
+          if old not in s: raise SystemExit('drum loop not found')
+          s=s.replace(old,new,1)
+
+          old="const leadStep=opts.model==='lite'?beat:beat/2;let lastDegree=0;for(let t=beat*2,i=0;t<end;t+=leadStep,i++){const phase=t/opts.duration;if(phase<.15||r()<.18)continue;let jump=Math.floor(r()*5)-2;lastDegree=Math.max(0,Math.min(scale.length-1,lastDegree+jump));const note=60+mood.root+scale[lastDegree]+(r()>.82?12:0),pan=channels===1?0:((r()-.5)*(opts.model==='ultra'?.65:.32)),ht=humanTime(r,model.human),len=opts.model==='ultra'?beat*.62:beat*.42;pluck(ctx,bus,Math.max(0,t+ht),len,midi(note),opts.model==='lite'?.055:opts.model==='studio'?.062:.068,pan,style.lead);if(opts.model==='ultra'&&i%8===6)pluck(ctx,bus,Math.max(0,t+ht+.01),len*.8,midi(note+7),.009,-pan*.5,'sine')}"
+          new="const leadStep=beat*style.leadStep*(opts.model==='lite'?1.45:1);let lastDegree=0;for(let t=beat*2,i=0;t<end;t+=leadStep,i++){const phase=t/opts.duration;if(phase<.15||r()<style.leadRest)continue;let jump=Math.floor(r()*(opts.style==='edm'?7:5))-Math.floor(opts.style==='edm'?3:2);lastDegree=Math.max(0,Math.min(scale.length-1,lastDegree+jump));const note=60+mood.root+scale[lastDegree]+(r()>style.leadOct?12:0),pan=channels===1?0:((r()-.5)*(opts.model==='ultra'?.58:.30)),ht=humanTime(r,model.human),len=(opts.model==='ultra'?beat*.62:beat*.42)*(opts.style==='lofi'?.82:opts.style==='cinematic'?1.45:1),leadAmp=(opts.model==='lite'?.055:opts.model==='studio'?.062:.068)*style.leadGain*mood.lead;pluck(ctx,bus,Math.max(0,t+ht),len,midi(note),leadAmp,pan,style.lead);if(opts.model==='ultra'&&opts.style==='pop'&&i%8===6)pluck(ctx,bus,Math.max(0,t+ht+.01),len*.8,midi(note+7),.007,-pan*.45,'sine')}"
+          if old not in s: raise SystemExit('lead loop not found')
+          s=s.replace(old,new,1)
+
+          old="document.querySelectorAll('[data-nb2-model]').forEach(x=>x.addEventListener('click',()=>selectModel(x.dataset.nb2Model)));"
+          new="document.querySelectorAll('[data-nb2-model]').forEach(x=>x.addEventListener('click',()=>selectModel(x.dataset.nb2Model)));\nstyleEl.addEventListener('change',()=>setReady('تم تغيير الستايل إلى '+styleEl.options[styleEl.selectedIndex].text+' — اضغط توليد لسماع التوزيع الجديد.'));\nmoodEl.addEventListener('change',()=>setReady('تم تغيير المود إلى '+moodEl.options[moodEl.selectedIndex].text+' — اضغط توليد لسماع الفرق.'));"
+          if old not in s: raise SystemExit('listener marker not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          t=Path('music-ai/e2e.spec.js')
+          ts=t.read_text()
+          marker="test('mobile layout loads and model controls remain usable'"
+          extra="""test('changing style changes arrangement profile and BPM', async ({ page }) => {\n  await page.goto('http://127.0.0.1:4173/music-ai/');\n  await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });\n  await page.selectOption('#style', 'trap');\n  await page.click('#generate');\n  await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });\n  await expect(page.locator('#trackMeta')).toContainText('Trap');\n  await expect(page.locator('#bpmSpec')).toHaveText('90');\n  const trapSrc = await page.locator('#audio').getAttribute('src');\n  await page.selectOption('#style', 'edm');\n  await expect(page.locator('#statusText')).toContainText('EDM');\n  await page.click('#generate');\n  await expect(page.locator('#trackMeta')).toContainText('EDM');\n  await expect(page.locator('#bpmSpec')).toHaveText('128');\n  const edmSrc = await page.locator('#audio').getAttribute('src');\n  expect(edmSrc).not.toBe(trapSrc);\n});\n\n"""
+          if 'changing style changes arrangement profile and BPM' not in ts:
+              if marker not in ts: raise SystemExit('e2e marker not found')
+              ts=ts.replace(marker,extra+marker,1)
+              t.write_text(ts)
+          PY
+      - name: Sanity check
+        run: |
+          grep -q "bassPattern:'trap'" music-ai/models-v2.js
+          grep -q "style.hatEvery" music-ai/models-v2.js
+          grep -q "تم تغيير الستايل" music-ai/models-v2.js
+          grep -q "changing style changes arrangement profile and BPM" music-ai/e2e.spec.js
+      - name: Commit style fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add music-ai/models-v2.js music-ai/e2e.spec.js
+          git commit -m 'Make NovaBeat styles audibly distinct' || exit 0
+          git push
