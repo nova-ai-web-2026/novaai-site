@@ -47,6 +47,15 @@ test('built-in audio self test reports non-silent Ultra 3 render', async ({ page
   await expect(page.locator('#supportText')).toContainText('Model 3');
 });
 
+test('duration control supports up to two minutes', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  const duration = page.locator('#duration');
+  await expect(duration).toHaveAttribute('min', '15');
+  await expect(duration).toHaveAttribute('max', '120');
+  await duration.evaluate(el => { el.value = '60'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await expect(page.locator('#durationOut')).toContainText('60');
+});
+
 test('mobile layout loads and model controls remain usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('http://127.0.0.1:4173/music-ai/');
