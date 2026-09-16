@@ -1,4 +1,4 @@
-// Natural-sound and duration regression suite for the three-model engine.
+// Style-differentiation, natural-sound and duration regression suite.
 const { test, expect } = require('@playwright/test');
 
 test('NovaBeat AI renders a real playable track with Ultra 3 by default', async ({ page }) => {
