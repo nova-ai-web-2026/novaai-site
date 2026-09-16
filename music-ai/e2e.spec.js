@@ -1,4 +1,4 @@
-// Realism-tuning regression suite for the three-model engine.
+// Natural-sound and duration regression suite for the three-model engine.
 const { test, expect } = require('@playwright/test');
 
 test('NovaBeat AI renders a real playable track with Ultra 3 by default', async ({ page }) => {
@@ -11,7 +11,7 @@ test('NovaBeat AI renders a real playable track with Ultra 3 by default', async 
   await page.fill('#prompt', 'اختبار موسيقى بوب مبهجة');
   await page.selectOption('#style', 'pop');
   await page.selectOption('#mood', 'uplifting');
-  await page.locator('#duration').evaluate(el => { el.value = '12'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#generate');
   await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
   await expect(page.locator('#statusText')).toContainText('تم التوليد');
@@ -23,7 +23,7 @@ test('NovaBeat AI renders a real playable track with Ultra 3 by default', async 
   expect(downloadHref).toMatch(/^blob:/);
   await expect(page.locator('#bpmSpec')).not.toHaveText('—');
   await expect(page.locator('#keySpec')).not.toHaveText('—');
-  await expect(page.locator('#durSpec')).toHaveText('12s');
+  await expect(page.locator('#durSpec')).toHaveText('15s');
 });
 
 test('all three models are selectable and technically distinct', async ({ page }) => {
@@ -47,13 +47,22 @@ test('built-in audio self test reports non-silent Ultra 3 render', async ({ page
   await expect(page.locator('#supportText')).toContainText('Model 3');
 });
 
-test('duration control supports up to two minutes', async ({ page }) => {
+test('duration control supports and renders a one-minute track', async ({ page }) => {
+  test.setTimeout(60000);
   await page.goto('http://127.0.0.1:4173/music-ai/');
   const duration = page.locator('#duration');
   await expect(duration).toHaveAttribute('min', '15');
   await expect(duration).toHaveAttribute('max', '120');
   await duration.evaluate(el => { el.value = '60'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#durationOut')).toContainText('60');
+  await page.fill('#prompt', 'اختبار مدة طويلة وصوت طبيعي هادئ');
+  await page.selectOption('#style', 'lofi');
+  await page.selectOption('#mood', 'calm');
+  await page.click('#generate');
+  await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 50000 });
+  await expect(page.locator('#durSpec')).toHaveText('60s');
+  const src = await page.locator('#audio').getAttribute('src');
+  expect(src).toMatch(/^blob:/);
 });
 
 test('mobile layout loads and model controls remain usable', async ({ page }) => {
