@@ -1,0 +1,93 @@
+name: Improve NovaBeat realism
+
+on:
+  push:
+    paths:
+      - '.github/workflows/improve-novabeat-realism.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  improve-audio-realism:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply subtle realism improvements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('music-ai/models-v2.js')
+          s = p.read_text()
+
+          old = "const MODELS={lite:{name:'Nova Lite 1',short:'Lite 1',rate:24000,channels:1,layers:4,human:.004,reverb:.025,delay:false,quality:'Fast mix'},studio:{name:'Nova Studio 2',short:'Studio 2',rate:44100,channels:2,layers:7,human:.012,reverb:.12,delay:true,quality:'Studio stereo'},ultra:{name:'Nova Ultra 3',short:'Ultra 3',rate:48000,channels:2,layers:11,human:.022,reverb:.22,delay:true,quality:'Premium stereo + mastering'}};"
+          new = "const MODELS={lite:{name:'Nova Lite 1',short:'Lite 1',rate:24000,channels:1,layers:4,human:.003,reverb:.018,delay:false,quality:'Fast mix'},studio:{name:'Nova Studio 2',short:'Studio 2',rate:44100,channels:2,layers:7,human:.009,reverb:.085,delay:true,quality:'Studio stereo'},ultra:{name:'Nova Ultra 3',short:'Ultra 3',rate:48000,channels:2,layers:11,human:.015,reverb:.14,delay:true,quality:'Premium stereo + mastering'}};"
+          assert old in s, 'MODELS block not found'
+          s = s.replace(old, new)
+
+          old = "function kick(ctx,dest,t,amp=.72){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(48,t+.13);g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.34);o.connect(g);g.connect(dest);o.start(t);o.stop(t+.36)}"
+          new = "function kick(ctx,dest,t,amp=.72){t=Math.max(0,t);amp*=.94+Math.random()*.1;const body=ctx.createOscillator(),bg=ctx.createGain(),click=ctx.createBufferSource(),cf=ctx.createBiquadFilter(),cg=ctx.createGain();body.type='sine';body.frequency.setValueAtTime(118,t);body.frequency.exponentialRampToValueAtTime(49,t+.12);bg.gain.setValueAtTime(amp,t);bg.gain.exponentialRampToValueAtTime(.0001,t+.31);click.buffer=noiseBuffer(ctx,.018);cf.type='highpass';cf.frequency.value=2700;cg.gain.setValueAtTime(amp*.11,t);cg.gain.exponentialRampToValueAtTime(.0001,t+.018);body.connect(bg);bg.connect(dest);click.connect(cf);cf.connect(cg);cg.connect(dest);body.start(t);body.stop(t+.33);click.start(t)}"
+          assert old in s, 'kick function not found'
+          s = s.replace(old, new)
+
+          old = "function snare(ctx,dest,t,amp=.22,pan=0){const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan);src.buffer=noiseBuffer(ctx,.18);f.type='bandpass';f.frequency.value=1850;f.Q.value=.65;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);src.connect(f);f.connect(g);g.connect(p);p.connect(dest);src.start(t)}"
+          new = "function snare(ctx,dest,t,amp=.22,pan=0){t=Math.max(0,t);amp*=.9+Math.random()*.16;const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan),body=ctx.createOscillator(),bg=ctx.createGain();src.buffer=noiseBuffer(ctx,.19);f.type='bandpass';f.frequency.value=1750;f.Q.value=.72;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.17);body.type='triangle';body.frequency.setValueAtTime(196,t);body.frequency.exponentialRampToValueAtTime(145,t+.09);bg.gain.setValueAtTime(amp*.24,t);bg.gain.exponentialRampToValueAtTime(.0001,t+.11);src.connect(f);f.connect(g);g.connect(p);body.connect(bg);bg.connect(p);p.connect(dest);src.start(t);body.start(t);body.stop(t+.12)}"
+          assert old in s, 'snare function not found'
+          s = s.replace(old, new)
+
+          old = "function hat(ctx,dest,t,amp=.07,pan=0){const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan);src.buffer=noiseBuffer(ctx,.055);f.type='highpass';f.frequency.value=6500;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.045);src.connect(f);f.connect(g);g.connect(p);p.connect(dest);src.start(t)}"
+          new = "function hat(ctx,dest,t,amp=.07,pan=0){t=Math.max(0,t);amp*=.82+Math.random()*.28;const src=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),bp=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan);src.buffer=noiseBuffer(ctx,.06);hp.type='highpass';hp.frequency.value=7200;bp.type='bandpass';bp.frequency.value=9800;bp.Q.value=.55;g.gain.setValueAtTime(amp*.82,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);src.connect(hp);hp.connect(bp);bp.connect(g);g.connect(p);p.connect(dest);src.start(t)}"
+          assert old in s, 'hat function not found'
+          s = s.replace(old, new)
+
+          old = "function shaker(ctx,dest,t,amp=.028,pan=0){const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan);src.buffer=noiseBuffer(ctx,.09);f.type='bandpass';f.frequency.value=4800;f.Q.value=.8;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.08);src.connect(f);f.connect(g);g.connect(p);p.connect(dest);src.start(t)}"
+          new = "function shaker(ctx,dest,t,amp=.028,pan=0){t=Math.max(0,t);amp*=.78+Math.random()*.3;const src=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),p=panNode(ctx,pan);src.buffer=noiseBuffer(ctx,.1);f.type='bandpass';f.frequency.value=4300+Math.random()*800;f.Q.value=.65;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(amp,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.09);src.connect(f);f.connect(g);g.connect(p);p.connect(dest);src.start(t)}"
+          assert old in s, 'shaker function not found'
+          s = s.replace(old, new)
+
+          old = "const comp=ctx.createDynamicsCompressor();comp.threshold.value=key==='ultra'?-16:-12;comp.knee.value=16;comp.ratio.value=key==='ultra'?3.2:4;comp.attack.value=.005;comp.release.value=.18;tail.connect(comp);const out=ctx.createGain();out.gain.value=key==='lite'?.76:.68;comp.connect(out);out.connect(ctx.destination);return input}"
+          new = "const comp=ctx.createDynamicsCompressor();comp.threshold.value=key==='ultra'?-14:-11;comp.knee.value=20;comp.ratio.value=key==='ultra'?2.5:3.2;comp.attack.value=.009;comp.release.value=.24;tail.connect(comp);const out=ctx.createGain();out.gain.value=key==='lite'?.75:.7;comp.connect(out);out.connect(ctx.destination);return input}"
+          assert old in s, 'compressor block not found'
+          s = s.replace(old, new)
+
+          old = "shelf.frequency.value=7200;shelf.gain.value=1.4;"
+          new = "shelf.frequency.value=7800;shelf.gain.value=.75;"
+          assert old in s, 'ultra shelf block not found'
+          s = s.replace(old, new)
+
+          old = "curve[i]=Math.tanh(x*1.18)"
+          new = "curve[i]=Math.tanh(x*1.08)"
+          assert old in s, 'saturation curve not found'
+          s = s.replace(old, new)
+
+          old = "opts.model==='lite'?'triangle':(opts.style==='cinematic'?'sine':'sawtooth')"
+          new = "opts.style==='cinematic'?'sine':(opts.model==='lite'?'triangle':opts.model==='studio'?'triangle':'triangle')"
+          assert old in s, 'chord oscillator selector not found'
+          s = s.replace(old, new)
+
+          old = "opts.model==='ultra'?3900:2800"
+          new = "opts.model==='ultra'?3300:2600"
+          assert old in s, 'chord cutoff selector not found'
+          s = s.replace(old, new)
+
+          p.write_text(s)
+          PY
+
+      - name: Sanity check patched engine
+        run: |
+          grep -q "body.frequency.setValueAtTime(118" music-ai/models-v2.js
+          grep -q "bg.gain.setValueAtTime(amp\*.24" music-ai/models-v2.js
+          grep -q "reverb:.14" music-ai/models-v2.js
+          grep -q "ratio.value=key==='ultra'?2.5:3.2" music-ai/models-v2.js
+
+      - name: Commit realism tuning
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add music-ai/models-v2.js
+          git commit -m "Tune NovaBeat audio realism" || exit 0
+          git push
