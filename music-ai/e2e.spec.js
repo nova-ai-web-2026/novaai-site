@@ -1,4 +1,4 @@
-// Style-differentiation, natural-sound and duration regression suite.
+// Model/style differentiation, natural-sound and duration regression suite.
 const { test, expect } = require('@playwright/test');
 
 test('NovaBeat AI renders a real playable track with Ultra 3 by default', async ({ page }) => {
@@ -47,16 +47,23 @@ test('same brief renders three materially different model outputs', async ({ pag
   await page.selectOption('#mood', 'uplifting');
   await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   const outputs = [];
+  let previousSrc = null;
   for (const model of ['lite','studio','ultra']) {
-    await page.click(`[data-nb2-model=\"${model}\"]`);
+    await page.click(`[data-nb2-model="${model}"]`);
     await page.click('#generate');
+    await expect(page.locator('#statusText')).toContainText('تم التوليد', { timeout: 30000 });
     await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
+    if (previousSrc) {
+      await expect.poll(async () => page.locator('#audio').getAttribute('src'), { timeout: 30000 }).not.toBe(previousSrc);
+    }
+    const src = await page.locator('#audio').getAttribute('src');
     outputs.push({
-      src: await page.locator('#audio').getAttribute('src'),
+      src,
       rate: await page.locator('#nb2RateSpec').textContent(),
       mix: await page.locator('#nb2MixSpec').textContent(),
       meta: await page.locator('#trackMeta').textContent()
     });
+    previousSrc = src;
   }
   expect(new Set(outputs.map(x => x.src)).size).toBe(3);
   expect(outputs.map(x => x.rate)).toEqual(['24 kHz','44.1 kHz','48 kHz']);
