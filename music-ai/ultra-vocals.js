@@ -14,7 +14,7 @@ const lyricsEl=$('#nbvLyrics'),voiceState=$('#nbvState');
 let vocalUrl=null,busy=false;
 function activeModel(){return document.querySelector('[data-nb2-model].active')?.dataset.nb2Model||'ultra'}
 function endpoint(){const meta=document.querySelector('meta[name="novabeat-vocal-api"]')?.content?.trim();if(meta)return meta;if(window.NOVABEAT_VOCAL_API)return String(window.NOVABEAT_VOCAL_API);if(location.hostname.endsWith('.vercel.app'))return '/api/ultra-vocals';return ''}
-function setState(){const model=activeModel(),has=lyricsEl.value.trim().length>0,ep=endpoint();voiceState.className='nbv-state '+(model==='ultra'&&has?'ready':'off');if(model!=='ultra')voiceState.textContent='الكلمات محفوظة، لكن الغناء متاح في Nova Ultra 3 فقط.';else if(!has)voiceState.textContent='اكتب كلماتك لتفعيل Ultra 3 Vocals.';else if(ep)voiceState.innerHTML='Ultra 3 Vocals جاهز للتوليد العصبي.<span class="nbv-live">AI VOCALS</span>';else voiceState.textContent='Ultra 3 جاهز للكلمات. يلزم تشغيل الـbackend الآمن لتفعيل الغناء العصبي الواقعي.'}
+function setState(){const model=activeModel(),has=lyricsEl.value.trim().length>0,ep=endpoint();voiceState.className='nbv-state '+(model==='ultra'&&has?'ready':'off');if(model!=='ultra')voiceState.textContent='الكلمات محفوظة، لكن الغناء متاح في Nova Ultra 3 فقط.';else if(!has)voiceState.textContent='اكتب كلماتك لتفعيل Ultra 3 Vocals.';else if(ep)voiceState.innerHTML='Ultra 3 Vocals جاهز للتوليد العصبي.<span class="nbv-live">AI VOCALS</span>';else voiceState.textContent='AI Vocals غير متصلة على GitHub Pages — سيتم توليد Instrumental بدل الصمت. الغناء الحقيقي يحتاج الـbackend الآمن.'}
 function setWork(msg){if(dot)dot.className='dot work';if(status)status.textContent=msg;btn.disabled=true;busy=true}
 function setDone(msg){if(dot)dot.className='dot on';if(status)status.textContent=msg;btn.disabled=false;busy=false}
 function setFail(msg){if(dot)dot.className='dot bad';if(status)status.textContent=msg;btn.disabled=false;busy=false}
@@ -36,7 +36,7 @@ async function generateVocals(){
 async function intercept(e){
   const trigger=e.target.closest?.('#generate,#regenerate');if(!trigger||busy)return;
   const lyrics=lyricsEl.value.trim();if(activeModel()!=='ultra'||!lyrics)return;
-  const ep=endpoint();if(!ep){setState();return}
+  const ep=endpoint();if(!ep){setState();if(status)status.textContent='AI Vocals غير متصلة — جاري توليد Instrumental حتى لا يحدث صمت.';return}
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   try{await generateVocals()}catch(err){console.error(err);setFail('تعذر توليد Ultra Vocals: '+(err?.message||'خطأ غير معروف'))}
 }

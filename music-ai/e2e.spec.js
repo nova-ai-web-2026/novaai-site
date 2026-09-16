@@ -148,3 +148,16 @@ test('lyrics box is available and vocals stay Ultra-only', async ({ page }) => {
   await page.click('[data-nb2-model="ultra"]');
   await expect(page.locator('#nbvState')).toContainText('Ultra 3');
 });
+
+
+test('Ultra lyrics without backend falls back to playable instrumental', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  await page.selectOption('#duration', '15');
+  await page.click('[data-nb2-model="ultra"]');
+  await page.fill('#nbvLyrics', '[Verse]\nكلمات اختبار للصوت');
+  await expect(page.locator('#nbvState')).toContainText('Instrumental');
+  await page.click('#generate');
+  await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 20000 });
+  await expect(page.locator('#audio')).toHaveAttribute('src', /^blob:/);
+  await expect(page.locator('#statusText')).toContainText('تم التوليد بنجاح');
+});
