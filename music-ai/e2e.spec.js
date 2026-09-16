@@ -65,6 +65,24 @@ test('duration control supports and renders a one-minute track', async ({ page }
   expect(src).toMatch(/^blob:/);
 });
 
+test('changing style changes arrangement profile and BPM', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.selectOption('#style', 'trap');
+  await page.click('#generate');
+  await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
+  await expect(page.locator('#trackMeta')).toContainText('Trap');
+  await expect(page.locator('#bpmSpec')).toHaveText('90');
+  const trapSrc = await page.locator('#audio').getAttribute('src');
+  await page.selectOption('#style', 'edm');
+  await expect(page.locator('#statusText')).toContainText('EDM');
+  await page.click('#generate');
+  await expect(page.locator('#trackMeta')).toContainText('EDM');
+  await expect(page.locator('#bpmSpec')).toHaveText('128');
+  const edmSrc = await page.locator('#audio').getAttribute('src');
+  expect(edmSrc).not.toBe(trapSrc);
+});
+
 test('mobile layout loads and model controls remain usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('http://127.0.0.1:4173/music-ai/');
