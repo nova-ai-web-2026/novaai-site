@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b0b12" />
+<title>NovaBeat AI — مولد موسيقى</title>
+<style>
+:root{--bg:#09090f;--panel:#11111a;--panel2:#171723;--text:#f7f7fb;--muted:#a7a7b6;--line:#292938;--accent:#7c5cff;--accent2:#26d0ce;--ok:#38d996;--bad:#ff6b7a;--shadow:0 18px 60px rgba(0,0,0,.28)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% -10%,#281d5d 0,transparent 32%),radial-gradient(circle at 8% 4%,#103a42 0,transparent 27%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:1050px;margin:auto;padding:28px 18px 48px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:20px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;box-shadow:var(--shadow);font-size:22px}.brand h1{font-size:20px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:13px}.badge{font-size:12px;color:#ddd8ff;background:#201d36;border:1px solid #3a355e;padding:7px 10px;border-radius:999px;white-space:nowrap}
+.hero{padding:26px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(22,22,34,.95),rgba(14,14,23,.95));border-radius:24px;box-shadow:var(--shadow)}.hero h2{font-size:clamp(28px,5vw,54px);line-height:1.05;margin:0 0 10px;letter-spacing:-1px}.hero h2 span{background:linear-gradient(90deg,#b5a5ff,#65e7df);-webkit-background-clip:text;background-clip:text;color:transparent}.hero>p{color:var(--muted);max-width:720px;line-height:1.8;margin:0 0 24px}
+.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.card{background:rgba(17,17,26,.92);border:1px solid var(--line);border-radius:20px;padding:18px}.label{font-size:13px;color:#d7d7e2;margin-bottom:8px;font-weight:700}.field{margin-bottom:15px}textarea,select,input[type=range]{width:100%}textarea,select{border:1px solid var(--line);background:#0d0d15;color:var(--text);border-radius:14px;padding:13px 14px;font:inherit;outline:none}textarea{min-height:116px;resize:vertical;line-height:1.6}textarea:focus,select:focus{border-color:#6558ba;box-shadow:0 0 0 3px rgba(124,92,255,.11)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1px solid var(--line);background:#101019;color:#d7d7e4;padding:8px 11px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px}.chip:hover{border-color:#605a83}.chip.active{background:#292147;border-color:#6e5ccf;color:#fff}.rangeRow{display:flex;gap:12px;align-items:center}.rangeRow output{min-width:62px;text-align:center;background:#0d0d15;border:1px solid var(--line);padding:8px;border-radius:10px;font-size:13px}
+.btn{border:0;border-radius:14px;padding:13px 16px;font:inherit;font-weight:800;cursor:pointer;transition:.2s}.btn:disabled{opacity:.55;cursor:not-allowed}.primary{width:100%;background:linear-gradient(90deg,var(--accent),#5d85ff);color:white;box-shadow:0 12px 30px rgba(86,82,255,.25)}.primary:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.05)}.secondary{background:#171722;color:#eee;border:1px solid var(--line)}
+.status{display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;margin-top:12px}.dot{width:9px;height:9px;border-radius:50%;background:#777}.dot.on{background:var(--ok);box-shadow:0 0 0 5px rgba(56,217,150,.08)}.dot.work{background:#ffd166;animation:pulse 1s infinite}.dot.bad{background:var(--bad)}@keyframes pulse{50%{opacity:.35}}
+.result{display:none;margin-top:18px}.result.show{display:block}.cover{aspect-ratio:1;border-radius:18px;background:linear-gradient(135deg,#271c55,#0b4b54);display:grid;place-items:center;overflow:hidden;position:relative}.cover:before,.cover:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.16)}.cover:before{width:72%;height:72%}.cover:after{width:44%;height:44%}.cover .note{font-size:54px;z-index:2;filter:drop-shadow(0 10px 22px #0008)}.trackTitle{font-size:22px;margin:15px 0 4px}.meta{color:var(--muted);font-size:13px;line-height:1.7}.audio{width:100%;margin-top:14px}.actions{display:flex;gap:10px;margin-top:12px}.actions .btn{flex:1}.specs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.spec{background:#0d0d15;border:1px solid var(--line);padding:10px;border-radius:12px;text-align:center}.spec b{display:block;font-size:14px}.spec span{font-size:11px;color:var(--muted)}
+.testbox{margin-top:18px;padding:13px;border-radius:14px;background:#0d0d15;border:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.8}.testbox strong{color:#fff}.footer{color:#7f7f92;font-size:12px;text-align:center;margin-top:24px;line-height:1.7}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start}.badge{display:none}.hero{padding:18px}.row{grid-template-columns:1fr}.wrap{padding:18px 12px 34px}.hero h2{font-size:34px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo">♪</div><div><h1>NovaBeat AI</h1><p>مولد موسيقى من وصفك — مباشرة في المتصفح</p></div></div>
+    <div class="badge">بدون تسجيل • بدون API Key</div>
+  </header>
+
+  <section class="hero">
+    <h2>اكتب فكرتك، وخليها <span>تتحول لموسيقى</span>.</h2>
+    <p>اكتب إحساس الأغنية أو المشهد الذي تتخيله. المحرك يبني مقامًا، كوردات، درامز، باس ولحنًا ثم يرندر ملف WAV حقيقي يمكنك تشغيله وتحميله.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="field">
+          <div class="label">فكرة الأغنية</div>
+          <textarea id="prompt" placeholder="مثال: أغنية ليلية في القاهرة، طاقة عالية، بداية هادئة ثم دروب قوي">ليلة في المدينة، طاقة متصاعدة ونهاية كبيرة</textarea>
+        </div>
+
+        <div class="row">
+          <div class="field"><div class="label">الستايل</div><select id="style"><option value="trap">Trap</option><option value="pop">Pop</option><option value="lofi">Lo‑Fi</option><option value="edm">EDM</option><option value="cinematic">Cinematic</option></select></div>
+          <div class="field"><div class="label">المود</div><select id="mood"><option value="dark">غامق</option><option value="uplifting">مبهج</option><option value="dreamy">حالم</option><option value="epic">ملحمي</option><option value="calm">هادئ</option></select></div>
+        </div>
+
+        <div class="field">
+          <div class="label">اقتراحات سريعة</div>
+          <div class="chips" id="chips"><button class="chip" data-p="راب عربي ليلي، درامز تقيلة وباس عميق">راب ليلي</button><button class="chip" data-p="بوب صيفي خفيف، لحن سهل ومبهج">بوب صيفي</button><button class="chip" data-p="لوفاي للمذاكرة، هادئ ودافئ ومطر خفيف">مذاكرة</button><button class="chip" data-p="موسيقى سينمائية ملحمية، تصاعد كبير ونهاية قوية">سينمائي</button></div>
+        </div>
+
+        <div class="field">
+          <div class="label">المدة</div>
+          <div class="rangeRow"><input id="duration" type="range" min="12" max="36" step="4" value="24"><output id="durationOut">24 ثانية</output></div>
+        </div>
+
+        <button id="generate" class="btn primary">✨ توليد الأغنية</button>
+        <div class="status"><span id="statusDot" class="dot on"></span><span id="statusText">المحرك جاهز للتوليد.</span></div>
+        <div class="testbox"><strong>فحص تلقائي:</strong> <span id="supportText">جارٍ فحص دعم الصوت…</span><br><button id="selfTest" class="btn secondary" style="margin-top:8px;padding:8px 10px">تشغيل اختبار الصوت</button></div>
+      </div>
+
+      <aside class="card">
+        <div class="cover"><div class="note">♫</div></div>
+        <div id="emptyState"><h3 class="trackTitle">التراك سيظهر هنا</h3><div class="meta">بعد التوليد ستقدر تسمع النتيجة وتحملها كملف WAV.</div></div>
+        <div id="result" class="result">
+          <h3 id="trackTitle" class="trackTitle"></h3>
+          <div id="trackMeta" class="meta"></div>
+          <audio id="audio" class="audio" controls preload="metadata"></audio>
+          <div class="actions"><a id="download" class="btn secondary" download="novabeat.wav" style="text-decoration:none;text-align:center">⬇ تحميل WAV</a><button id="regenerate" class="btn secondary">↻ نسخة جديدة</button></div>
+          <div class="specs"><div class="spec"><b id="bpmSpec">—</b><span>BPM</span></div><div class="spec"><b id="keySpec">—</b><span>Key</span></div><div class="spec"><b id="durSpec">—</b><span>Duration</span></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+  <div class="footer">المحرك يولد موسيقى أصلية حسابيًا من الوصف ولا يقلّد صوت فنان بعينه. أفضل تجربة على Chrome / Edge / Safari الحديثة.</div>
+</main>
+<script>
+(()=>{
+const $=s=>document.querySelector(s); const promptEl=$('#prompt'), styleEl=$('#style'), moodEl=$('#mood'), durEl=$('#duration'), durOut=$('#durationOut'), btn=$('#generate'), result=$('#result'), empty=$('#emptyState'), audio=$('#audio'), dl=$('#download'), dot=$('#statusDot'), status=$('#statusText');
+let currentUrl=null, nonce=0;
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const STYLE={trap:{bpm:92,wave:'sawtooth',hat:2,lead:'square'},pop:{bpm:116,wave:'triangle',hat:1,lead:'sine'},lofi:{bpm:80,wave:'triangle',hat:1,lead:'triangle'},edm:{bpm:128,wave:'sawtooth',hat:2,lead:'sawtooth'},cinematic:{bpm:96,wave:'sine',hat:.5,lead:'triangle'}};
+const MOOD={dark:{root:1,scale:[0,2,3,5,7,8,10],prog:[0,5,3,6]},uplifting:{root:0,scale:[0,2,4,5,7,9,11],prog:[0,4,5,3]},dreamy:{root:9,scale:[0,2,4,7,9],prog:[0,3,5,4]},epic:{root:2,scale:[0,2,3,5,7,8,10],prog:[0,5,6,4]},calm:{root:5,scale:[0,2,4,5,7,9,11],prog:[0,3,4,0]}};
+function hash(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function midi(n){return 440*Math.pow(2,(n-69)/12)}
+function connectMaster(ctx){const master=ctx.createGain();master.gain.value=.72;const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.knee.value=14;comp.ratio.value=5;comp.attack.value=.004;comp.release.value=.18;master.connect(comp);comp.connect(ctx.destination);return master}
+function osc(ctx,dest,t,dur,freq,type,gain=.1,attack=.012,release=.08,detune=0){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);o.detune.value=detune;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),t+attack);g.gain.setValueAtTime(Math.max(.0002,gain),Math.max(t+attack,t+dur-release));g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.02)}
+function kick(ctx,dest,t,amp=.7){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(45,t+.13);g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+.34);o.connect(g);g.connect(dest);o.start(t);o.stop(t+.36)}
+function noise(ctx,dest,t,dur,amp,hp=1200,seed=1){const len=Math.ceil(ctx.sampleRate*dur),b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0),r=rng(seed);for(let i=0;i<len;i++)d[i]=r()*2-1;const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();f.type='highpass';f.frequency.value=hp;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.buffer=b;s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+dur)}
+function makePlan(text,style,mood,duration,extra=0){const seed=hash(text+'|'+style+'|'+mood+'|'+extra),r=rng(seed),sp=STYLE[style],mp=MOOD[mood];const root=(mp.root+Math.floor(r()*12))%12;const bpm=Math.round(sp.bpm+(r()-.5)*8);const bars=Math.max(4,Math.ceil(duration/(60/bpm*4)));const scale=mp.scale;const melody=[];for(let i=0;i<bars*8;i++){const degree=Math.floor(r()*scale.length),oct=r()>.78?2:1;melody.push({degree,oct,rest:r()<.18,vel:.7+r()*.3})}return{seed,style,mood,duration,bpm,bars,root,scale,prog:mp.prog,melody,wave:sp.wave,lead:sp.lead,hat:sp.hat}}
+function triad(rootMidi,scale,degree){const idx=degree%scale.length;const a=rootMidi+scale[idx],b=rootMidi+scale[(idx+2)%scale.length]+((idx+2)>=scale.length?12:0),c=rootMidi+scale[(idx+4)%scale.length]+((idx+4)>=scale.length?12:0);return[a,b,c]}
+async function renderTrack(plan){const sr=44100,total=Math.ceil((plan.duration+.5)*sr),ctx=new OfflineAudioContext(2,total,sr),master=connectMaster(ctx);const beat=60/plan.bpm,bar=beat*4,rootMidi=48+plan.root;const r=rng(plan.seed^0x9e3779b9);
+  for(let b=0;b<plan.bars;b++){const bt=b*bar,deg=plan.prog[b%plan.prog.length]%plan.scale.length,ch=triad(rootMidi+12,plan.scale,deg);ch.forEach((n,i)=>{osc(ctx,master,bt,bar*.96,midi(n),plan.style==='cinematic'?'sine':'triangle',plan.style==='edm'?.075:.055,.06,.2,(i-1)*4);if(plan.style==='cinematic')osc(ctx,master,bt,bar*.95,midi(n-12),'sine',.025,.1,.25)});
+    const bassN=rootMidi-12+plan.scale[deg];for(let q=0;q<4;q++){const st=bt+q*beat;osc(ctx,master,st,beat*.78,midi(bassN),plan.wave,plan.style==='trap'?.16:.115,.006,.06)}
+    for(let q=0;q<4;q++){const st=bt+q*beat;if(q===0||q===2||plan.style==='edm')kick(ctx,master,st,plan.style==='lofi'?.42:.68);if(q===1||q===3)noise(ctx,master,st,.14,plan.style==='lofi'?.11:.18,900,plan.seed+b*31+q)}
+    const hats=Math.max(2,Math.round(4*plan.hat));for(let h=0;h<hats;h++){const st=bt+h*(bar/hats);noise(ctx,master,st,.045,plan.style==='lofi'?.028:.052,6000,plan.seed+b*101+h)}
+  }
+  plan.melody.forEach((m,i)=>{if(m.rest)return;const st=i*(beat/2);if(st>plan.duration-.1)return;const n=rootMidi+12+(m.oct-1)*12+plan.scale[m.degree];osc(ctx,master,st,beat*.38,midi(n),plan.lead,(plan.style==='cinematic'?.045:.065)*m.vel,.01,.07,(r()-.5)*6)});
+  return await ctx.startRendering()
+}
+function wavBlob(buffer){const ch=Math.min(2,buffer.numberOfChannels),len=buffer.length*ch*2,ab=new ArrayBuffer(44+len),v=new DataView(ab);const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+len,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,buffer.sampleRate,true);v.setUint32(28,buffer.sampleRate*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,len,true);let off=44;for(let i=0;i<buffer.length;i++){for(let c=0;c<ch;c++){let x=Math.max(-1,Math.min(1,buffer.getChannelData(c)[i]));v.setInt16(off,x<0?x*32768:x*32767,true);off+=2}}return new Blob([ab],{type:'audio/wav'})}
+function titleFrom(text,style){const clean=text.replace(/[،,.!؟?]/g,' ').trim().split(/\s+/).filter(x=>x.length>2).slice(0,3).join(' ');return clean?clean:'NovaBeat '+style.toUpperCase()}
+function setStatus(kind,msg){dot.className='dot '+kind;status.textContent=msg}
+async function generate(){const text=promptEl.value.trim()||'موسيقى جديدة',dur=+durEl.value;btn.disabled=true;setStatus('work','جاري بناء اللحن والرندر…');try{const plan=makePlan(text,styleEl.value,moodEl.value,dur,nonce++);const buffer=await renderTrack(plan);const blob=wavBlob(buffer);if(currentUrl)URL.revokeObjectURL(currentUrl);currentUrl=URL.createObjectURL(blob);audio.src=currentUrl;dl.href=currentUrl;dl.download=(titleFrom(text,plan.style).replace(/[^\p{L}\p{N}_-]+/gu,'-')||'novabeat')+'.wav';$('#trackTitle').textContent=titleFrom(text,plan.style);$('#trackMeta').textContent=`${styleEl.options[styleEl.selectedIndex].text} • ${moodEl.options[moodEl.selectedIndex].text} • ملف WAV مولّد الآن`;$('#bpmSpec').textContent=plan.bpm;$('#keySpec').textContent=NOTES[plan.root];$('#durSpec').textContent=dur+'s';empty.style.display='none';result.classList.add('show');setStatus('on','تم التوليد ✓ اضغط تشغيل لسماع التراك.');audio.load();}catch(e){console.error(e);setStatus('bad','تعذر التوليد على هذا المتصفح: '+(e.message||e));}finally{btn.disabled=false}}
+async function selfTest(){const el=$('#supportText');try{if(!window.OfflineAudioContext)throw new Error('OfflineAudioContext غير مدعوم');const p=makePlan('self-test','pop','uplifting',4,77);p.duration=2;p.bars=1;p.melody=p.melody.slice(0,8);const b=await renderTrack(p);let energy=0,d=b.getChannelData(0),step=Math.max(1,Math.floor(d.length/4000));for(let i=0;i<d.length;i+=step)energy+=Math.abs(d[i]);if(!b.length||energy<.05)throw new Error('خرج الصوت صامت');el.textContent=`نجح ✓ تم رندر ${(b.duration).toFixed(1)} ثانية وصوت غير صامت.`;el.style.color='var(--ok)'}catch(e){el.textContent='فشل: '+e.message;el.style.color='var(--bad)'}}
+durEl.addEventListener('input',()=>durOut.textContent=durEl.value+' ثانية');btn.addEventListener('click',generate);$('#regenerate').addEventListener('click',generate);$('#selfTest').addEventListener('click',selfTest);$('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;promptEl.value=b.dataset.p;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+const supported=!!window.OfflineAudioContext&&!!window.AudioContext;$('#supportText').textContent=supported?'المتصفح يدعم محرك الرندر الصوتي ✓':'المتصفح قديم أو لا يدعم Web Audio بالكامل.';$('#supportText').style.color=supported?'var(--ok)':'var(--bad)';
+})();
+</script>
+</body>
+</html>
