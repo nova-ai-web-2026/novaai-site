@@ -1,0 +1,42 @@
+name: Test NovaBeat AI
+
+on:
+  push:
+    paths:
+      - 'music-ai/**'
+      - '.github/workflows/test-music-ai.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-audio-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/novabeat-server.log 2>&1 &
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:4173/music-ai/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/novabeat-server.log
+          exit 1
+
+      - name: Run browser tests
+        run: npx playwright test music-ai/e2e.spec.js --project=chromium --reporter=line
