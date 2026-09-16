@@ -39,4 +39,4 @@ jobs:
           exit 1
 
       - name: Run browser tests
-        run: npx playwright test music-ai/e2e.spec.js --project=chromium --reporter=line
+        run: npx playwright test music-ai/e2e.spec.js --reporter=line
