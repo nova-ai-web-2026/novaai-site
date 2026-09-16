@@ -1,0 +1,51 @@
+name: Upgrade NovaBeat three-model engine
+
+on:
+  push:
+    paths:
+      - 'music-ai/models-v2.js'
+      - '.github/workflows/upgrade-novabeat-models-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire-model-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject upgraded engine
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('music-ai/index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = '<script src="./models-v2.js"></script>'
+          if marker not in text:
+              if '</body>' not in text:
+                  raise SystemExit('index.html is missing </body>')
+              text = text.replace('</body>', marker + '\n</body>', 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verify wiring
+        run: |
+          grep -q '<script src="./models-v2.js"></script>' music-ai/index.html
+          test -s music-ai/models-v2.js
+          grep -q 'Nova Ultra 3' music-ai/models-v2.js
+          grep -q "rate:48000" music-ai/models-v2.js
+
+      - name: Commit wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add music-ai/index.html
+          if git diff --cached --quiet; then
+            echo "NovaBeat engine already wired"
+            exit 0
+          fi
+          git commit -m "Enable NovaBeat three-model audio engine"
+          git push
