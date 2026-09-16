@@ -83,6 +83,18 @@ test('changing style changes arrangement profile and BPM', async ({ page }) => {
   expect(edmSrc).not.toBe(trapSrc);
 });
 
+test('all five styles expose clearly different tempo identities', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  const expected = { trap: '90', pop: '116', lofi: '78', edm: '128', cinematic: '84' };
+  for (const [style, bpm] of Object.entries(expected)) {
+    await page.selectOption('#style', style);
+    await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.click('#generate');
+    await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
+    await expect(page.locator('#bpmSpec')).toHaveText(bpm);
+  }
+});
+
 test('mobile layout loads and model controls remain usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('http://127.0.0.1:4173/music-ai/');
