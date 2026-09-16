@@ -1,0 +1,46 @@
+name: Hotfix NovaBeat timing safety
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hotfix-novabeat-timing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  clamp-humanized-events:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clamp humanized drum times to zero
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('music-ai/models-v2.js')
+          s = p.read_text(encoding='utf-8')
+          old = 't+humanTime(r,model.human)'
+          new = 'Math.max(0,t+humanTime(r,model.human))'
+          count = s.count(old)
+          if count != 4:
+              raise SystemExit(f'Expected 4 unsafe timing expressions, found {count}')
+          s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Verify hotfix
+        run: |
+          test -s music-ai/models-v2.js
+          ! grep -q 't+humanTime(r,model.human)' music-ai/models-v2.js
+          grep -q 'Math.max(0,t+humanTime(r,model.human))' music-ai/models-v2.js
+
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add music-ai/models-v2.js
+          git commit -m "Fix negative humanized audio event times"
+          git push
