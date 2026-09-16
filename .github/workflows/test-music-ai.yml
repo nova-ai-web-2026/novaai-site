@@ -1,5 +1,6 @@
 name: Test NovaBeat AI
 
+# Includes model-identity regression: same brief must render distinct Lite, Studio and Ultra outputs.
 on:
   push:
     paths:
