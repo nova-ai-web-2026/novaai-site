@@ -142,17 +142,17 @@ test('lyrics box is available and vocals stay Ultra-only', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/music-ai/');
   await expect(page.locator('#nbvLyrics')).toBeVisible();
   await page.fill('#nbvLyrics', '[Verse]\nكلمات اختبار');
-  await expect(page.locator('#nbvState')).toContainText('Ultra 3');
+  await expect(page.locator('#nbvState')).toContainText('AI Vocals');
   await page.click('[data-nb2-model="studio"]');
   await expect(page.locator('#nbvState')).toContainText('Nova Ultra 3 فقط');
   await page.click('[data-nb2-model="ultra"]');
-  await expect(page.locator('#nbvState')).toContainText('Ultra 3');
+  await expect(page.locator('#nbvState')).toContainText('AI Vocals');
 });
 
 
 test('Ultra lyrics without backend falls back to playable instrumental', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/music-ai/');
-  await page.selectOption('#duration', '15');
+  await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('[data-nb2-model="ultra"]');
   await page.fill('#nbvLyrics', '[Verse]\nكلمات اختبار للصوت');
   await expect(page.locator('#nbvState')).toContainText('Instrumental');
