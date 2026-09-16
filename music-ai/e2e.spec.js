@@ -39,6 +39,33 @@ test('all three models are selectable and technically distinct', async ({ page }
   await expect(page.locator('#nb2RateSpec')).toHaveText('48 kHz');
 });
 
+test('same brief renders three materially different model outputs', async ({ page }) => {
+  test.setTimeout(60000);
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  await page.fill('#prompt', 'نفس الاختبار للموديلات الثلاثة');
+  await page.selectOption('#style', 'pop');
+  await page.selectOption('#mood', 'uplifting');
+  await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  const outputs = [];
+  for (const model of ['lite','studio','ultra']) {
+    await page.click(`[data-nb2-model=\"${model}\"]`);
+    await page.click('#generate');
+    await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
+    outputs.push({
+      src: await page.locator('#audio').getAttribute('src'),
+      rate: await page.locator('#nb2RateSpec').textContent(),
+      mix: await page.locator('#nb2MixSpec').textContent(),
+      meta: await page.locator('#trackMeta').textContent()
+    });
+  }
+  expect(new Set(outputs.map(x => x.src)).size).toBe(3);
+  expect(outputs.map(x => x.rate)).toEqual(['24 kHz','44.1 kHz','48 kHz']);
+  expect(new Set(outputs.map(x => x.mix)).size).toBe(3);
+  expect(outputs[0].meta).toContain('Nova Lite 1');
+  expect(outputs[1].meta).toContain('Nova Studio 2');
+  expect(outputs[2].meta).toContain('Nova Ultra 3');
+});
+
 test('built-in audio self test reports non-silent Ultra 3 render', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/music-ai/');
   await page.click('#selfTest');
