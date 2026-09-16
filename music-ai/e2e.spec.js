@@ -137,3 +137,14 @@ test('mobile layout loads and model controls remain usable', async ({ page }) =>
   await expect(page.locator('#style')).toBeVisible();
   await expect(page.locator('[data-nb2-model="ultra"]')).toBeVisible();
 });
+
+test('lyrics box is available and vocals stay Ultra-only', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/music-ai/');
+  await expect(page.locator('#nbvLyrics')).toBeVisible();
+  await page.fill('#nbvLyrics', '[Verse]\nكلمات اختبار');
+  await expect(page.locator('#nbvState')).toContainText('Ultra 3');
+  await page.click('[data-nb2-model="studio"]');
+  await expect(page.locator('#nbvState')).toContainText('Nova Ultra 3 فقط');
+  await page.click('[data-nb2-model="ultra"]');
+  await expect(page.locator('#nbvState')).toContainText('Ultra 3');
+});
