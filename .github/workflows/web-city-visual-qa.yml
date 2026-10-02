@@ -1,0 +1,91 @@
+name: Web City visual QA
+on:
+  push:
+    paths:
+      - 'spider-man-web-city/**'
+      - '.github/workflows/web-city-visual-qa.yml'
+permissions:
+  contents: read
+jobs:
+  browser-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated test dependencies
+        run: |
+          mkdir -p /tmp/web-city-qa qa-output/vendor
+          npm install --prefix /tmp/web-city-qa playwright@1.57.0 three@0.180.0 --no-audit --no-fund
+          cp /tmp/web-city-qa/node_modules/three/build/three.module.js qa-output/vendor/
+          cp /tmp/web-city-qa/node_modules/three/build/three.core.js qa-output/vendor/
+          cp /tmp/web-city-qa/node_modules/three/LICENSE qa-output/vendor/THREE-LICENSE.txt
+      - name: Check game in Chromium and capture evidence
+        run: |
+          cat > /tmp/web-city-qa/check.cjs <<'JS'
+          const {chromium}=require('playwright');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const http=require('node:http');
+          const root=process.cwd();
+          const errors=[];
+          const server=http.createServer((req,res)=>{
+            const url=new URL(req.url,'http://localhost');
+            let file=url.pathname==='/'?'spider-man-web-city/index.html':url.pathname.slice(1);
+            if(file==='favicon.ico'){res.writeHead(204);return res.end();}
+            if(file.startsWith('__vendor/'))file='qa-output/vendor/'+file.slice(9);
+            if(!file.includes('.')||file.endsWith('/'))file+='index.html';
+            const target=path.resolve(root,file);
+            if(!target.startsWith(root+path.sep)||!fs.existsSync(target)){res.writeHead(404);return res.end('Not found');}
+            let body=fs.readFileSync(target);
+            if(file.endsWith('.js')){
+              let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,city,get state(){return {position:player.pos.toArray(),grounded:player.grounded,swing:!!swingAnchor,web,health,mission:missionIndex}}};';
+              body=Buffer.from(code);
+            }
+            res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
+            res.end(body);
+          });
+          (async()=>{
+            await new Promise(r=>server.listen(8765,'127.0.0.1',r));
+            const candidates=['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'];
+            const executablePath=candidates.find(f=>fs.existsSync(f));
+            const browser=await chromium.launch({executablePath,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl']});
+            const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:1});
+            page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+            await page.addInitScript(()=>{let seed=92713;Math.random=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};});
+            await page.goto('http://127.0.0.1:8765/spider-man-web-city/',{waitUntil:'networkidle'});
+            await page.waitForFunction(()=>window.__worldQA,{timeout:30000});
+            await page.click('#startBtn');
+            await page.waitForTimeout(900);
+            const before=await page.evaluate(()=>window.__worldQA.state);
+            await page.screenshot({path:'qa-output/spawn.png'});
+            await page.keyboard.down('KeyD');await page.waitForTimeout(650);await page.keyboard.up('KeyD');
+            const moved=await page.evaluate(()=>window.__worldQA.state);
+            await page.keyboard.press('Space');await page.waitForTimeout(180);
+            const jumped=await page.evaluate(()=>window.__worldQA.state);
+            await page.keyboard.down('KeyQ');await page.waitForTimeout(750);
+            const swung=await page.evaluate(()=>window.__worldQA.state);
+            await page.screenshot({path:'qa-output/swing.png'});
+            await page.keyboard.up('KeyQ');
+            await page.evaluate(()=>{const q=window.__worldQA;q.renderer.setAnimationLoop(null);document.exitPointerLock?.();q.camera.position.set(84,76,133);q.camera.lookAt(0,26,-35);q.renderer.render(q.scene,q.camera);});
+            await page.screenshot({path:'qa-output/aerial.png'});
+            const render=await page.evaluate(()=>({calls:window.__worldQA.renderer.info.render.calls,triangles:window.__worldQA.renderer.info.render.triangles,buildings:window.__worldQA.city.length}));
+            const report={commit:process.env.GITHUB_SHA,before,moved,jumped,swung,render,errors};
+            report.movementPassed=Math.hypot(moved.position[0]-before.position[0],moved.position[2]-before.position[2])>.2;
+            report.jumpPassed=jumped.position[1]>moved.position[1];report.swingPassed=swung.swing;
+            fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));
+            console.log(JSON.stringify(report));await browser.close();server.close();
+            if(errors.length||!report.movementPassed)process.exitCode=1;
+          })().catch(e=>{fs.writeFileSync('qa-output/error.txt',e.stack||String(e));console.error(e);server.close();process.exitCode=1;});
+          JS
+          node /tmp/web-city-qa/check.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-city-visual-qa
+          path: qa-output
+          retention-days: 3
