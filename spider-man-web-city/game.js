@@ -980,8 +980,9 @@ function animateScene(dt,t){
   let activeSwingSide=1;
 
   if(swingAnchor){
-    const rel=swingAnchor.x-player.pos.x;
-    activeSwingSide=Math.abs(rel)>.5?(rel>0?1:-1):1;
+    const toAnchor=swingAnchor.clone().sub(player.pos);
+    const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
+    activeSwingSide=toAnchor.dot(right)>=0?1:-1;
   }
 
   for(const part of playerMesh.children){
@@ -1045,14 +1046,7 @@ function animateScene(dt,t){
       ? clamp(-speed*.0055,-.075,0)
       : clamp(-player.vel.y*.011,-.18,.18);
 
-  const bodyYaw = player.grounded
-    ? Math.sin(phase)*.025*runAmount
-    : swingPose
-      ? (activeSwingSide*.035)
-      : 0;
-
   playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,5.5,dt);
-  playerMesh.rotation.y+=THREE.MathUtils.damp(0,bodyYaw,5,dt)*dt;
 
   if(player.grounded && runAmount>.05){
     playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.016*runAmount;
