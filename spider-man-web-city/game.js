@@ -995,9 +995,9 @@ function animateScene(dt,t){
 
       if(swingPose){
         const active=side===activeSwingSide;
-        shoulderX=active?-2.28:-1.05;
+        shoulderX=active?2.28:-.72;
         shoulderZ=side*(active?.17:.14);
-        elbowX=active?-.28:-.72;
+        elbowX=active?-.34:-.58;
       }else if(airborne){
         shoulderX=side*.16+clamp(-player.vel.y*.014,-.24,.24);
         shoulderZ=side*.10;
@@ -1023,14 +1023,14 @@ function animateScene(dt,t){
 
       if(swingPose){
         hipX=side===activeSwingSide?.24:-.30;
-        kneeX=side===activeSwingSide?.62:.30;
+        kneeX=side===activeSwingSide?-.62:-.30;
       }else if(airborne){
         hipX=side*.18+clamp(-player.vel.y*.010,-.13,.15);
-        kneeX=side>0?.48:.24;
+        kneeX=side>0?-.48:-.24;
       }else{
         const stride=Math.sin(phase-side*1.57);
         hipX=stride*.54*runAmount;
-        kneeX=Math.max(0,-stride)*.56*runAmount+.04;
+        kneeX=-Math.max(0,-stride)*.56*runAmount-.04;
       }
 
       part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,8.2,dt);
