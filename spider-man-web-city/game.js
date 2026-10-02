@@ -973,10 +973,10 @@ function animateScene(dt,t){
   if(!playerMesh)return;
 
   const speed=player.vel.length();
-  const runAmount=player.grounded?clamp(speed/13,0,1):0;
+  const runAmount=player.grounded?clamp(speed/14,0,1):0;
   const swingPose=!!swingAnchor;
   const airborne=!player.grounded;
-  const phase=t*(7.4+runAmount*2.4);
+  const phase=t*(6.8+runAmount*1.9);
   let activeSwingSide=1;
 
   if(swingAnchor){
@@ -990,27 +990,28 @@ function animateScene(dt,t){
       const elbow=part.userData.elbow;
 
       let shoulderX=0;
-      let shoulderZ=side*.085;
-      let elbowX=-.26;
+      let shoulderZ=side*.075;
+      let elbowX=-.22;
 
       if(swingPose){
         const active=side===activeSwingSide;
-        shoulderX=active?-2.58:-1.22;
-        shoulderZ=side*(active?.22:.18);
-        elbowX=active?-.18:-.92;
+        shoulderX=active?-2.28:-1.05;
+        shoulderZ=side*(active?.17:.14);
+        elbowX=active?-.28:-.72;
       }else if(airborne){
-        shoulderX=side*.22+clamp(-player.vel.y*.018,-.30,.30);
-        shoulderZ=side*.13;
-        elbowX=-.72;
+        shoulderX=side*.16+clamp(-player.vel.y*.014,-.24,.24);
+        shoulderZ=side*.10;
+        elbowX=-.58;
       }else{
-        shoulderX=Math.sin(phase+side*1.57)*.66*runAmount;
-        shoulderZ=side*(.085+.035*runAmount);
-        elbowX=-.24-Math.max(0,Math.sin(phase+side*1.57))*.52*runAmount;
+        const armCycle=Math.sin(phase+side*1.57);
+        shoulderX=armCycle*.52*runAmount;
+        shoulderZ=side*(.075+.022*runAmount);
+        elbowX=-.20-Math.max(0,armCycle)*.40*runAmount;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,10,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,10,dt);
-      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,11,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,8.5,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,8.5,dt);
+      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,9.5,dt);
     }
 
     if(part.userData.kind==="leg"){
@@ -1018,36 +1019,43 @@ function animateScene(dt,t){
       const knee=part.userData.knee;
 
       let hipX=0;
-      let kneeX=.08;
+      let kneeX=.06;
 
       if(swingPose){
-        hipX=side===activeSwingSide?.30:-.42;
-        kneeX=side===activeSwingSide?.82:.38;
+        hipX=side===activeSwingSide?.24:-.30;
+        kneeX=side===activeSwingSide?.62:.30;
       }else if(airborne){
-        hipX=side*.24+clamp(-player.vel.y*.012,-.16,.18);
-        kneeX=side>0?.62:.28;
+        hipX=side*.18+clamp(-player.vel.y*.010,-.13,.15);
+        kneeX=side>0?.48:.24;
       }else{
         const stride=Math.sin(phase-side*1.57);
-        hipX=stride*.69*runAmount;
-        kneeX=Math.max(0,-stride)*.72*runAmount+.05;
+        hipX=stride*.54*runAmount;
+        kneeX=Math.max(0,-stride)*.56*runAmount+.04;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,9,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,side*.018*runAmount,9,dt);
-      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,10,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,8.2,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,side*.012*runAmount,8.2,dt);
+      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,9,dt);
     }
   }
 
   const bodyPitch = swingPose
-    ? -.16
+    ? -.12
     : player.grounded
-      ? clamp(-speed*.007,-.10,0)
-      : clamp(-player.vel.y*.014,-.25,.23);
+      ? clamp(-speed*.0055,-.075,0)
+      : clamp(-player.vel.y*.011,-.18,.18);
 
-  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,6,dt);
+  const bodyYaw = player.grounded
+    ? Math.sin(phase)*.025*runAmount
+    : swingPose
+      ? (activeSwingSide*.035)
+      : 0;
+
+  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,5.5,dt);
+  playerMesh.rotation.y+=THREE.MathUtils.damp(0,bodyYaw,5,dt)*dt;
 
   if(player.grounded && runAmount>.05){
-    playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.026*runAmount;
+    playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.016*runAmount;
   }
 }
 function showWin(){
