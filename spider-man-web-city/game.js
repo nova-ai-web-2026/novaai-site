@@ -30,7 +30,8 @@ let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
-let audioCtx = null, masterGain = null, noiseBuffer = null;
+let audioCtx = null, masterGain = null, noiseBuffer = null, audioCompressor = null;
+let windSource = null, windGain = null, windFilter = null;
 let sfxMuted = false;
 const sfxStats = Object.create(null);
 const keys = {};
@@ -498,7 +499,17 @@ function beginSwing(){
 }
 
 function releaseSwing(){
-  swingAnchor=null;if(webLine)webLine.visible=false;
+  const hadSwing=!!swingAnchor;
+  const releaseSpeed=player?.vel?.length?.()||0;
+  if(hadSwing&&player&&started){
+    const releaseForward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+    const boost=clamp(.75+releaseSpeed*.055,.9,3.1);
+    player.vel.addScaledVector(releaseForward,boost);
+    if(player.vel.y<4.8)player.vel.y+=clamp(releaseSpeed*.035,.35,1.35);
+    sfx("release",clamp(releaseSpeed/28,.65,1.2));
+  }
+  swingAnchor=null;
+  if(webLine)webLine.visible=false;
 }
 
 function webZip(){
@@ -576,15 +587,33 @@ function updatePlayer(dt){
     web=Math.max(0,web-dt*4);
     if(web<=0){releaseSwing();}
     else{
-      const r=player.pos.clone().sub(swingAnchor);
-      const dist=r.length();
+      const ropeVec=player.pos.clone().sub(swingAnchor);
+      const dist=Math.max(.001,ropeVec.length());
+      const ropeDir=ropeVec.clone().multiplyScalar(1/dist);
+
       if(dist>ropeLength){
         const stretch=dist-ropeLength;
-        player.vel.addScaledVector(r.normalize(),-(stretch*18+Math.max(0,player.vel.dot(r.normalize()))*5)*dt);
+        const outward=Math.max(0,player.vel.dot(ropeDir));
+        player.vel.addScaledVector(ropeDir,-(stretch*23+outward*7.5)*dt);
       }
-      player.vel.addScaledVector(forward,(keys.ShiftLeft||keys.ShiftRight?16:10)*dt);
-      if(keys.KeyW)ropeLength=Math.max(7,ropeLength-dt*5);
-      if(keys.KeyS)ropeLength=Math.min(85,ropeLength+dt*5);
+
+      const tangent=forward.clone().addScaledVector(ropeDir,-forward.dot(ropeDir));
+      if(tangent.lengthSq()>.0001){
+        tangent.normalize();
+        const pump=keys.ShiftLeft||keys.ShiftRight?21:14;
+        player.vel.addScaledVector(tangent,pump*dt);
+      }
+
+      if(Math.abs(mx)>.05){
+        const sideTangent=right.clone().addScaledVector(ropeDir,-right.dot(ropeDir));
+        if(sideTangent.lengthSq()>.0001)player.vel.addScaledVector(sideTangent.normalize(),mx*5.5*dt);
+      }
+
+      if(keys.KeyW)ropeLength=Math.max(7,ropeLength-dt*6.5);
+      if(keys.KeyS)ropeLength=Math.min(85,ropeLength+dt*6.5);
+
+      const swingSpeed=player.vel.length();
+      if(swingSpeed>47)player.vel.multiplyScalar(47/swingSpeed);
       updateWebLine();
     }
   }
@@ -592,8 +621,12 @@ function updatePlayer(dt){
   if(zipTarget){
     const dir=zipTarget.clone().sub(player.pos);
     const d=dir.length();
-    if(d<3.8){zipTarget=null;player.vel.y=Math.max(player.vel.y,4);}
-    else{player.vel.addScaledVector(dir.normalize(),42*dt);webLine.visible=true;drawWeb(player.pos,zipTarget);}
+    if(d<3.8){zipTarget=null;player.vel.y=Math.max(player.vel.y,4.6);}
+    else{
+      player.vel.addScaledVector(dir.normalize(),48*dt);
+      webLine.visible=true;
+      drawWeb(player.pos,zipTarget);
+    }
   }else if(!swingAnchor && webLine)webLine.visible=false;
 
   const sprint=keys.ShiftLeft||keys.ShiftRight;
@@ -603,7 +636,14 @@ function updatePlayer(dt){
     player.vel.x=THREE.MathUtils.damp(player.vel.x,target.x,8,dt);
     player.vel.z=THREE.MathUtils.damp(player.vel.z,target.z,8,dt);
   }else if(len>.05){
-    player.vel.addScaledVector(wish,(swingAnchor?4.5:9)*dt);
+    const horizontal=new THREE.Vector3(player.vel.x,0,player.vel.z);
+    const horizontalSpeed=horizontal.length();
+    const desired=wish.clone().multiplyScalar(Math.max(horizontalSpeed,sprint?13:9));
+    const steer=clamp((swingAnchor?2.4:5.4)*dt,0,.16);
+    horizontal.lerp(desired,steer);
+    player.vel.x=horizontal.x;
+    player.vel.z=horizontal.z;
+    player.vel.addScaledVector(wish,(swingAnchor?2.8:5.5)*dt);
   }
 
   if(!player.grounded)player.vel.y-=state.gravity*dt;
@@ -623,8 +663,11 @@ function updatePlayer(dt){
   const faceYaw=Math.atan2(-player.facing.x,-player.facing.z);
   playerMesh.rotation.y=THREE.MathUtils.lerp(playerMesh.rotation.y,faceYaw,.18);
   const sp=player.vel.length();
-  playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,clamp(-player.vel.x*.015,-.18,.18),5,dt);
-  motionLines.style.opacity=String(clamp((sp-20)/24,0,.42));
+  const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
+  const lateralSpeed=player.vel.dot(localRight);
+  playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,clamp(-lateralSpeed*.018,-.20,.20),5.5,dt);
+  motionLines.style.opacity=String(clamp((sp-15)/25,0,.50));
+  updateWind(sp,!!swingAnchor,player.grounded);
 }
 
 function resolveCollisions(dt,forwardInput){
@@ -669,14 +712,20 @@ function updateCamera(dt){
   const cp=Math.cos(pitch),sp=Math.sin(pitch);
   const back=new THREE.Vector3(Math.sin(yaw)*cp,sp,Math.cos(yaw)*cp);
   const speed=player.vel.length();
-  const distance=8.5+clamp(speed*.065,0,4.2);
-  const target=player.pos.clone().add(new THREE.Vector3(0,1.15,0));
+  const distance=8.7+clamp(speed*.085,0,5.4);
+  const target=player.pos.clone().add(new THREE.Vector3(0,1.2,0));
   const desired=target.clone().addScaledVector(back,distance);
-  desired.y+=2.1;
-  camera.position.lerp(desired,1-Math.pow(.001,dt));
-  const look=target.clone().addScaledVector(player.vel,.07);
+  desired.y+=2.05+clamp(player.vel.y*.025,-.35,.55);
+  camera.position.lerp(desired,1-Math.pow(.0012,dt));
+  const look=target.clone().addScaledVector(player.vel,.095);
   camera.lookAt(look);
-  camera.fov=THREE.MathUtils.damp(camera.fov,68+clamp((speed-12)*.45,0,12),4,dt);
+
+  const camRight=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  const lateral=player.vel.dot(camRight);
+  const bank=swingAnchor?clamp(-lateral*.0075,-.11,.11):clamp(-lateral*.002,-.025,.025);
+  camera.rotation.z=THREE.MathUtils.damp(camera.rotation.z,bank,5.5,dt);
+
+  camera.fov=THREE.MathUtils.damp(camera.fov,68+clamp((speed-10)*.56,0,14),4.5,dt);
   camera.updateProjectionMatrix();
 }
 
@@ -887,14 +936,38 @@ function ensureAudio(){
   const Ctx=window.AudioContext||window.webkitAudioContext;
   if(!Ctx)return null;
   audioCtx=new Ctx();
-  masterGain=audioCtx.createGain();
-  masterGain.gain.value=sfxMuted?0:.72;
-  masterGain.connect(audioCtx.destination);
 
-  const length=Math.max(1,Math.floor(audioCtx.sampleRate*.9));
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=sfxMuted?0:.95;
+
+  audioCompressor=audioCtx.createDynamicsCompressor();
+  audioCompressor.threshold.value=-18;
+  audioCompressor.knee.value=16;
+  audioCompressor.ratio.value=4.5;
+  audioCompressor.attack.value=.003;
+  audioCompressor.release.value=.16;
+  masterGain.connect(audioCompressor);
+  audioCompressor.connect(audioCtx.destination);
+
+  const length=Math.max(1,Math.floor(audioCtx.sampleRate*1.4));
   noiseBuffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate);
   const data=noiseBuffer.getChannelData(0);
-  for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length*.18);
+  for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length*.08);
+
+  windSource=audioCtx.createBufferSource();
+  windSource.buffer=noiseBuffer;
+  windSource.loop=true;
+  windFilter=audioCtx.createBiquadFilter();
+  windFilter.type="bandpass";
+  windFilter.frequency.value=780;
+  windFilter.Q.value=.45;
+  windGain=audioCtx.createGain();
+  windGain.gain.value=.0001;
+  windSource.connect(windFilter);
+  windFilter.connect(windGain);
+  windGain.connect(masterGain);
+  windSource.start();
+
   return audioCtx;
 }
 
@@ -906,7 +979,7 @@ function tone(startFreq,endFreq,dur,gain=.06,type="sine",delay=0){
   osc.frequency.setValueAtTime(Math.max(20,startFreq),now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq),now+dur);
   amp.gain.setValueAtTime(.0001,now);
-  amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),now+.008);
+  amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain*1.55),now+.008);
   amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
   osc.connect(amp);amp.connect(masterGain);
   osc.start(now);osc.stop(now+dur+.02);
@@ -920,7 +993,7 @@ function noise(dur=.08,gain=.05,filterFreq=1100,filterType="bandpass",delay=0){
   filter.type=filterType;
   filter.frequency.value=filterFreq;
   filter.Q.value=filterType==="bandpass"?1.2:.7;
-  amp.gain.setValueAtTime(Math.max(.0002,gain),now);
+  amp.gain.setValueAtTime(Math.max(.0002,gain*1.65),now);
   amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
   src.connect(filter);filter.connect(amp);amp.connect(masterGain);
   src.start(now,Math.random()*.35);src.stop(now+dur+.02);
@@ -944,22 +1017,22 @@ function sfx(name,intensity=1){
       tone(310,620,.14,.052*k,"triangle");noise(.055,.022*k,1450,"highpass");
       break;
     case "web":
-      noise(.075,.055*k,1750,"bandpass");tone(840,360,.095,.040*k,"triangle");tone(260,180,.07,.017*k,"sine",.025);
+      noise(.095,.082*k,1900,"bandpass");tone(980,390,.11,.060*k,"triangle");tone(300,155,.09,.028*k,"sine",.025);
       break;
     case "zip":
-      noise(.11,.045*k,1500,"highpass");tone(280,1120,.14,.047*k,"sawtooth");tone(1050,680,.08,.019*k,"triangle",.09);
+      noise(.14,.070*k,1650,"highpass");tone(240,1280,.17,.068*k,"sawtooth");tone(1220,650,.10,.032*k,"triangle",.09);
       break;
     case "attack":
-      noise(.07,.042*k,780,"bandpass");tone(190,95,.07,.022*k,"triangle");
+      noise(.085,.060*k,820,"bandpass");tone(210,92,.08,.034*k,"triangle");
       break;
     case "heavySwing":
       noise(.12,.058*k,620,"bandpass");tone(155,62,.13,.034*k,"sawtooth");
       break;
     case "hit":
-      noise(.075,.070*k,520,"lowpass");tone(145,72,.085,.060*k,"sine");tone(320,150,.045,.018*k,"square");
+      noise(.09,.095*k,560,"lowpass");tone(150,65,.10,.082*k,"sine");tone(340,140,.055,.030*k,"square");
       break;
     case "heavyHit":
-      noise(.13,.095*k,430,"lowpass");tone(110,42,.16,.082*k,"sine");tone(250,95,.075,.028*k,"square");
+      noise(.16,.125*k,450,"lowpass");tone(112,38,.18,.110*k,"sine");tone(265,82,.085,.042*k,"square");
       break;
     case "enemyDown":
       tone(115,48,.18,.038*k,"sawtooth");noise(.11,.030*k,420,"lowpass");
@@ -980,15 +1053,27 @@ function sfx(name,intensity=1){
       tone(620,720,.11,.030*k,"triangle");tone(820,950,.12,.028*k,"triangle",.08);tone(1080,1320,.16,.026*k,"triangle",.16);
       break;
     case "mission":
-      tone(392,440,.13,.028*k,"triangle");tone(523,587,.14,.028*k,"triangle",.09);tone(659,784,.18,.030*k,"triangle",.18);
+      tone(392,440,.13,.040*k,"triangle");tone(523,587,.14,.040*k,"triangle",.09);tone(659,784,.18,.044*k,"triangle",.18);
+      break;
+    case "release":
+      noise(.11,.065*k,1150,"highpass");tone(420,180,.13,.035*k,"triangle");
       break;
   }
+}
+
+function updateWind(speed,swinging,grounded){
+  if(!audioCtx||!windGain||!windFilter)return;
+  const airborne=!grounded;
+  const normalized=airborne?clamp((speed-6)/34,0,1):0;
+  const target=normalized*(swinging?.13:.085);
+  windGain.gain.setTargetAtTime(sfxMuted?0:target,audioCtx.currentTime,.07);
+  windFilter.frequency.setTargetAtTime(520+speed*42+(swinging?180:0),audioCtx.currentTime,.06);
 }
 
 function toggleSound(){
   sfxMuted=!sfxMuted;
   ensureAudio();
-  if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:.72,audioCtx.currentTime,.015);
+  if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:.95,audioCtx.currentTime,.015);
   if(soundToggle){
     soundToggle.textContent=sfxMuted?"🔇":"🔊";
     soundToggle.setAttribute("aria-label",sfxMuted?"تشغيل المؤثرات الصوتية":"كتم المؤثرات الصوتية");
