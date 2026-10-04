@@ -390,7 +390,7 @@ function setupInput(){
     if(e.code==="KeyE") webZip();
     if(e.code==="KeyF") performAttack(false);
     if(e.code==="KeyR") performAttack(true);
-    if(e.code==="KeyM") toggleSound();
+    if(e.code==="KeyM"&&!e.repeat) toggleSound();
     if(e.code==="KeyQ") swingHeld=true;
   });
   addEventListener("keyup",e=>{
