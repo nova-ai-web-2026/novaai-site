@@ -14,6 +14,7 @@ const scoreEl = el("score");
 const comboEl = el("combo");
 const speedEl = el("speed");
 const tipEl = el("tip");
+const soundToggle = el("soundToggle");
 const motionLines = el("motionLines");
 const toastEl = el("toast");
 const minimap = el("minimap");
@@ -29,7 +30,9 @@ let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
-let audioCtx = null;
+let audioCtx = null, masterGain = null, noiseBuffer = null;
+let sfxMuted = false;
+const sfxStats = Object.create(null);
 const keys = {};
 const mobileAxes = {x:0,y:0};
 const isTouch = matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0;
@@ -387,6 +390,7 @@ function setupInput(){
     if(e.code==="KeyE") webZip();
     if(e.code==="KeyF") performAttack(false);
     if(e.code==="KeyR") performAttack(true);
+    if(e.code==="KeyM") toggleSound();
     if(e.code==="KeyQ") swingHeld=true;
   });
   addEventListener("keyup",e=>{
@@ -406,6 +410,7 @@ function setupInput(){
     pitch = clamp(pitch-e.movementY*.0017,-.82,.35);
   });
   renderer.domElement.addEventListener("click",()=>{if(started&&!isTouch)renderer.domElement.requestPointerLock();});
+  soundToggle?.addEventListener("click",e=>{e.stopPropagation();toggleSound();});
 
   if(isTouch){
     mobileUI.classList.remove("hidden");
@@ -449,7 +454,9 @@ function startGame(){
   started=true;won=false;
   startScreen.classList.add("hidden");winScreen.classList.add("hidden");hud.classList.remove("hidden");
   if(!isTouch){renderer.domElement.requestPointerLock().catch(()=>{});}
-  if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();}
+  ensureAudio();
+  if(audioCtx?.state==="suspended")audioCtx.resume().catch(()=>{});
+  sfx("start");
   resetAll();
 }
 
@@ -462,8 +469,8 @@ function resetAll(){
 
 function tryJump(){
   if(!started)return;
-  if(player.grounded){player.vel.y=state.jump;player.grounded=false;beep(320,.06);}
-  else if(wallTouch){player.vel.y=9;player.vel.addScaledVector(player.facing,-5);beep(420,.07);}
+  if(player.grounded){player.vel.y=state.jump;player.grounded=false;sfx("jump");}
+  else if(wallTouch){player.vel.y=9;player.vel.addScaledVector(player.facing,-5);sfx("wallJump");}
 }
 
 function findWebAnchor(){
@@ -487,7 +494,7 @@ function beginSwing(){
   const a=findWebAnchor();
   if(!a)return;
   swingAnchor=a;ropeLength=Math.max(8,player.pos.distanceTo(a)*.77);
-  webLine.visible=true;beep(760,.04);
+  webLine.visible=true;sfx("web");
 }
 
 function releaseSwing(){
@@ -498,12 +505,13 @@ function webZip(){
   if(!started||web<12)return;
   const a=findWebAnchor();
   if(!a)return toast("مفيش نقطة Web Zip مناسبة قدامك.");
-  zipTarget=a.clone();web-=10;beep(900,.05);
+  zipTarget=a.clone();web-=10;sfx("zip");
 }
 
 function performAttack(heavy){
   if(!started||attackCooldown>0)return;
   attackCooldown=heavy?.55:.28;
+  sfx(heavy?"heavySwing":"attack");
   const range=heavy?5.1:3.7, damage=heavy?55:32;
   let hit=false;
   const f=player.facing.clone().normalize();
@@ -519,7 +527,7 @@ function performAttack(heavy){
       if(e.hp<=0)killEnemy(e);
     }
   }
-  if(hit){beep(150,heavy?.12:.07);player.vel.addScaledVector(f,heavy?1.5:.7);}
+  if(hit){sfx(heavy?"heavyHit":"hit");player.vel.addScaledVector(f,heavy?1.5:.7);}
   else combo=Math.max(1,combo-1);
 }
 
@@ -529,7 +537,7 @@ function flashEnemy(e){
 }
 
 function killEnemy(e){
-  e.alive=false;scene.remove(e.group);score+=e.boss?2500:300;beep(e.boss?70:95,.18);
+  e.alive=false;scene.remove(e.group);score+=e.boss?2500:300;sfx(e.boss?"bossDown":"enemyDown");
   if(e.boss){
     missionIndex=4;won=true;setTimeout(showWin,700);
   }
@@ -537,7 +545,7 @@ function killEnemy(e){
 
 function damagePlayer(amount){
   health=clamp(health-amount,0,100);combo=1;
-  beep(85,.11);
+  sfx("damage");
   if(health<=0){
     health=100;player.pos.set(0,5,0);player.vel.set(0,0,0);score=Math.max(0,score-500);
     toast("اتوقعت! رجعتك لنقطة آمنة وخسرت 500 نقطة.");
@@ -545,6 +553,8 @@ function damagePlayer(amount){
 }
 
 function updatePlayer(dt){
+  const wasGrounded=player.grounded;
+  const preCollisionVy=player.vel.y;
   attackCooldown=Math.max(0,attackCooldown-dt);
   comboTimer-=dt;if(comboTimer<=0){combo=1;}
   web=Math.min(100,web+dt*7);
@@ -601,6 +611,7 @@ function updatePlayer(dt){
   player.pos.addScaledVector(player.vel,dt);
 
   resolveCollisions(dt,mz);
+  if(player.grounded&&!wasGrounded&&preCollisionVy<-4.2)sfx("land",clamp(Math.abs(preCollisionVy)/18,.45,1.15));
 
   if(player.pos.y<-12){
     damagePlayer(20);player.pos.set(0,6,0);player.vel.set(0,0,0);
@@ -693,7 +704,7 @@ function updateEnemies(dt){
     pos.y=THREE.MathUtils.damp(pos.y,ground,9,dt);
   }
   if(missionIndex===1 && alive===0){
-    missionIndex=2;score+=800;spawnDrone();
+    missionIndex=2;score+=800;sfx("mission");spawnDrone();
   }
 }
 
@@ -725,13 +736,13 @@ function updateMission(dt,t){
     for(let i=beacons.length-1;i>=0;i--){
       const b=beacons[i];b.rotation.y+=dt*1.8;b.children[0].rotation.z+=dt*.8;
       if(b.position.distanceTo(player.pos)<3.4){
-        scene.remove(b);beacons.splice(i,1);beaconCount++;score+=400;beep(1120,.1);
+        scene.remove(b);beacons.splice(i,1);beaconCount++;score+=400;sfx("beacon");
         missionEl.textContent="المهمة 1/4 • فعّل 3 إشارات على الأسطح — "+beaconCount+"/3";
         toast("إشارة اتفعلت! "+beaconCount+"/3");
       }
     }
     if(beaconCount>=3){
-      missionIndex=1;spawnEnemies(6);missionEl.textContent="المهمة 2/4 • اهزم العصابة في الساحة — 6 خصوم";
+      missionIndex=1;sfx("mission");spawnEnemies(6);missionEl.textContent="المهمة 2/4 • اهزم العصابة في الساحة — 6 خصوم";
       toast("العصابة ظهرت في الساحة — انزل قاتلهم.");
     }
   }else if(missionIndex===1){
@@ -743,7 +754,7 @@ function updateMission(dt,t){
     drone.mesh.position.set(Math.cos(drone.t)*r,42+Math.sin(drone.t*2.2)*12,Math.sin(drone.t)*r);
     drone.mesh.rotation.y+=dt*2.3;drone.mesh.rotation.x+=dt*.9;
     if(drone.mesh.position.distanceTo(player.pos)<4.2){
-      scene.remove(drone.mesh);drone=null;score+=1400;missionIndex=3;spawnBoss();
+      scene.remove(drone.mesh);drone=null;score+=1400;missionIndex=3;sfx("mission");spawnBoss();
     }
   }
 }
@@ -752,7 +763,7 @@ function updateCollectibles(dt){
   for(let i=collectibles.length-1;i>=0;i--){
     const c=collectibles[i];c.userData.t+=dt;c.rotation.x+=dt;c.rotation.y+=dt*1.5;c.position.y=c.userData.baseY+Math.sin(c.userData.t*2)*.35;
     if(c.position.distanceTo(player.pos)<2){
-      scene.remove(c);collectibles.splice(i,1);score+=150;web=Math.min(100,web+15);beep(1300,.04);
+      scene.remove(c);collectibles.splice(i,1);score+=150;web=Math.min(100,web+15);sfx("pickup");
     }
   }
 }
@@ -871,14 +882,121 @@ function showWin(){
 function toast(msg){
   toastEl.textContent=msg;toastEl.classList.add("show");toastTimer=3.2;
 }
-function beep(freq,dur){
-  if(!audioCtx)return;
-  try{
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.type="sine";o.frequency.value=freq;g.gain.setValueAtTime(.035,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);
-    o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur);
-  }catch(_){}
+function ensureAudio(){
+  if(audioCtx)return audioCtx;
+  const Ctx=window.AudioContext||window.webkitAudioContext;
+  if(!Ctx)return null;
+  audioCtx=new Ctx();
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=sfxMuted?0:.72;
+  masterGain.connect(audioCtx.destination);
+
+  const length=Math.max(1,Math.floor(audioCtx.sampleRate*.9));
+  noiseBuffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate);
+  const data=noiseBuffer.getChannelData(0);
+  for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length*.18);
+  return audioCtx;
 }
+
+function tone(startFreq,endFreq,dur,gain=.06,type="sine",delay=0){
+  if(!ensureAudio()||sfxMuted)return;
+  const now=audioCtx.currentTime+delay;
+  const osc=audioCtx.createOscillator(),amp=audioCtx.createGain();
+  osc.type=type;
+  osc.frequency.setValueAtTime(Math.max(20,startFreq),now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq),now+dur);
+  amp.gain.setValueAtTime(.0001,now);
+  amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),now+.008);
+  amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
+  osc.connect(amp);amp.connect(masterGain);
+  osc.start(now);osc.stop(now+dur+.02);
+}
+
+function noise(dur=.08,gain=.05,filterFreq=1100,filterType="bandpass",delay=0){
+  if(!ensureAudio()||sfxMuted||!noiseBuffer)return;
+  const now=audioCtx.currentTime+delay;
+  const src=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),amp=audioCtx.createGain();
+  src.buffer=noiseBuffer;
+  filter.type=filterType;
+  filter.frequency.value=filterFreq;
+  filter.Q.value=filterType==="bandpass"?1.2:.7;
+  amp.gain.setValueAtTime(Math.max(.0002,gain),now);
+  amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
+  src.connect(filter);filter.connect(amp);amp.connect(masterGain);
+  src.start(now,Math.random()*.35);src.stop(now+dur+.02);
+}
+
+function sfx(name,intensity=1){
+  sfxStats[name]=(sfxStats[name]||0)+1;
+  if(sfxMuted)return;
+  ensureAudio();
+  if(audioCtx?.state==="suspended")audioCtx.resume().catch(()=>{});
+  const k=clamp(intensity,.25,1.35);
+
+  switch(name){
+    case "start":
+      tone(330,390,.11,.035,"triangle",0);tone(495,585,.12,.030,"triangle",.07);tone(660,780,.16,.028,"triangle",.14);
+      break;
+    case "jump":
+      tone(230,455,.12,.045*k,"triangle");noise(.045,.018*k,1200,"highpass");
+      break;
+    case "wallJump":
+      tone(310,620,.14,.052*k,"triangle");noise(.055,.022*k,1450,"highpass");
+      break;
+    case "web":
+      noise(.075,.055*k,1750,"bandpass");tone(840,360,.095,.040*k,"triangle");tone(260,180,.07,.017*k,"sine",.025);
+      break;
+    case "zip":
+      noise(.11,.045*k,1500,"highpass");tone(280,1120,.14,.047*k,"sawtooth");tone(1050,680,.08,.019*k,"triangle",.09);
+      break;
+    case "attack":
+      noise(.07,.042*k,780,"bandpass");tone(190,95,.07,.022*k,"triangle");
+      break;
+    case "heavySwing":
+      noise(.12,.058*k,620,"bandpass");tone(155,62,.13,.034*k,"sawtooth");
+      break;
+    case "hit":
+      noise(.075,.070*k,520,"lowpass");tone(145,72,.085,.060*k,"sine");tone(320,150,.045,.018*k,"square");
+      break;
+    case "heavyHit":
+      noise(.13,.095*k,430,"lowpass");tone(110,42,.16,.082*k,"sine");tone(250,95,.075,.028*k,"square");
+      break;
+    case "enemyDown":
+      tone(115,48,.18,.038*k,"sawtooth");noise(.11,.030*k,420,"lowpass");
+      break;
+    case "bossDown":
+      noise(.24,.080*k,360,"lowpass");tone(92,38,.32,.075*k,"sawtooth");tone(220,110,.18,.035*k,"square",.08);tone(440,220,.25,.025*k,"triangle",.18);
+      break;
+    case "damage":
+      noise(.10,.060*k,480,"lowpass");tone(125,58,.14,.052*k,"square");
+      break;
+    case "land":
+      noise(.09,.055*k,310,"lowpass");tone(92,48,.10,.055*k,"sine");
+      break;
+    case "pickup":
+      tone(920,1180,.075,.032*k,"sine");tone(1300,1600,.10,.026*k,"triangle",.055);
+      break;
+    case "beacon":
+      tone(620,720,.11,.030*k,"triangle");tone(820,950,.12,.028*k,"triangle",.08);tone(1080,1320,.16,.026*k,"triangle",.16);
+      break;
+    case "mission":
+      tone(392,440,.13,.028*k,"triangle");tone(523,587,.14,.028*k,"triangle",.09);tone(659,784,.18,.030*k,"triangle",.18);
+      break;
+  }
+}
+
+function toggleSound(){
+  sfxMuted=!sfxMuted;
+  ensureAudio();
+  if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:.72,audioCtx.currentTime,.015);
+  if(soundToggle){
+    soundToggle.textContent=sfxMuted?"🔇":"🔊";
+    soundToggle.setAttribute("aria-label",sfxMuted?"تشغيل المؤثرات الصوتية":"كتم المؤثرات الصوتية");
+    soundToggle.title=sfxMuted?"تشغيل الصوت (M)":"كتم الصوت (M)";
+  }
+  toast(sfxMuted?"المؤثرات الصوتية: مقفولة":"المؤثرات الصوتية: شغالة");
+}
+
 function onResize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);}
 function loop(){
   const dt=Math.min(.033,clock.getDelta()||.016),t=clock.elapsedTime;
