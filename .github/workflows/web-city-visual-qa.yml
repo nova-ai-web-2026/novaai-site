@@ -46,7 +46,7 @@ jobs:
             let body=fs.readFileSync(target);
             if(file.endsWith('.js')){
               let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
-              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,city,get state(){return {position:player.pos.toArray(),grounded:player.grounded,swing:!!swingAnchor,web,health,mission:missionIndex,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,sfxStats:{...sfxStats}}}};';
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,city,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,web,health,mission:missionIndex,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windLevel:windGain?.gain?.value||0,sfxStats:{...sfxStats}}}};';
               body=Buffer.from(code);
             }
             res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
@@ -78,7 +78,8 @@ jobs:
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>5,{timeout:30000});
             report.swung=await page.evaluate(()=>window.__worldQA.state);
             await page.screenshot({path:'qa-output/swing.png'});
-            await page.keyboard.up('KeyQ');
+            await page.keyboard.up('KeyQ');await page.waitForTimeout(180);
+            report.released=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyF');await page.waitForTimeout(120);
             report.audio=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyM');await page.waitForTimeout(80);
@@ -92,6 +93,8 @@ jobs:
             }
             report.movementPassed=report.moved.position[0]-report.before.position[0]>.2;
             report.jumpPassed=report.jumped.position[1]>report.moved.position[1];report.swingPassed=report.swung.swing;
+            report.releasePassed=report.released.swing===false&&report.released.sfxStats.release>0&&report.released.speed>2;
+            report.windPassed=report.swung.windLevel>.001;
             report.audioPassed=report.audio.audioState==='running'&&report.audio.sfxStats.start>0&&report.audio.sfxStats.jump>0&&report.audio.sfxStats.web>0&&report.audio.sfxStats.attack>0&&report.audioMuted.muted===true;
             await page.close();
             const mobile=await browser.newPage({viewport:{width:412,height:915},deviceScaleFactor:1,isMobile:true,hasTouch:true});logErrors(mobile);
@@ -104,7 +107,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.movementPassed||!report.jumpPassed||!report.swingPassed||!report.audioPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.movementPassed||!report.jumpPassed||!report.swingPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs
