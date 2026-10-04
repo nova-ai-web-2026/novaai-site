@@ -93,7 +93,7 @@ function createPlayer(){
   };
 
   playerMesh = new THREE.Group();
-  playerMesh.userData.visualOffset=.56;
+  playerMesh.userData.visualOffset=1.20;
 
   const redMat = new THREE.MeshStandardMaterial({color:0xc90f31,roughness:.34,metalness:.035});
   const redDarkMat = new THREE.MeshStandardMaterial({color:0x941027,roughness:.42,metalness:.04});
