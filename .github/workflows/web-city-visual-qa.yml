@@ -91,7 +91,7 @@ jobs:
             report.audioMuted=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyM');
             await page.evaluate(()=>{window.__worldQA.renderer.setAnimationLoop(null);document.exitPointerLock?.();document.getElementById('toast').classList.remove('show');});
-            for(const [name,p,l] of [['aerial',[84,76,133],[0,26,-35]],['street',[16,5.8,29],[16,12,-80]],['skyline',[132,148,161],[0,30,-35]]]){
+            for(const [name,p,l] of [['aerial',[84,76,133],[0,26,-35]],['street',[16,5.8,29],[16,12,-80]],['street-end',[16,7,142],[16,24,242]],['skyline',[132,148,161],[0,30,-35]]]){
               await page.evaluate(([p,l])=>{const q=window.__worldQA;q.camera.position.fromArray(p);q.camera.lookAt(...l);q.renderer.render(q.scene,q.camera);},[p,l]);
               await page.screenshot({path:`qa-output/${name}.png`});
               report[name]=await page.evaluate(()=>({calls:window.__worldQA.renderer.info.render.calls,triangles:window.__worldQA.renderer.info.render.triangles}));
