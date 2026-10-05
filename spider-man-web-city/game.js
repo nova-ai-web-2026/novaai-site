@@ -938,14 +938,14 @@ function ensureAudio(){
   audioCtx=new Ctx();
 
   masterGain=audioCtx.createGain();
-  masterGain.gain.value=sfxMuted?0:.95;
+  masterGain.gain.value=sfxMuted?0:1.0;
 
   audioCompressor=audioCtx.createDynamicsCompressor();
-  audioCompressor.threshold.value=-20;
+  audioCompressor.threshold.value=-19;
   audioCompressor.knee.value=18;
-  audioCompressor.ratio.value=3.4;
-  audioCompressor.attack.value=.0045;
-  audioCompressor.release.value=.22;
+  audioCompressor.ratio.value=3.1;
+  audioCompressor.attack.value=.006;
+  audioCompressor.release.value=.19;
   masterGain.connect(audioCompressor);
   audioCompressor.connect(audioCtx.destination);
 
@@ -980,7 +980,7 @@ function tone(startFreq,endFreq,dur,gain=.06,type="sine",delay=0){
   osc.frequency.setValueAtTime(Math.max(20,startFreq),now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq),now+dur);
   amp.gain.setValueAtTime(.0001,now);
-  amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain*1.38),now+.008);
+  amp.gain.exponentialRampToValueAtTime(Math.max(.0002,gain*1.28),now+.008);
   amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
   osc.connect(amp);amp.connect(masterGain);
   osc.start(now);osc.stop(now+dur+.02);
@@ -994,7 +994,7 @@ function noise(dur=.08,gain=.05,filterFreq=1100,filterType="bandpass",delay=0){
   filter.type=filterType;
   filter.frequency.value=filterFreq;
   filter.Q.value=filterType==="bandpass"?1.2:.7;
-  amp.gain.setValueAtTime(Math.max(.0002,gain*1.48),now);
+  amp.gain.setValueAtTime(Math.max(.0002,gain*1.58),now);
   amp.gain.exponentialRampToValueAtTime(.0001,now+dur);
   src.connect(filter);filter.connect(amp);amp.connect(masterGain);
   src.start(now,Math.random()*.35);src.stop(now+dur+.02);
@@ -1018,32 +1018,32 @@ function sfx(name,intensity=1){
       tone(285,560,.13,.045*k,"triangle");noise(.05,.019*k,1250,"highpass");
       break;
     case "web":
-      noise(.032,.050*k,3200,"highpass");
-      noise(.075,.070*k,1350,"bandpass",.006);
-      tone(760,255,.085,.050*k,"triangle",.004);
-      tone(185,125,.065,.022*k,"sine",.018);
+      noise(.028,.060*k,3900,"highpass");
+      noise(.090,.076*k,1120,"bandpass",.004);
+      noise(.036,.026*k,440,"lowpass",.010);
+      tone(640,235,.070,.034*k,"triangle",.004);
       break;
     case "zip":
-      noise(.115,.060*k,1750,"highpass");
-      noise(.11,.040*k,900,"bandpass",.018);
-      tone(330,1020,.15,.056*k,"triangle");
-      tone(920,470,.11,.027*k,"sine",.075);
+      noise(.145,.072*k,1950,"highpass");
+      noise(.145,.052*k,760,"bandpass",.012);
+      noise(.055,.025*k,360,"lowpass",.020);
+      tone(290,900,.125,.038*k,"triangle",.006);
       break;
     case "attack":
-      noise(.072,.052*k,940,"bandpass");tone(185,82,.075,.030*k,"triangle");
+      noise(.080,.062*k,1080,"bandpass");tone(170,78,.062,.021*k,"triangle");
       break;
     case "heavySwing":
-      noise(.115,.060*k,660,"bandpass");tone(145,58,.125,.038*k,"triangle");
+      noise(.130,.072*k,620,"bandpass");noise(.045,.026*k,2400,"highpass");tone(138,55,.105,.030*k,"triangle");
       break;
     case "hit":
-      noise(.082,.084*k,520,"lowpass");
-      tone(132,58,.095,.072*k,"sine");
-      tone(235,118,.050,.023*k,"triangle",.006);
+      noise(.094,.096*k,470,"lowpass");
+      noise(.036,.032*k,1850,"highpass",.004);
+      tone(122,54,.082,.054*k,"sine");
       break;
     case "heavyHit":
-      noise(.145,.112*k,420,"lowpass");
-      tone(105,36,.17,.100*k,"sine");
-      tone(220,72,.080,.034*k,"triangle",.008);
+      noise(.165,.126*k,390,"lowpass");
+      noise(.050,.036*k,1500,"highpass",.004);
+      tone(98,34,.150,.080*k,"sine");
       break;
     case "enemyDown":
       tone(108,44,.17,.034*k,"triangle");noise(.10,.028*k,390,"lowpass");
@@ -1058,7 +1058,7 @@ function sfx(name,intensity=1){
       noise(.095,.056*k,470,"lowpass");tone(118,55,.13,.047*k,"triangle");
       break;
     case "land":
-      noise(.085,.050*k,290,"lowpass");tone(88,46,.095,.050*k,"sine");
+      noise(.105,.062*k,250,"lowpass");tone(82,43,.090,.042*k,"sine");
       break;
     case "pickup":
       tone(860,1110,.070,.028*k,"sine");tone(1180,1450,.095,.023*k,"triangle",.052);
@@ -1070,7 +1070,7 @@ function sfx(name,intensity=1){
       tone(392,440,.13,.040*k,"triangle");tone(523,587,.14,.040*k,"triangle",.09);tone(659,784,.18,.044*k,"triangle",.18);
       break;
     case "release":
-      noise(.085,.055*k,1450,"highpass");noise(.065,.030*k,760,"bandpass",.01);tone(390,175,.115,.031*k,"triangle");
+      noise(.100,.066*k,1650,"highpass");noise(.075,.038*k,690,"bandpass",.008);tone(350,165,.095,.024*k,"triangle");
       break;
   }
 }
@@ -1079,15 +1079,15 @@ function updateWind(speed,swinging,grounded){
   if(!audioCtx||!windGain||!windFilter)return;
   const airborne=!grounded;
   const normalized=airborne?clamp((speed-6)/34,0,1):0;
-  const target=normalized*(swinging?.105:.068);
+  const target=normalized*(swinging?.098:.062);
   windGain.gain.setTargetAtTime(sfxMuted?0:target,audioCtx.currentTime,.07);
-  windFilter.frequency.setTargetAtTime(460+speed*32+(swinging?125:0),audioCtx.currentTime,.085);
+  windFilter.frequency.setTargetAtTime(420+speed*29+(swinging?110:0),audioCtx.currentTime,.095);
 }
 
 function toggleSound(){
   sfxMuted=!sfxMuted;
   ensureAudio();
-  if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:.95,audioCtx.currentTime,.015);
+  if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:1.0,audioCtx.currentTime,.015);
   if(soundToggle){
     soundToggle.textContent=sfxMuted?"🔇":"🔊";
     soundToggle.setAttribute("aria-label",sfxMuted?"تشغيل المؤثرات الصوتية":"كتم المؤثرات الصوتية");
