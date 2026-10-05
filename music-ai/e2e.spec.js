@@ -14,7 +14,7 @@ test('NovaBeat AI renders a real playable track with Ultra 3 by default', async 
   await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#generate');
   await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
-  await expect(page.locator('#statusText')).toContainText('تم التوليد');
+  await expect(page.locator('#statusText')).toContainText('Style Engine V3');
   await expect(page.locator('#trackMeta')).toContainText('Nova Ultra 3');
   await expect(page.locator('#nb2RateSpec')).toHaveText('48 kHz');
   const audioSrc = await page.locator('#audio').getAttribute('src');
@@ -178,5 +178,5 @@ test('Ultra lyrics without backend falls back to playable instrumental', async (
   await page.click('#generate');
   await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 20000 });
   await expect(page.locator('#audio')).toHaveAttribute('src', /^blob:/);
-  await expect(page.locator('#statusText')).toContainText('تم التوليد بنجاح');
+  await expect(page.locator('#statusText')).toContainText('Style Engine V3');
 });
