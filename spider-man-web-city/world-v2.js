@@ -319,12 +319,69 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     const jet=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.020,4,false),jetMat);scene.add(jet);
   }
 
-  // Distant city is scenery only; the original playable bounds remain unchanged.
-  for(let i=0;i<112;i++){
-    const a=i/112*Math.PI*2,r=rnd(265,355),h=rnd(15,70),w=rnd(7,18);
-    box(m.coping,[Math.cos(a)*r,h/2,Math.sin(a)*r],[w,h,rnd(8,19)],[0,0,0],[0x9aaab2,0x899da9,0xadbbb9][i%3]);
-    if(i%9===0)box(m.steel,[Math.cos(a)*r,h+3,Math.sin(a)*r],[.24,6,.24]);
+  // Finished distant skyline: layered towers with visible façade bands and roof caps.
+  const skylineBody=std(0xffffff,.82,{metalness:.06});
+  const skylineGlass=std(0xffffff,.34,{metalness:.28});
+  const skylineWindow=new THREE.MeshBasicMaterial({color:0xa7c8d2,transparent:true,opacity:.28});
+  const skylineWarm=new THREE.MeshBasicMaterial({color:0xe4c38d,transparent:true,opacity:.22});
+
+  for(let ring=0;ring<2;ring++){
+    const count=ring===0?104:72;
+    for(let i=0;i<count;i++){
+      const a=i/count*Math.PI*2+rnd(-.012,.012);
+      const r=ring===0?rnd(238,285):rnd(300,365);
+      const h=ring===0?rnd(28,86):rnd(20,64);
+      const w=rnd(9,20),d=rnd(9,20);
+      const x=Math.cos(a)*r,z=Math.sin(a)*r;
+      const glass=(i+ring)%4===0;
+      const bodyMat=glass?skylineGlass:skylineBody;
+      const bodyColor=glass?[0x617d89,0x536d7a,0x71858b][i%3]:[0x8b9292,0x9c998f,0x7d898c,0xa59d8d][i%4];
+
+      box(bodyMat,[x,h/2,z],[w,h,d],[0,-a,0],bodyColor);
+      box(m.dark,[x,h+.28,z],[w+.18,.55,d+.18],[0,-a,0]);
+
+      if(i%3===0){
+        box(m.steel,[x,h+1.65,z],[w*.46,2.7,d*.42],[0,-a,0]);
+        box(m.dark,[x,h+3.08,z],[w*.50,.18,d*.46],[0,-a,0]);
+      }
+      if(i%11===0)box(m.steel,[x,h+4.2,z],[.14,7.5,.14]);
+
+      // A few large window bands are enough at this distance and avoid blank unfinished slabs.
+      const faceX=Math.cos(a),faceZ=Math.sin(a);
+      const winMat=i%5===0?skylineWarm:skylineWindow;
+      for(let row=0;row<Math.min(7,Math.floor(h/10));row++){
+        const yy=6+row*9;
+        if(yy>h-3)break;
+        const px=x-faceX*(Math.abs(faceX)>Math.abs(faceZ)?w/2+.05:d/2+.05);
+        const pz=z-faceZ*(Math.abs(faceX)>Math.abs(faceZ)?w/2+.05:d/2+.05);
+        if(Math.abs(faceX)>Math.abs(faceZ)){
+          inst(unitPlane,winMat,[px,yy,pz],[d*.62,.62,1],[0,faceX>0?-Math.PI/2:Math.PI/2,0]);
+        }else{
+          inst(unitPlane,winMat,[px,yy,pz],[w*.62,.62,1],[0,faceZ>0?Math.PI:0,0]);
+        }
+      }
+    }
   }
+
+  // Street-end anchor towers stop the long avenues from terminating in empty horizon gaps.
+  const avenueEnds=[
+    [0,-232,0],[0,232,Math.PI],[-232,0,-Math.PI/2],[232,0,Math.PI/2],
+    [-96,-236,0],[96,-236,0],[-96,236,Math.PI],[96,236,Math.PI],
+    [-236,-96,-Math.PI/2],[-236,96,-Math.PI/2],[236,-96,Math.PI/2],[236,96,Math.PI/2]
+  ];
+  avenueEnds.forEach((p,i)=>{
+    const [x,z,ry]=p,h=72+(i%3)*11,w=24+(i%2)*4,d=22;
+    box(skylineBody,[x,h/2,z],[w,h,d],[0,ry,0],[0x737f83,0x8d8980,0x657982][i%3]);
+    box(m.dark,[x,h+.35,z],[w+.3,.7,d+.3],[0,ry,0]);
+    box(m.steel,[x,h+3,z],[w*.38,5.3,d*.36],[0,ry,0]);
+    for(let row=0;row<8;row++){
+      const yy=7+row*7.2;
+      const dz=ry===0?-d/2-.06:ry===Math.PI?d/2+.06:0;
+      const dx=Math.abs(ry)===Math.PI/2?(ry>0?-w/2-.06:w/2+.06):0;
+      inst(unitPlane,row%3===0?skylineWarm:skylineWindow,[x+dx,yy,z+dz],[w*.58,.68,1],[0,ry,0]);
+    }
+  });
+
   finishPools();
 
   // Dynamic traffic: shared instanced geometry, not a separate mesh per window.
@@ -368,7 +425,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.0';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
+  scene.userData.worldVersion='2.1';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
   return {
     city,
     update(dt,t,playerPosition){
