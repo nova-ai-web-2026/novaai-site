@@ -232,6 +232,7 @@ function createPlayer(){
     hand.castShadow=true;
     elbow.add(hand);
 
+    arm.userData.hand=hand;
     arm.userData.elbow=elbow;
     arm.add(elbow);
     arm.rotation.z=sx*.085;
@@ -786,9 +787,27 @@ function resolveCollisions(dt,forwardInput){
   }
 }
 
+function getWebOrigin(target){
+  const fallback=new THREE.Vector3(player.pos.x,player.pos.y+.9,player.pos.z);
+  if(!playerMesh||!target)return fallback;
+
+  const toTarget=target.clone().sub(player.pos);
+  const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
+  const side=toTarget.dot(right)>=0?1:-1;
+  const arm=playerMesh.children.find(p=>p.userData?.kind==="arm"&&p.userData.side===side);
+  const hand=arm?.userData?.hand;
+  if(!hand)return fallback;
+
+  playerMesh.updateMatrixWorld(true);
+  const origin=new THREE.Vector3();
+  hand.getWorldPosition(origin);
+  return origin;
+}
+
 function drawWeb(a,b){
   const arr=webLine.geometry.attributes.position.array;
-  arr[0]=a.x;arr[1]=a.y+.7;arr[2]=a.z;
+  const origin=getWebOrigin(b);
+  arr[0]=origin.x;arr[1]=origin.y;arr[2]=origin.z;
   arr[3]=b.x;arr[4]=b.y;arr[5]=b.z;
   webLine.geometry.attributes.position.needsUpdate=true;
 }
@@ -997,9 +1016,9 @@ function animateScene(dt,t){
 
       if(swingPose){
         const trailing=side===activeSwingSide;
-        hipX=(trailing?.16:-.24)+swingPhase*(trailing?.18:.26);
-        hipZ=side*(.035+.035*Math.abs(swingPhase));
-        kneeX=-(trailing?.46:.30)-Math.max(0,-swingPhase)*(trailing?.20:.30);
+        hipX=(trailing?.22:-.30)+swingPhase*(trailing?.16:.22);
+        hipZ=side*(.040+.030*Math.abs(swingPhase));
+        kneeX=-(trailing?.56:.40)-Math.max(0,-swingPhase)*(trailing?.16:.24);
       }else if(airborne){
         hipX=side*.15+clamp(-player.vel.y*.009,-.12,.14);
         hipZ=side*.012;
@@ -1272,7 +1291,10 @@ function loop(){
   const dt=Math.min(.033,clock.getDelta()||.016),t=clock.elapsedTime;
   updateWorld(dt,t);
   if(started&&!won){
-    updatePlayer(dt);updateEnemies(dt);updateProjectiles(dt);updateMission(dt,t);updateCollectibles(dt);updateCamera(dt);animateScene(dt,t);updateHUD();drawMap();
+    updatePlayer(dt);updateEnemies(dt);updateProjectiles(dt);updateMission(dt,t);updateCollectibles(dt);updateCamera(dt);animateScene(dt,t);
+    if(swingAnchor)updateWebLine();
+    if(zipTarget)drawWeb(player.pos,zipTarget);
+    updateHUD();drawMap();
   }else if(player){animateScene(dt,t);updateCamera(dt);}
   renderer.render(scene,camera);
 }
