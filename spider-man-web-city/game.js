@@ -31,6 +31,7 @@ let drone = null, boss = null;
 let started = false, won = false;
 let yaw = 0, pitch = -0.16;
 let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
+let swingBlend = 0;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
@@ -826,7 +827,7 @@ function updateCamera(dt){
 
   const camRight=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
   const lateral=player.vel.dot(camRight);
-  const bank=swingAnchor?clamp(-lateral*.0075,-.11,.11):clamp(-lateral*.002,-.025,.025);
+  const bank=swingAnchor?clamp(-lateral*.0065,-.095,.095):clamp(-lateral*.002,-.025,.025);
   camera.rotation.z=THREE.MathUtils.damp(camera.rotation.z,bank,5.5,dt);
 
   camera.fov=THREE.MathUtils.damp(camera.fov,68+clamp((speed-10)*.56,0,14),4.5,dt);
@@ -956,6 +957,8 @@ function animateScene(dt,t){
   const horizontalSpeed=Math.hypot(player.vel.x,player.vel.z);
   const runAmount=player.grounded?clamp(speed/14,0,1):0;
   const swingPose=!!swingAnchor;
+  swingBlend=THREE.MathUtils.damp(swingBlend,swingPose?1:0,swingPose?7.2:5.2,dt);
+  const swingWeight=clamp(swingBlend,0,1);
   const airborne=!player.grounded;
   const phase=t*(6.8+runAmount*1.9);
   const rise=clamp(player.vel.y/16,-1,1);
@@ -976,17 +979,22 @@ function animateScene(dt,t){
       const elbow=part.userData.elbow;
       let shoulderX=0,shoulderZ=side*.075,elbowX=-.10;
 
-      if(swingPose){
+      if(swingWeight>.01){
         const active=side===activeSwingSide;
-        if(active){
-          shoulderX=2.14+clamp((swingAnchor.y-player.pos.y)/64,-.08,.14)+ropeForward*.035;
-          shoulderZ=side*(.19+.050*speedN);
-          elbowX=-.055-clamp(speedN*.045,0,.045);
-        }else{
-          shoulderX=-.62-rise*.20;
-          shoulderZ=side*(.30+.065*speedN);
-          elbowX=-.36-rise*.06;
-        }
+        const airShoulder=side*.12+clamp(-player.vel.y*.012,-.20,.20);
+        const swingShoulder=active
+          ?1.98+clamp(((swingAnchor?.y??player.pos.y)-player.pos.y)/70,-.06,.12)+ropeForward*.03
+          :-.46-rise*.16;
+        const swingZ=active
+          ?side*(.17+.042*speedN)
+          :side*(.24+.052*speedN);
+        const swingElbow=active
+          ?-.10-clamp(speedN*.035,0,.035)
+          :-.32-rise*.05;
+
+        shoulderX=THREE.MathUtils.lerp(airShoulder,swingShoulder,swingWeight);
+        shoulderZ=THREE.MathUtils.lerp(side*.085,swingZ,swingWeight);
+        elbowX=THREE.MathUtils.lerp(-.36,swingElbow,swingWeight);
       }else if(airborne){
         shoulderX=side*.12+clamp(-player.vel.y*.012,-.20,.20);
         shoulderZ=side*.085;
@@ -1008,13 +1016,18 @@ function animateScene(dt,t){
       const knee=part.userData.knee;
       let hipX=0,hipZ=side*.012*runAmount,kneeX=.06;
 
-      if(swingPose){
+      if(swingWeight>.01){
         const active=side===activeSwingSide;
-        hipX=(active?.42:-.40)-rise*(active?.14:.12);
-        kneeX=(active?-.72:-.30)-Math.max(0,rise)*.08+Math.max(0,-rise)*.06;
-        hipZ=active
-          ? side*(.16+.060*speedN)
-          : side*(.10+.045*speedN);
+        const airHip=side*.14+clamp(-player.vel.y*.009,-.11,.13);
+        const swingHip=(active?.34:-.32)-rise*(active?.10:.09);
+        const swingKnee=(active?-.62:-.36)-Math.max(0,rise)*.06+Math.max(0,-rise)*.04;
+        const swingHipZ=active
+          ?side*(.13+.050*speedN)
+          :side*(.085+.038*speedN);
+
+        hipX=THREE.MathUtils.lerp(airHip,swingHip,swingWeight);
+        kneeX=THREE.MathUtils.lerp(side>0?-.38:-.22,swingKnee,swingWeight);
+        hipZ=THREE.MathUtils.lerp(side*.015,swingHipZ,swingWeight);
       }else if(airborne){
         hipX=side*.14+clamp(-player.vel.y*.009,-.11,.13);
         kneeX=side>0?-.38:-.22;
@@ -1032,18 +1045,18 @@ function animateScene(dt,t){
   }
 
   const flightAngle=Math.atan2(player.vel.y,Math.max(4,horizontalSpeed));
-  const bodyPitch=swingPose
-    ?clamp(-.18-flightAngle*.28,-.34,.06)
-    :player.grounded?clamp(-speed*.0055,-.075,0):clamp(-player.vel.y*.011,-.18,.18);
+  const airPitch=player.grounded?clamp(-speed*.0055,-.075,0):clamp(-player.vel.y*.011,-.18,.18);
+  const swingPitch=clamp(-.16-flightAngle*.24,-.30,.045);
+  const bodyPitch=THREE.MathUtils.lerp(airPitch,swingPitch,swingWeight);
 
   const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
   const lateral=player.vel.dot(localRight);
-  const swingRoll=swingPose
-    ?clamp(-lateral*.0065-activeSwingSide*.11,-.24,.24)
-    :clamp(-lateral*.002,-.025,.025);
+  const airRoll=clamp(-lateral*.002,-.025,.025);
+  const swingRollTarget=clamp(-lateral*.0055-activeSwingSide*.085,-.19,.19);
+  const swingRoll=THREE.MathUtils.lerp(airRoll,swingRollTarget,swingWeight);
 
-  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,swingPose?5.0:5.5,dt);
-  playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,swingRoll,swingPose?5.0:5.5,dt);
+  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,5.2,dt);
+  playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,swingRoll,5.2,dt);
 
   if(player.grounded&&runAmount>.05)playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.016*runAmount;
 }
