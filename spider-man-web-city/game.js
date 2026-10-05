@@ -35,6 +35,7 @@ let swingBlend = 0;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
+let swingPoseBlend = 0;
 let audioCtx = null, masterGain = null, noiseBuffer = null, windBuffer = null, audioCompressor = null;
 let windSource = null, windBodyGain = null, windBodyFilter = null, windAirGain = null, windAirFilter = null;
 let sfxMuted = false;
@@ -550,7 +551,7 @@ function startGame(){
 }
 
 function resetAll(){
-  score=0;combo=1;comboTimer=0;health=100;web=100;missionIndex=0;zipTarget=null;releaseSwing();
+  score=0;combo=1;comboTimer=0;health=100;web=100;missionIndex=0;zipTarget=null;swingPoseBlend=0;releaseSwing();
   enemies.forEach(e=>scene.remove(e.group));enemies=[]; if(drone){scene.remove(drone.mesh);drone=null;}
   player.pos.set(0,3,0);player.vel.set(0,0,0);yaw=0;pitch=-.16;
   setupMission0();
@@ -965,12 +966,14 @@ function animateScene(dt,t){
   const speedN=clamp(speed/32,0,1);
   let activeSwingSide=1;
   let ropeForward=.5;
+  let ropeHeight=.35;
 
   if(swingAnchor){
     const toAnchor=swingAnchor.clone().sub(player.pos).normalize();
     const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
     activeSwingSide=toAnchor.dot(right)>=0?1:-1;
     ropeForward=clamp(toAnchor.dot(player.facing),-1,1);
+    ropeHeight=clamp(toAnchor.y,-.15,.95);
   }
 
   for(const part of playerMesh.children){
@@ -1301,7 +1304,7 @@ function loop(){
   const dt=Math.min(.033,clock.getDelta()||.016),t=clock.elapsedTime;
   updateWorld(dt,t);
   if(started&&!won){
-    updatePlayer(dt);updateEnemies(dt);updateProjectiles(dt);updateMission(dt,t);updateCollectibles(dt);updateCamera(dt);animateScene(dt,t);updateHUD();drawMap();
+    updatePlayer(dt);updateEnemies(dt);updateProjectiles(dt);updateMission(dt,t);updateCollectibles(dt);updateCamera(dt);animateScene(dt,t);if(swingAnchor)updateWebLine();if(zipTarget)drawWeb(player.pos,zipTarget);updateHUD();drawMap();
   }else if(player){animateScene(dt,t);updateCamera(dt);}
   renderer.render(scene,camera);
 }
