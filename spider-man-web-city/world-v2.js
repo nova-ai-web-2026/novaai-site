@@ -319,12 +319,87 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     const jet=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.020,4,false),jetMat);scene.add(jet);
   }
 
-  // Distant city is scenery only; the original playable bounds remain unchanged.
-  for(let i=0;i<112;i++){
-    const a=i/112*Math.PI*2,r=rnd(265,355),h=rnd(15,70),w=rnd(7,18);
-    box(m.coping,[Math.cos(a)*r,h/2,Math.sin(a)*r],[w,h,rnd(8,19)],[0,0,0],[0x9aaab2,0x899da9,0xadbbb9][i%3]);
-    if(i%9===0)box(m.steel,[Math.cos(a)*r,h+3,Math.sin(a)*r],[.24,6,.24]);
+  // Finished skyline beyond the playable streets. These buildings are scenery only.
+  const distantWall=std(0x7f929a,.78,{metalness:.05});
+  const distantWallWarm=std(0x9a8e83,.82,{metalness:.025});
+  const distantGlass=std(0x5d7480,.34,{metalness:.34});
+  const distantRoof=std(0x49565d,.68,{metalness:.16});
+  const distantWindow=new THREE.MeshBasicMaterial({color:0xb9d6de,transparent:true,opacity:.22});
+
+  function distantTower(x,z,w,d,h,style=0){
+    const wall=style===1?distantWallWarm:style===2?distantGlass:distantWall;
+    box(wall,[x,h/2,z],[w,h,d]);
+
+    const capH=Math.max(.8,Math.min(2.2,h*.035));
+    box(distantRoof,[x,h+capH/2,z],[w*.92,capH,d*.92]);
+
+    if(h>42){
+      const crownH=Math.min(8,2+h*.045);
+      box(distantRoof,[x,h+capH+crownH/2,z],[w*.55,crownH,d*.55]);
+    }
+
+    if(h>58 && style===2){
+      box(m.steel,[x,h+capH+5,z],[.16,8,.16]);
+      inst(sphere,m.red,[x,h+capH+9,z],[.08,.08,.08]);
+    }
+
+    const rows=Math.max(2,Math.min(8,Math.floor(h/10)));
+    for(let r=0;r<rows;r++){
+      const yy=5+r*((h-8)/Math.max(1,rows-1));
+      const front=new THREE.Mesh(unitPlane,distantWindow);
+      front.position.set(x,yy,z-d/2-.012);
+      front.scale.set(w*.66,.46,1);
+      scene.add(front);
+
+      const back=front.clone();
+      back.position.z=z+d/2+.012;
+      back.rotation.y=Math.PI;
+      scene.add(back);
+
+      if(r%2===0){
+        const sideA=new THREE.Mesh(unitPlane,distantWindow);
+        sideA.position.set(x-w/2-.012,yy,z);
+        sideA.rotation.y=Math.PI/2;
+        sideA.scale.set(d*.58,.42,1);
+        scene.add(sideA);
+
+        const sideB=sideA.clone();
+        sideB.position.x=x+w/2+.012;
+        sideB.rotation.y=-Math.PI/2;
+        scene.add(sideB);
+      }
+    }
   }
+
+  // Put complete blocks directly at the four street exits so roads never end in empty/unfinished geometry.
+  const streetEnds=[-176,-144,-112,-80,-48,-16,16,48,80,112,144,176];
+  for(const side of [-1,1]){
+    for(let i=0;i<streetEnds.length;i++){
+      const along=streetEnds[i]+rnd(-3.5,3.5);
+      const edge=side*rnd(232,248);
+      const h=rnd(34,82)+(i%4===0?rnd(12,28):0);
+      const w=rnd(18,27),d=rnd(17,25),style=i%3;
+
+      distantTower(along,edge,w,d,h,style);
+      distantTower(edge,along,d,w,rnd(30,76)+(i%5===0?18:0),(style+1)%3);
+    }
+  }
+
+  // A second, softer layer fills gaps behind the street-end blocks.
+  for(let i=0;i<52;i++){
+    const a=i/52*Math.PI*2;
+    const r=rnd(278,328);
+    const h=rnd(22,66);
+    distantTower(
+      Math.cos(a)*r,
+      Math.sin(a)*r,
+      rnd(12,20),
+      rnd(12,20),
+      h,
+      i%3
+    );
+  }
+
   finishPools();
 
   // Dynamic traffic: shared instanced geometry, not a separate mesh per window.
@@ -368,7 +443,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.0';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
+  scene.userData.worldVersion='2.8';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
   return {
     city,
     update(dt,t,playerPosition){
