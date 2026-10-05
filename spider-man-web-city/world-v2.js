@@ -319,11 +319,51 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     const jet=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.020,4,false),jetMat);scene.add(jet);
   }
 
-  // Distant city is scenery only; the original playable bounds remain unchanged.
-  for(let i=0;i<112;i++){
-    const a=i/112*Math.PI*2,r=rnd(265,355),h=rnd(15,70),w=rnd(7,18);
-    box(m.coping,[Math.cos(a)*r,h/2,Math.sin(a)*r],[w,h,rnd(8,19)],[0,0,0],[0x9aaab2,0x899da9,0xadbbb9][i%3]);
-    if(i%9===0)box(m.steel,[Math.cos(a)*r,h+3,Math.sin(a)*r],[.24,6,.24]);
+  // Finished outer city belt so long street views end in complete architecture.
+  const skylineColors=[0x6f7f89,0x80919b,0x697b86,0x8a989e,0x667781];
+  const edgeRoads=[];
+  for(let i=-6;i<=6;i++)edgeRoads.push(i*32+16);
+
+  for(let side=0;side<4;side++){
+    for(let i=0;i<edgeRoads.length;i++){
+      const p=edgeRoads[i];
+      const edge=side<2?(side===0?-236:236):(side===2?-236:236);
+      const w=rnd(18,25),d=rnd(17,23),h=rnd(34,82);
+      const x=side<2?p:edge,z=side<2?edge:p;
+      const bw=side<2?w:d,bz=side<2?d:w;
+      const color=skylineColors[(i+side*2)%skylineColors.length];
+
+      box(m.dark,[x,h*.08,z],[bw*1.10,h*.16,bz*1.10],[0,0,0],0x39464d);
+      box(m.coping,[x,h*.52,z],[bw,h*.72,bz],[0,0,0],color);
+      box(m.dark,[x,h*.91,z],[bw*.76,h*.10,bz*.76],[0,0,0],0x46535a);
+      box(m.coping,[x,h+.22,z],[bw*.80,.44,bz*.80],[0,0,0],0xa8b1b2);
+
+      for(let row=0;row<Math.min(7,Math.max(3,Math.floor(h/10)));row++){
+        const yy=7+row*8.2;
+        if(yy>h-5)break;
+        if(side<2) box(m.glass,[x,yy,z+(side===0?1:-1)*(bz/2+.04)],[bw*.68,.70,.07]);
+        else box(m.glass,[x+(side===2?1:-1)*(bw/2+.04),yy,z],[.07,.70,bz*.68]);
+      }
+
+      if((i+side)%4===0){
+        box(m.steel,[x,h+2.4,z],[.16,4.4,.16]);
+        inst(sphere,m.red,[x,h+4.7,z],[.08,.08,.08]);
+      }
+    }
+  }
+
+  for(let i=0;i<96;i++){
+    const a=i/96*Math.PI*2,r=rnd(282,365);
+    const h=rnd(24,86),w=rnd(8,20),d=rnd(9,21);
+    const x=Math.cos(a)*r,z=Math.sin(a)*r;
+    const color=skylineColors[i%skylineColors.length];
+    box(m.coping,[x,h*.42,z],[w,h*.84,d],[0,0,0],color);
+    box(m.dark,[x,h*.89,z],[w*.76,h*.10,d*.76],[0,0,0],0x435058);
+    box(m.coping,[x,h+.18,z],[w*.80,.36,d*.80],[0,0,0],0xa5afb1);
+    if(i%7===0){
+      box(m.steel,[x,h+3.0,z],[.18,5.6,.18]);
+      inst(sphere,m.red,[x,h+5.9,z],[.075,.075,.075]);
+    }
   }
   finishPools();
 
@@ -368,7 +408,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.0';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
+  scene.userData.worldVersion='2.1';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
   return {
     city,
     update(dt,t,playerPosition){
