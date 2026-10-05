@@ -8,6 +8,10 @@ const winScreen = el("winScreen");
 const hud = el("hud");
 const mobileUI = el("mobile");
 const missionEl = el("mission");
+const objectiveTracker = el("objectiveTracker");
+const objectiveArrow = el("objectiveArrow");
+const objectiveTitle = el("objectiveTitle");
+const objectiveDistance = el("objectiveDistance");
 const healthBar = el("healthBar");
 const webBar = el("webBar");
 const scoreEl = el("score");
@@ -31,7 +35,7 @@ let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCo
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
 let audioCtx = null, masterGain = null, noiseBuffer = null, audioCompressor = null;
-let windSource = null, windGain = null, windFilter = null;
+let windSource = null, windBodyGain = null, windBodyFilter = null, windAirGain = null, windAirFilter = null;
 let sfxMuted = false;
 const sfxStats = Object.create(null);
 const keys = {};
@@ -313,24 +317,106 @@ function createPlayer(){
   webLine.visible=false;
   scene.add(webLine);
 }
+function getMissionTarget(){
+  if(missionIndex===0 && beacons.length){
+    let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);
+    for(const b of beacons){
+      const d=b.position.distanceToSquared(player.pos);
+      if(d<bestD){best=b;bestD=d;}
+    }
+    return {pos:best.position,label:"إشارة سطح"};
+  }
+  if(missionIndex===1){
+    const alive=enemies.filter(e=>e.alive);
+    if(alive.length){
+      let best=alive[0],bestD=best.group.position.distanceToSquared(player.pos);
+      for(const e of alive){
+        const d=e.group.position.distanceToSquared(player.pos);
+        if(d<bestD){best=e;bestD=d;}
+      }
+      return {pos:best.group.position,label:"خصم"};
+    }
+  }
+  if(missionIndex===2 && drone)return {pos:drone.mesh.position,label:"الدرون"};
+  if(missionIndex===3 && boss?.alive)return {pos:boss.group.position,label:"الـBoss"};
+  return null;
+}
+
+function updateObjectiveHUD(){
+  if(!objectiveTracker||!player)return;
+  const target=getMissionTarget();
+  if(!target){
+    objectiveTracker.classList.add("hidden");
+    return;
+  }
+
+  objectiveTracker.classList.remove("hidden");
+  const dx=target.pos.x-player.pos.x,dz=target.pos.z-player.pos.z;
+  const dist=Math.hypot(dx,dz);
+  const targetAngle=Math.atan2(-dx,-dz);
+  const facingAngle=Math.atan2(-player.facing.x,-player.facing.z);
+  let delta=targetAngle-facingAngle;
+  delta=Math.atan2(Math.sin(delta),Math.cos(delta));
+
+  objectiveArrow.style.transform=`rotate(${delta}rad)`;
+  objectiveTitle.textContent=target.label;
+  objectiveDistance.textContent=Math.max(0,Math.round(dist))+"m";
+}
+
 function createBeacon(b,index){
   const g=new THREE.Group();
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.55,.13,10,34),new THREE.MeshBasicMaterial({color:0x43dfff}));
-  ring.rotation.x=Math.PI/2; g.add(ring);
-  const core=new THREE.Mesh(new THREE.OctahedronGeometry(.36),new THREE.MeshBasicMaterial({color:0xffffff}));
+  const cyan=new THREE.MeshBasicMaterial({color:0x43dfff,transparent:true,opacity:.95});
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.65,.14,10,38),cyan);
+  ring.rotation.x=Math.PI/2;
+  g.add(ring);
+
+  const core=new THREE.Mesh(new THREE.OctahedronGeometry(.42),new THREE.MeshBasicMaterial({color:0xffffff}));
   g.add(core);
+
+  const beam=new THREE.Mesh(
+    new THREE.CylinderGeometry(.16,.34,18,10,1,true),
+    new THREE.MeshBasicMaterial({color:0x43dfff,transparent:true,opacity:.24,side:THREE.DoubleSide,depthWrite:false})
+  );
+  beam.position.y=9;
+  g.add(beam);
+
+  const halo=new THREE.Mesh(
+    new THREE.RingGeometry(1.9,2.35,32),
+    new THREE.MeshBasicMaterial({color:0x8ff5ff,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false})
+  );
+  halo.rotation.x=-Math.PI/2;
+  halo.position.y=.05;
+  g.add(halo);
+
   g.position.set(b.x,b.h+3.3,b.z);
   g.userData.index=index;
+  g.userData.phase=index*1.9;
   scene.add(g);
   beacons.push(g);
 }
 
 function setupMission0(){
   missionIndex=0; beaconCount=0; beacons.forEach(b=>scene.remove(b)); beacons=[];
-  const tall=[...city].sort((a,b)=>b.h-a.h).slice(3,20);
-  createBeacon(tall[2],0); createBeacon(tall[8],1); createBeacon(tall[14],2);
-  missionEl.textContent="المهمة 1/4 • فعّل 3 إشارات على الأسطح — 0/3";
-  toast("ابدأ بالأسطح: اتأرجح ناحية العلامات الزرقا.");
+  let candidates=city
+    .filter(b=>{
+      const d=Math.hypot(b.x,b.z);
+      return d>28&&d<112&&b.h>24&&b.h<72;
+    })
+    .sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z));
+
+  if(candidates.length<9)candidates=[...city].sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z));
+
+  const picks=[
+    candidates[Math.min(2,candidates.length-1)],
+    candidates[Math.min(Math.floor(candidates.length*.38),candidates.length-1)],
+    candidates[Math.min(Math.floor(candidates.length*.68),candidates.length-1)]
+  ].filter(Boolean);
+
+  picks.forEach((b,i)=>createBeacon(b,i));
+  missionEl.textContent="MISSION 1/4 • إشارات الأسطح • 0/3";
+  objectiveTracker?.classList.remove("hidden");
+  toast("MISSION START • روح لأقرب علامة سماوي على السطح.");
+  sfx("mission");
 }
 
 function createCollectibles(){
@@ -367,8 +453,8 @@ function spawnBoss(){
   const roof=[...city].sort((a,b)=>b.h-a.h)[0];
   boss=makeEnemy(new THREE.Vector3(roof.x,roof.h+1.2,roof.z),true);
   enemies.push(boss);
-  missionEl.textContent="المهمة 4/4 • اهزم الـTech Boss على أعلى سطح";
-  toast("Boss fight! وصل لأعلى مبنى وخليه ينزل.");
+  missionEl.textContent="MISSION 4/4 • Tech Boss";
+  toast("MISSION 4 START • وصل للسطح واهزم الـBoss.");
 }
 
 function spawnDrone(){
@@ -380,8 +466,8 @@ function spawnDrone(){
   mesh.position.set(65,44,0);
   scene.add(mesh);
   drone={mesh,t:0};
-  missionEl.textContent="المهمة 3/4 • طارد الدرون البنفسجي والمسُه";
-  toast("الدرون هرب فوق المدينة — استخدم Swing + Web Zip.");
+  missionEl.textContent="MISSION 3/4 • مطاردة الدرون";
+  toast("MISSION 3 START • طارد الدرون البنفسجي والمسُه.");
 }
 
 function setupInput(){
@@ -783,20 +869,25 @@ function updateProjectiles(dt){
 function updateMission(dt,t){
   if(missionIndex===0){
     for(let i=beacons.length-1;i>=0;i--){
-      const b=beacons[i];b.rotation.y+=dt*1.8;b.children[0].rotation.z+=dt*.8;
+      const b=beacons[i];
+      b.rotation.y+=dt*1.8;
+      b.children[0].rotation.z+=dt*.8;
+      const pulse=1+Math.sin(t*3.1+b.userData.phase)*.09;
+      b.children[0].scale.setScalar(pulse);
+      b.children[3].material.opacity=.27+.12*(.5+.5*Math.sin(t*2.4+b.userData.phase));
       if(b.position.distanceTo(player.pos)<3.4){
         scene.remove(b);beacons.splice(i,1);beaconCount++;score+=400;sfx("beacon");
-        missionEl.textContent="المهمة 1/4 • فعّل 3 إشارات على الأسطح — "+beaconCount+"/3";
+        missionEl.textContent="MISSION 1/4 • إشارات الأسطح • "+beaconCount+"/3";
         toast("إشارة اتفعلت! "+beaconCount+"/3");
       }
     }
     if(beaconCount>=3){
-      missionIndex=1;sfx("mission");spawnEnemies(6);missionEl.textContent="المهمة 2/4 • اهزم العصابة في الساحة — 6 خصوم";
-      toast("العصابة ظهرت في الساحة — انزل قاتلهم.");
+      missionIndex=1;sfx("mission");spawnEnemies(6);missionEl.textContent="MISSION 2/4 • العصابة • باقي 6";
+      toast("MISSION 2 START • انزل للساحة واهزم العصابة.");
     }
   }else if(missionIndex===1){
     const a=enemies.filter(e=>e.alive).length;
-    missionEl.textContent="المهمة 2/4 • اهزم العصابة — باقي "+a;
+    missionEl.textContent="MISSION 2/4 • العصابة • باقي "+a;
   }else if(missionIndex===2 && drone){
     drone.t+=dt*.35;
     const r=72+Math.sin(drone.t*1.9)*12;
@@ -821,6 +912,7 @@ function updateHUD(){
   healthBar.style.width=health+"%";webBar.style.width=web+"%";
   scoreEl.textContent=String(Math.floor(score));comboEl.textContent="x"+combo;
   speedEl.textContent=String(Math.floor(player.vel.length()*4));
+  updateObjectiveHUD();
   if(toastTimer>0){toastTimer-=1/60;if(toastTimer<=0)toastEl.classList.remove("show");}
 }
 
@@ -957,16 +1049,30 @@ function ensureAudio(){
   windSource=audioCtx.createBufferSource();
   windSource.buffer=noiseBuffer;
   windSource.loop=true;
-  windSource.playbackRate.value=.76;
-  windFilter=audioCtx.createBiquadFilter();
-  windFilter.type="bandpass";
-  windFilter.frequency.value=620;
-  windFilter.Q.value=.22;
-  windGain=audioCtx.createGain();
-  windGain.gain.value=.0001;
-  windSource.connect(windFilter);
-  windFilter.connect(windGain);
-  windGain.connect(masterGain);
+  windSource.playbackRate.value=.70;
+
+  windBodyFilter=audioCtx.createBiquadFilter();
+  windBodyFilter.type="lowpass";
+  windBodyFilter.frequency.value=480;
+  windBodyFilter.Q.value=.35;
+  windBodyGain=audioCtx.createGain();
+  windBodyGain.gain.value=.0001;
+
+  windAirFilter=audioCtx.createBiquadFilter();
+  windAirFilter.type="bandpass";
+  windAirFilter.frequency.value=1450;
+  windAirFilter.Q.value=.55;
+  windAirGain=audioCtx.createGain();
+  windAirGain.gain.value=.0001;
+
+  windSource.connect(windBodyFilter);
+  windBodyFilter.connect(windBodyGain);
+  windBodyGain.connect(masterGain);
+
+  windSource.connect(windAirFilter);
+  windAirFilter.connect(windAirGain);
+  windAirGain.connect(masterGain);
+
   windSource.start();
 
   return audioCtx;
@@ -1096,18 +1202,27 @@ function sfx(name,intensity=1){
 }
 
 function updateWind(speed,swinging,grounded){
-  if(!audioCtx||!windGain||!windFilter)return;
+  if(!audioCtx||!windBodyGain||!windBodyFilter||!windAirGain||!windAirFilter)return;
   const airborne=!grounded;
-  const normalized=airborne?clamp((speed-6)/34,0,1):0;
-  const target=normalized*(swinging?.112:.072);
-  windGain.gain.setTargetAtTime(sfxMuted?0:target,audioCtx.currentTime,.10);
-  windFilter.frequency.setTargetAtTime(390+speed*24+(swinging?105:0),audioCtx.currentTime,.11);
+  const normalized=airborne?clamp((speed-7)/36,0,1):0;
+  const swingLift=swinging?1.18:1;
+
+  const bodyTarget=normalized*.095*swingLift;
+  const airTarget=Math.pow(normalized,1.45)*.035*(swinging?1.12:1);
+
+  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.12);
+  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.14);
+
+  windBodyFilter.frequency.setTargetAtTime(260+speed*17+(swinging?65:0),audioCtx.currentTime,.13);
+  windAirFilter.frequency.setTargetAtTime(1050+speed*19+(swinging?150:0),audioCtx.currentTime,.14);
 }
 
 function toggleSound(){
   sfxMuted=!sfxMuted;
   ensureAudio();
   if(masterGain)masterGain.gain.setTargetAtTime(sfxMuted?0:1.02,audioCtx.currentTime,.015);
+  if(windBodyGain)windBodyGain.gain.setTargetAtTime(0,audioCtx.currentTime,.02);
+  if(windAirGain)windAirGain.gain.setTargetAtTime(0,audioCtx.currentTime,.02);
   if(soundToggle){
     soundToggle.textContent=sfxMuted?"🔇":"🔊";
     soundToggle.setAttribute("aria-label",sfxMuted?"تشغيل المؤثرات الصوتية":"كتم المؤثرات الصوتية");
