@@ -34,7 +34,7 @@ let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
-let audioCtx = null, masterGain = null, noiseBuffer = null, audioCompressor = null;
+let audioCtx = null, masterGain = null, noiseBuffer = null, windBuffer = null, audioCompressor = null;
 let windSource = null, windBodyGain = null, windBodyFilter = null, windAirGain = null, windAirFilter = null;
 let sfxMuted = false;
 const sfxStats = Object.create(null);
@@ -1046,22 +1046,31 @@ function ensureAudio(){
   const data=noiseBuffer.getChannelData(0);
   for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*(1-i/length*.08);
 
+  const windLength=Math.max(1,Math.floor(audioCtx.sampleRate*2.4));
+  windBuffer=audioCtx.createBuffer(1,windLength,audioCtx.sampleRate);
+  const windData=windBuffer.getChannelData(0);
+  let smooth=0;
+  for(let i=0;i<windLength;i++){
+    smooth=smooth*.988+(Math.random()*2-1)*.012;
+    windData[i]=smooth*.94+(Math.random()*2-1)*.06;
+  }
+
   windSource=audioCtx.createBufferSource();
-  windSource.buffer=noiseBuffer;
+  windSource.buffer=windBuffer;
   windSource.loop=true;
-  windSource.playbackRate.value=.60;
+  windSource.playbackRate.value=.56;
 
   windBodyFilter=audioCtx.createBiquadFilter();
   windBodyFilter.type="lowpass";
-  windBodyFilter.frequency.value=420;
-  windBodyFilter.Q.value=.26;
+  windBodyFilter.frequency.value=360;
+  windBodyFilter.Q.value=.22;
   windBodyGain=audioCtx.createGain();
   windBodyGain.gain.value=.0001;
 
   windAirFilter=audioCtx.createBiquadFilter();
   windAirFilter.type="bandpass";
-  windAirFilter.frequency.value=1180;
-  windAirFilter.Q.value=.34;
+  windAirFilter.frequency.value=940;
+  windAirFilter.Q.value=.28;
   windAirGain=audioCtx.createGain();
   windAirGain.gain.value=.0001;
 
@@ -1204,17 +1213,17 @@ function sfx(name,intensity=1){
 function updateWind(speed,swinging,grounded){
   if(!audioCtx||!windBodyGain||!windBodyFilter||!windAirGain||!windAirFilter)return;
   const airborne=!grounded;
-  const normalized=airborne?clamp((speed-8)/38,0,1):0;
-  const swingLift=swinging?1.14:1;
+  const normalized=airborne?clamp((speed-8)/36,0,1):0;
+  const swingLift=swinging?1.12:1;
 
-  const bodyTarget=Math.pow(normalized,.92)*.084*swingLift;
-  const airTarget=Math.pow(normalized,1.72)*.024*(swinging?1.08:1);
+  const bodyTarget=Math.pow(normalized,.88)*.096*swingLift;
+  const airTarget=Math.pow(normalized,1.85)*.014*(swinging?1.06:1);
 
-  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.16);
-  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.19);
+  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.18);
+  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.22);
 
-  windBodyFilter.frequency.setTargetAtTime(230+speed*14+(swinging?55:0),audioCtx.currentTime,.16);
-  windAirFilter.frequency.setTargetAtTime(880+speed*14+(swinging?115:0),audioCtx.currentTime,.19);
+  windBodyFilter.frequency.setTargetAtTime(205+speed*12+(swinging?38:0),audioCtx.currentTime,.18);
+  windAirFilter.frequency.setTargetAtTime(720+speed*12+(swinging?78:0),audioCtx.currentTime,.22);
 }
 
 function toggleSound(){
