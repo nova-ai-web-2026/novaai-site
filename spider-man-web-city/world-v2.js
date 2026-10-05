@@ -324,6 +324,22 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   const edgeRoads=[];
   for(let i=-6;i<=6;i++)edgeRoads.push(i*32+16);
 
+  const outerFacadeMaterials=facadeMaterials.map((base,idx)=>{
+    const mat=base.clone();
+    for(const key of ["map","emissiveMap","roughnessMap","bumpMap"]){
+      if(!base[key])continue;
+      const tex=base[key].clone();
+      tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+      const glassy=idx===2||idx===4;
+      tex.repeat.set(glassy?2.8:2.35,glassy?5.4:4.8);
+      tex.needsUpdate=true;
+      mat[key]=tex;
+    }
+    mat.roughness=(idx===2||idx===4)?.38:.76;
+    mat.envMapIntensity=(idx===2||idx===4)?.72:.16;
+    return mat;
+  });
+
   for(let side=0;side<4;side++){
     for(let i=0;i<edgeRoads.length;i++){
       const p=edgeRoads[i];
@@ -336,32 +352,19 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const baseH=Math.min(5.0,Math.max(3.8,h*.08));
 
       // Finished massing: normal ground floor, full tower, cornice and stepped rooftop.
-      box(m.coping,[x,baseH/2,z],[bw*1.05,baseH,bz*1.05],[0,0,0],0x59676d);
-      box(m.coping,[x,(h+baseH)/2,z],[bw,h-baseH,bz],[0,0,0],color);
+      const outerStyle=(i+side)%outerFacadeMaterials.length;
+      box(m.coping,[x,baseH/2,z],[bw*1.05,baseH,bz*1.05],[0,0,0],0x69777c);
+      box(outerFacadeMaterials[outerStyle],[x,(h+baseH)/2,z],[bw,h-baseH,bz]);
       box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
       box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
       box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
 
       const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
-      const cols=Math.max(3,Math.min(5,Math.floor(facadeSpan/4.3)));
-      const step=facadeSpan/(cols+.55);
-      const winW=Math.min(2.9,step*.66);
-      const maxRows=Math.min(11,Math.max(4,Math.floor((h-baseH-5)/5.4)));
 
-      // Real window panels instead of horizontal stripes.
-      for(let row=0;row<maxRows;row++){
-        const yy=baseH+4.0+row*5.35;
-        if(yy>h-5)break;
-        for(let col=0;col<cols;col++){
-          const offset=(col-(cols-1)/2)*step;
-          if(side<2){
-            box(m.glass,[x+offset,yy,z+faceSign*(bz/2+.045)],[winW,1.65,.075]);
-            box(m.coping,[x+offset,yy-1.05,z+faceSign*(bz/2+.038)],[winW+.18,.12,.09],[0,0,0],0xb7b8b0);
-          }else{
-            box(m.glass,[x+faceSign*(bw/2+.045),yy,z+offset],[.075,1.65,winW]);
-            box(m.coping,[x+faceSign*(bw/2+.038),yy-1.05,z+offset],[.09,.12,winW+.18],[0,0,0],0xb7b8b0);
-          }
-        }
+      // A few shallow stone belts/pilasters keep the texture from reading like one giant tiled slab.
+      for(let yy=baseH+13;yy<h-6;yy+=18){
+        if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.03)],[bw*.94,.16,.07]);
+        else box(m.cream,[x+faceSign*(bw/2+.03),yy,z],[.07,.16,bz*.94]);
       }
 
       // Ground-floor entrance/shopfront makes the street termination feel intentional, not unfinished.
