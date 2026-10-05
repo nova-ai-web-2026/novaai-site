@@ -99,23 +99,41 @@ test('duration control supports and renders a one-minute track', async ({ page }
   expect(src).toMatch(/^blob:/);
 });
 
-test('changing style changes arrangement profile and BPM', async ({ page }) => {
+test('changing style changes arrangement profile, BPM and rendered PCM', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/music-ai/');
+  await page.evaluate(() => { window.__NOVABEAT_TEST_SEED__ = 'style-identity-v3'; });
+  await page.fill('#prompt', 'نفس الفكرة لاختبار فرق الستايل');
+  await page.selectOption('#mood', 'uplifting');
   await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+
+  const pcmSignature = async () => page.evaluate(async () => {
+    const src = document.querySelector('#audio').src;
+    const bytes = new Uint8Array(await (await fetch(src)).arrayBuffer());
+    let h = 2166136261 >>> 0;
+    for (let i = 44; i < bytes.length; i += 257) {
+      h ^= bytes[i];
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  });
+
   await page.selectOption('#style', 'trap');
   await page.click('#generate');
   await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
   await expect(page.locator('#trackMeta')).toContainText('Trap');
   await expect(page.locator('#bpmSpec')).toHaveText('142');
-  const trapSrc = await page.locator('#audio').getAttribute('src');
+  await expect(page.locator('#statusText')).toContainText('Style Engine V3');
+  const trapSignature = await pcmSignature();
+
   await page.selectOption('#style', 'edm');
   await expect(page.locator('#statusText')).toContainText('EDM');
   await page.click('#generate');
   await expect(page.locator('#trackMeta')).toContainText('EDM');
   await expect(page.locator('#bpmSpec')).toHaveText('128');
   await expect(page.locator('#statusText')).toContainText('Style Engine V3');
-  const edmSrc = await page.locator('#audio').getAttribute('src');
-  expect(edmSrc).not.toBe(trapSrc);
+  const edmSignature = await pcmSignature();
+
+  expect(edmSignature).not.toBe(trapSignature);
 });
 
 test('all five styles expose clearly different tempo identities', async ({ page }) => {
