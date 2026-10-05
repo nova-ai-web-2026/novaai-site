@@ -106,20 +106,21 @@ test('changing style changes arrangement profile and BPM', async ({ page }) => {
   await page.click('#generate');
   await expect(page.locator('#result')).toHaveClass(/show/, { timeout: 30000 });
   await expect(page.locator('#trackMeta')).toContainText('Trap');
-  await expect(page.locator('#bpmSpec')).toHaveText('90');
+  await expect(page.locator('#bpmSpec')).toHaveText('142');
   const trapSrc = await page.locator('#audio').getAttribute('src');
   await page.selectOption('#style', 'edm');
   await expect(page.locator('#statusText')).toContainText('EDM');
   await page.click('#generate');
   await expect(page.locator('#trackMeta')).toContainText('EDM');
   await expect(page.locator('#bpmSpec')).toHaveText('128');
+  await expect(page.locator('#statusText')).toContainText('Style Engine V3');
   const edmSrc = await page.locator('#audio').getAttribute('src');
   expect(edmSrc).not.toBe(trapSrc);
 });
 
 test('all five styles expose clearly different tempo identities', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/music-ai/');
-  const expected = { trap: '90', pop: '116', lofi: '78', edm: '128', cinematic: '84' };
+  const expected = { trap: '142', pop: '112', lofi: '74', edm: '128', cinematic: '86' };
   for (const [style, bpm] of Object.entries(expected)) {
     await page.selectOption('#style', style);
     await page.locator('#duration').evaluate(el => { el.value = '15'; el.dispatchEvent(new Event('input', { bubbles: true })); });
