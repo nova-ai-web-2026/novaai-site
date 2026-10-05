@@ -1049,19 +1049,19 @@ function ensureAudio(){
   windSource=audioCtx.createBufferSource();
   windSource.buffer=noiseBuffer;
   windSource.loop=true;
-  windSource.playbackRate.value=.70;
+  windSource.playbackRate.value=.60;
 
   windBodyFilter=audioCtx.createBiquadFilter();
   windBodyFilter.type="lowpass";
-  windBodyFilter.frequency.value=480;
-  windBodyFilter.Q.value=.35;
+  windBodyFilter.frequency.value=420;
+  windBodyFilter.Q.value=.26;
   windBodyGain=audioCtx.createGain();
   windBodyGain.gain.value=.0001;
 
   windAirFilter=audioCtx.createBiquadFilter();
   windAirFilter.type="bandpass";
-  windAirFilter.frequency.value=1450;
-  windAirFilter.Q.value=.55;
+  windAirFilter.frequency.value=1180;
+  windAirFilter.Q.value=.34;
   windAirGain=audioCtx.createGain();
   windAirGain.gain.value=.0001;
 
@@ -1204,17 +1204,17 @@ function sfx(name,intensity=1){
 function updateWind(speed,swinging,grounded){
   if(!audioCtx||!windBodyGain||!windBodyFilter||!windAirGain||!windAirFilter)return;
   const airborne=!grounded;
-  const normalized=airborne?clamp((speed-7)/36,0,1):0;
-  const swingLift=swinging?1.18:1;
+  const normalized=airborne?clamp((speed-8)/38,0,1):0;
+  const swingLift=swinging?1.14:1;
 
-  const bodyTarget=normalized*.095*swingLift;
-  const airTarget=Math.pow(normalized,1.45)*.035*(swinging?1.12:1);
+  const bodyTarget=Math.pow(normalized,.92)*.084*swingLift;
+  const airTarget=Math.pow(normalized,1.72)*.024*(swinging?1.08:1);
 
-  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.12);
-  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.14);
+  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.16);
+  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.19);
 
-  windBodyFilter.frequency.setTargetAtTime(260+speed*17+(swinging?65:0),audioCtx.currentTime,.13);
-  windAirFilter.frequency.setTargetAtTime(1050+speed*19+(swinging?150:0),audioCtx.currentTime,.14);
+  windBodyFilter.frequency.setTargetAtTime(230+speed*14+(swinging?55:0),audioCtx.currentTime,.16);
+  windAirFilter.frequency.setTargetAtTime(880+speed*14+(swinging?115:0),audioCtx.currentTime,.19);
 }
 
 function toggleSound(){
