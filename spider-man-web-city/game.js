@@ -979,13 +979,13 @@ function animateScene(dt,t){
       if(swingPose){
         const active=side===activeSwingSide;
         if(active){
-          shoulderX=2.04+clamp((swingAnchor.y-player.pos.y)/60,-.10,.16)+ropeForward*.04;
-          shoulderZ=side*(.12+.035*speedN);
-          elbowX=-.12-clamp(speedN*.07,0,.07);
+          shoulderX=2.14+clamp((swingAnchor.y-player.pos.y)/64,-.08,.14)+ropeForward*.035;
+          shoulderZ=side*(.14+.040*speedN);
+          elbowX=-.055-clamp(speedN*.045,0,.045);
         }else{
-          shoulderX=-.42-rise*.24;
-          shoulderZ=side*(.13+.045*speedN);
-          elbowX=-.44-rise*.08;
+          shoulderX=-.62-rise*.20;
+          shoulderZ=side*(.17+.055*speedN);
+          elbowX=-.36-rise*.06;
         }
       }else if(airborne){
         shoulderX=side*.12+clamp(-player.vel.y*.012,-.20,.20);
@@ -1010,9 +1010,9 @@ function animateScene(dt,t){
 
       if(swingPose){
         const active=side===activeSwingSide;
-        hipX=(active?.26:-.30)-rise*(active?.16:.14);
-        kneeX=(active?-.58:-.38)-Math.max(0,rise)*.10+Math.max(0,-rise)*.07;
-        hipZ=side*(.045+.035*speedN)+(active?activeSwingSide*.025:-activeSwingSide*.018);
+        hipX=(active?.42:-.40)-rise*(active?.14:.12);
+        kneeX=(active?-.72:-.30)-Math.max(0,rise)*.08+Math.max(0,-rise)*.06;
+        hipZ=side*(.055+.045*speedN)+(active?activeSwingSide*.035:-activeSwingSide*.024);
       }else if(airborne){
         hipX=side*.14+clamp(-player.vel.y*.009,-.11,.13);
         kneeX=side>0?-.38:-.22;
@@ -1031,13 +1031,13 @@ function animateScene(dt,t){
 
   const flightAngle=Math.atan2(player.vel.y,Math.max(4,horizontalSpeed));
   const bodyPitch=swingPose
-    ?clamp(-.11-flightAngle*.30,-.28,.12)
+    ?clamp(-.18-flightAngle*.28,-.34,.06)
     :player.grounded?clamp(-speed*.0055,-.075,0):clamp(-player.vel.y*.011,-.18,.18);
 
   const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
   const lateral=player.vel.dot(localRight);
   const swingRoll=swingPose
-    ?clamp(-lateral*.0055-activeSwingSide*.035,-.12,.12)
+    ?clamp(-lateral*.0060-activeSwingSide*.045,-.15,.15)
     :clamp(-lateral*.002,-.025,.025);
 
   playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,swingPose?5.0:5.5,dt);
