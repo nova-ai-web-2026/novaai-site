@@ -233,6 +233,7 @@ function createPlayer(){
     elbow.add(hand);
 
     arm.userData.elbow=elbow;
+    arm.userData.hand=hand;
     arm.add(elbow);
     arm.rotation.z=sx*.085;
     playerMesh.add(arm);
@@ -786,9 +787,26 @@ function resolveCollisions(dt,forwardInput){
   }
 }
 
+function getWebOrigin(target){
+  const fallback=new THREE.Vector3(player.pos.x,player.pos.y+.72,player.pos.z);
+  if(!playerMesh)return fallback;
+
+  const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
+  const rel=target.clone().sub(player.pos);
+  const side=rel.dot(right)>=0?1:-1;
+  const arm=playerMesh.children.find(p=>p.userData.kind==="arm"&&p.userData.side===side);
+  const hand=arm?.userData.hand;
+  if(!hand)return fallback;
+
+  const p=new THREE.Vector3();
+  hand.getWorldPosition(p);
+  return p;
+}
+
 function drawWeb(a,b){
+  const origin=getWebOrigin(b);
   const arr=webLine.geometry.attributes.position.array;
-  arr[0]=a.x;arr[1]=a.y+.7;arr[2]=a.z;
+  arr[0]=origin.x;arr[1]=origin.y;arr[2]=origin.z;
   arr[3]=b.x;arr[4]=b.y;arr[5]=b.z;
   webLine.geometry.attributes.position.needsUpdate=true;
 }
@@ -961,13 +979,13 @@ function animateScene(dt,t){
       if(swingPose){
         const active=side===activeSwingSide;
         if(active){
-          shoulderX=1.94+clamp((swingAnchor.y-player.pos.y)/55,-.12,.18)+ropeForward*.05;
-          shoulderZ=side*(.105+.025*speedN);
-          elbowX=-.16-clamp(speedN*.08,0,.08);
+          shoulderX=2.04+clamp((swingAnchor.y-player.pos.y)/60,-.10,.16)+ropeForward*.04;
+          shoulderZ=side*(.12+.035*speedN);
+          elbowX=-.12-clamp(speedN*.07,0,.07);
         }else{
-          shoulderX=-.22-rise*.28;
-          shoulderZ=side*(.07+.025*speedN);
-          elbowX=-.32-rise*.10;
+          shoulderX=-.42-rise*.24;
+          shoulderZ=side*(.13+.045*speedN);
+          elbowX=-.44-rise*.08;
         }
       }else if(airborne){
         shoulderX=side*.12+clamp(-player.vel.y*.012,-.20,.20);
@@ -992,9 +1010,9 @@ function animateScene(dt,t){
 
       if(swingPose){
         const active=side===activeSwingSide;
-        hipX=(active?.10:-.16)-rise*(active?.12:.20);
-        kneeX=(active?-.34:-.22)-Math.max(0,rise)*.12+Math.max(0,-rise)*.08;
-        hipZ=side*(.035+.025*speedN)+(active?activeSwingSide*.018:-activeSwingSide*.012);
+        hipX=(active?.26:-.30)-rise*(active?.16:.14);
+        kneeX=(active?-.58:-.38)-Math.max(0,rise)*.10+Math.max(0,-rise)*.07;
+        hipZ=side*(.045+.035*speedN)+(active?activeSwingSide*.025:-activeSwingSide*.018);
       }else if(airborne){
         hipX=side*.14+clamp(-player.vel.y*.009,-.11,.13);
         kneeX=side>0?-.38:-.22;
@@ -1013,13 +1031,13 @@ function animateScene(dt,t){
 
   const flightAngle=Math.atan2(player.vel.y,Math.max(4,horizontalSpeed));
   const bodyPitch=swingPose
-    ?clamp(-.08-flightAngle*.16,-.18,.055)
+    ?clamp(-.11-flightAngle*.30,-.28,.12)
     :player.grounded?clamp(-speed*.0055,-.075,0):clamp(-player.vel.y*.011,-.18,.18);
 
   const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
   const lateral=player.vel.dot(localRight);
   const swingRoll=swingPose
-    ?clamp(-lateral*.0045-activeSwingSide*.022,-.085,.085)
+    ?clamp(-lateral*.0055-activeSwingSide*.035,-.12,.12)
     :clamp(-lateral*.002,-.025,.025);
 
   playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,swingPose?5.0:5.5,dt);
