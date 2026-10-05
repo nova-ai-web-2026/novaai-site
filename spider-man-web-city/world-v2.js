@@ -363,24 +363,62 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     }
   }
 
-  // Street-end anchor towers stop the long avenues from terminating in empty horizon gaps.
-  const avenueEnds=[
-    [0,-232,0],[0,232,Math.PI],[-232,0,-Math.PI/2],[232,0,Math.PI/2],
-    [-96,-236,0],[96,-236,0],[-96,236,Math.PI],[96,236,Math.PI],
-    [-236,-96,-Math.PI/2],[-236,96,-Math.PI/2],[236,-96,Math.PI/2],[236,96,Math.PI/2]
-  ];
-  avenueEnds.forEach((p,i)=>{
-    const [x,z,ry]=p,h=72+(i%3)*11,w=24+(i%2)*4,d=22;
-    box(skylineBody,[x,h/2,z],[w,h,d],[0,ry,0],[0x737f83,0x8d8980,0x657982][i%3]);
-    box(m.dark,[x,h+.35,z],[w+.3,.7,d+.3],[0,ry,0]);
-    box(m.steel,[x,h+3,z],[w*.38,5.3,d*.36],[0,ry,0]);
-    for(let row=0;row<8;row++){
-      const yy=7+row*7.2;
-      const dz=ry===0?-d/2-.06:ry===Math.PI?d/2+.06:0;
-      const dx=Math.abs(ry)===Math.PI/2?(ry>0?-w/2-.06:w/2+.06):0;
-      inst(unitPlane,row%3===0?skylineWarm:skylineWindow,[x+dx,yy,z+dz],[w*.58,.68,1],[0,ry,0]);
+  // Finished street-end belt: textured, complete architecture on every avenue exit.
+  const edgeRoads=[];
+  for(let i=-6;i<=6;i++)edgeRoads.push(i*32+16);
+
+  const outerFacadeMaterials=facadeMaterials.map((base,idx)=>{
+    const mat=base.clone();
+    for(const key of ["map","emissiveMap","roughnessMap","bumpMap"]){
+      if(!base[key])continue;
+      const tex=base[key].clone();
+      tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+      const glassy=idx===2||idx===4;
+      tex.repeat.set(glassy?2.8:2.35,glassy?5.4:4.8);
+      tex.needsUpdate=true;
+      mat[key]=tex;
     }
+    mat.roughness=(idx===2||idx===4)?.38:.76;
+    mat.envMapIntensity=(idx===2||idx===4)?.72:.16;
+    return mat;
   });
+
+  for(let side=0;side<4;side++){
+    for(let i=0;i<edgeRoads.length;i++){
+      const p=edgeRoads[i];
+      const edge=side<2?(side===0?-236:236):(side===2?-236:236);
+      const w=rnd(18,25),d=rnd(17,23),h=rnd(34,82);
+      const x=side<2?p:edge,z=side<2?edge:p;
+      const bw=side<2?w:d,bz=side<2?d:w;
+      const baseH=Math.min(5.0,Math.max(3.8,h*.08));
+      const outerStyle=(i+side)%outerFacadeMaterials.length;
+      const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
+
+      box(m.coping,[x,baseH/2,z],[bw*1.05,baseH,bz*1.05],[0,0,0],0x69777c);
+      box(outerFacadeMaterials[outerStyle],[x,(h+baseH)/2,z],[bw,h-baseH,bz]);
+      box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
+      box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
+      box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
+
+      for(let yy=baseH+13;yy<h-6;yy+=18){
+        if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.03)],[bw*.94,.16,.07]);
+        else box(m.cream,[x+faceSign*(bw/2+.03),yy,z],[.07,.16,bz*.94]);
+      }
+
+      if(side<2){
+        box(m.glass,[x,2.15,z+faceSign*(bz/2+.052)],[Math.min(bw*.52,10),2.8,.085]);
+        box(m.dark,[x,3.72,z+faceSign*(bz/2+.042)],[Math.min(bw*.60,11),.24,.10],[0,0,0],0x3b474d);
+      }else{
+        box(m.glass,[x+faceSign*(bw/2+.052),2.15,z],[.085,2.8,Math.min(bz*.52,10)]);
+        box(m.dark,[x+faceSign*(bw/2+.042),3.72,z],[.10,.24,Math.min(bz*.60,11)],[0,0,0],0x3b474d);
+      }
+
+      if((i+side)%4===0){
+        box(m.steel,[x,h+4.2,z],[.14,4.0,.14]);
+        inst(sphere,m.red,[x,h+6.3,z],[.075,.075,.075]);
+      }
+    }
+  }
 
   finishPools();
 
