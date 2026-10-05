@@ -935,36 +935,44 @@ function animateScene(dt,t){
   if(!playerMesh)return;
 
   const speed=player.vel.length();
+  const horizontalSpeed=Math.hypot(player.vel.x,player.vel.z);
   const runAmount=player.grounded?clamp(speed/14,0,1):0;
   const swingPose=!!swingAnchor;
   const airborne=!player.grounded;
   const phase=t*(6.8+runAmount*1.9);
+  const rise=clamp(player.vel.y/16,-1,1);
+  const speedN=clamp(speed/32,0,1);
   let activeSwingSide=1;
+  let ropeForward=.5;
 
   if(swingAnchor){
-    const toAnchor=swingAnchor.clone().sub(player.pos);
+    const toAnchor=swingAnchor.clone().sub(player.pos).normalize();
     const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
     activeSwingSide=toAnchor.dot(right)>=0?1:-1;
+    ropeForward=clamp(toAnchor.dot(player.facing),-1,1);
   }
 
   for(const part of playerMesh.children){
     if(part.userData.kind==="arm"){
       const side=part.userData.side;
       const elbow=part.userData.elbow;
-
-      let shoulderX=0;
-      let shoulderZ=side*.075;
-      let elbowX=-.10;
+      let shoulderX=0,shoulderZ=side*.075,elbowX=-.10;
 
       if(swingPose){
         const active=side===activeSwingSide;
-        shoulderX=active?2.28:-.72;
-        shoulderZ=side*(active?.17:.14);
-        elbowX=active?-.28:-.42;
+        if(active){
+          shoulderX=1.94+clamp((swingAnchor.y-player.pos.y)/55,-.12,.18)+ropeForward*.05;
+          shoulderZ=side*(.105+.025*speedN);
+          elbowX=-.16-clamp(speedN*.08,0,.08);
+        }else{
+          shoulderX=-.22-rise*.28;
+          shoulderZ=side*(.07+.025*speedN);
+          elbowX=-.32-rise*.10;
+        }
       }else if(airborne){
-        shoulderX=side*.16+clamp(-player.vel.y*.014,-.24,.24);
-        shoulderZ=side*.10;
-        elbowX=-.44;
+        shoulderX=side*.12+clamp(-player.vel.y*.012,-.20,.20);
+        shoulderZ=side*.085;
+        elbowX=-.36;
       }else{
         const armCycle=Math.sin(phase+side*1.57);
         shoulderX=armCycle*.52*runAmount;
@@ -972,47 +980,52 @@ function animateScene(dt,t){
         elbowX=-.10-Math.max(0,armCycle)*.34*runAmount;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,8.5,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,8.5,dt);
-      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,9.5,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,swingPose?7.4:8.5,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,swingPose?7.4:8.5,dt);
+      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,swingPose?8.0:9.5,dt);
     }
 
     if(part.userData.kind==="leg"){
       const side=part.userData.side;
       const knee=part.userData.knee;
-
-      let hipX=0;
-      let kneeX=.06;
+      let hipX=0,hipZ=side*.012*runAmount,kneeX=.06;
 
       if(swingPose){
-        hipX=side===activeSwingSide?.24:-.30;
-        kneeX=side===activeSwingSide?-.62:-.30;
+        const active=side===activeSwingSide;
+        hipX=(active?.10:-.16)-rise*(active?.12:.20);
+        kneeX=(active?-.34:-.22)-Math.max(0,rise)*.12+Math.max(0,-rise)*.08;
+        hipZ=side*(.035+.025*speedN)+(active?activeSwingSide*.018:-activeSwingSide*.012);
       }else if(airborne){
-        hipX=side*.18+clamp(-player.vel.y*.010,-.13,.15);
-        kneeX=side>0?-.48:-.24;
+        hipX=side*.14+clamp(-player.vel.y*.009,-.11,.13);
+        kneeX=side>0?-.38:-.22;
+        hipZ=side*.015;
       }else{
         const stride=Math.sin(phase-side*1.57);
         hipX=stride*.54*runAmount;
         kneeX=-Math.max(0,-stride)*.56*runAmount-.04;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,8.2,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,side*.012*runAmount,8.2,dt);
-      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,9,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,swingPose?7.0:8.2,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,hipZ,swingPose?6.8:8.2,dt);
+      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,swingPose?7.6:9,dt);
     }
   }
 
-  const bodyPitch = swingPose
-    ? -.12
-    : player.grounded
-      ? clamp(-speed*.0055,-.075,0)
-      : clamp(-player.vel.y*.011,-.18,.18);
+  const flightAngle=Math.atan2(player.vel.y,Math.max(4,horizontalSpeed));
+  const bodyPitch=swingPose
+    ?clamp(-.08-flightAngle*.16,-.18,.055)
+    :player.grounded?clamp(-speed*.0055,-.075,0):clamp(-player.vel.y*.011,-.18,.18);
 
-  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,5.5,dt);
+  const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
+  const lateral=player.vel.dot(localRight);
+  const swingRoll=swingPose
+    ?clamp(-lateral*.0045-activeSwingSide*.022,-.085,.085)
+    :clamp(-lateral*.002,-.025,.025);
 
-  if(player.grounded && runAmount>.05){
-    playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.016*runAmount;
-  }
+  playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,swingPose?5.0:5.5,dt);
+  playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,swingRoll,swingPose?5.0:5.5,dt);
+
+  if(player.grounded&&runAmount>.05)playerMesh.position.y+=Math.abs(Math.sin(phase*2))*.016*runAmount;
 }
 function showWin(){
   started=false;hud.classList.add("hidden");mobileUI.classList.add("hidden");winScreen.classList.remove("hidden");
