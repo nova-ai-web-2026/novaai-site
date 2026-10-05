@@ -346,27 +346,12 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     const rows=Math.max(2,Math.min(8,Math.floor(h/10)));
     for(let r=0;r<rows;r++){
       const yy=5+r*((h-8)/Math.max(1,rows-1));
-      const front=new THREE.Mesh(unitPlane,distantWindow);
-      front.position.set(x,yy,z-d/2-.012);
-      front.scale.set(w*.66,.46,1);
-      scene.add(front);
-
-      const back=front.clone();
-      back.position.z=z+d/2+.012;
-      back.rotation.y=Math.PI;
-      scene.add(back);
+      inst(unitPlane,distantWindow,[x,yy,z-d/2-.012],[w*.66,.46,1],[0,0,0]);
+      inst(unitPlane,distantWindow,[x,yy,z+d/2+.012],[w*.66,.46,1],[0,Math.PI,0]);
 
       if(r%2===0){
-        const sideA=new THREE.Mesh(unitPlane,distantWindow);
-        sideA.position.set(x-w/2-.012,yy,z);
-        sideA.rotation.y=Math.PI/2;
-        sideA.scale.set(d*.58,.42,1);
-        scene.add(sideA);
-
-        const sideB=sideA.clone();
-        sideB.position.x=x+w/2+.012;
-        sideB.rotation.y=-Math.PI/2;
-        scene.add(sideB);
+        inst(unitPlane,distantWindow,[x-w/2-.012,yy,z],[d*.58,.42,1],[0,Math.PI/2,0]);
+        inst(unitPlane,distantWindow,[x+w/2+.012,yy,z],[d*.58,.42,1],[0,-Math.PI/2,0]);
       }
     }
   }
