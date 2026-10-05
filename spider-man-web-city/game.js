@@ -986,9 +986,9 @@ function animateScene(dt,t){
           shoulderZ=side*(.13+Math.abs(swingPhase)*.035);
           elbowX=-.22-Math.abs(swingPhase)*.10;
         }else{
-          shoulderX=-.44+swingPhase*.22;
-          shoulderZ=side*(.11+Math.abs(swingPhase)*.025);
-          elbowX=-.34-Math.max(0,-swingPhase)*.18;
+          shoulderX=.72+swingPhase*.16;
+          shoulderZ=side*(.16+Math.abs(swingPhase)*.03);
+          elbowX=-.52-Math.max(0,-swingPhase)*.12;
         }
       }else if(airborne){
         shoulderX=side*.14+clamp(-player.vel.y*.012,-.20,.20);
@@ -1016,9 +1016,9 @@ function animateScene(dt,t){
 
       if(swingPose){
         const trailing=side===activeSwingSide;
-        hipX=(trailing?.22:-.30)+swingPhase*(trailing?.16:.22);
-        hipZ=side*(.040+.030*Math.abs(swingPhase));
-        kneeX=-(trailing?.56:.40)-Math.max(0,-swingPhase)*(trailing?.16:.24);
+        hipX=(trailing?.30:-.34)+swingPhase*(trailing?.14:.18);
+        hipZ=side*(.050+.035*Math.abs(swingPhase));
+        kneeX=-(trailing?.72:.55)-Math.max(0,-swingPhase)*(trailing?.12:.18);
       }else if(airborne){
         hipX=side*.15+clamp(-player.vel.y*.009,-.12,.14);
         hipZ=side*.012;
@@ -1037,12 +1037,12 @@ function animateScene(dt,t){
   }
 
   const bodyPitch = swingPose
-    ? -.10-swingPhase*.11
+    ? clamp(-.19-swingPhase*.16,-.34,.04)
     : player.grounded
       ? clamp(-speed*.0055,-.075,0)
       : clamp(-player.vel.y*.011,-.18,.18);
 
-  const swingLean=swingPose?activeSwingSide*clamp(speed/42,0,.075):0;
+  const swingLean=swingPose?activeSwingSide*clamp(speed/34,0,.11):0;
   playerMesh.rotation.x=THREE.MathUtils.damp(playerMesh.rotation.x,bodyPitch,swingPose?5.2:5.5,dt);
   playerMesh.rotation.z=THREE.MathUtils.damp(playerMesh.rotation.z,swingLean,swingPose?4.8:5.5,dt);
 
