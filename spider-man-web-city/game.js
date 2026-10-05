@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=2.0";
+import { createCityWorld } from "./world-v2.js?v=2.2-edge-finish";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
@@ -315,8 +315,11 @@ function createPlayer(){
   playerMesh.scale.set(.96,.96,.96);
   scene.add(playerMesh);
 
-  const webGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+  const webPoints=Array.from({length:9},()=>new THREE.Vector3());
+  const webGeo = new THREE.BufferGeometry().setFromPoints(webPoints);
+  webGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
   webLine = new THREE.Line(webGeo,new THREE.LineBasicMaterial({color:0xeaf7ff,transparent:true,opacity:.92}));
+  webLine.frustumCulled=false;
   webLine.visible=false;
   scene.add(webLine);
 }
@@ -807,10 +810,39 @@ function getWebOrigin(target){
 
 function drawWeb(a,b){
   const origin=getWebOrigin(b);
-  const arr=webLine.geometry.attributes.position.array;
-  arr[0]=origin.x;arr[1]=origin.y;arr[2]=origin.z;
-  arr[3]=b.x;arr[4]=b.y;arr[5]=b.z;
-  webLine.geometry.attributes.position.needsUpdate=true;
+  const attr=webLine.geometry.attributes.position;
+  const arr=attr.array;
+  const count=attr.count;
+  const delta=b.clone().sub(origin);
+  const dist=Math.max(.001,delta.length());
+  const dir=delta.clone().multiplyScalar(1/dist);
+  const side=new THREE.Vector3(-dir.z,0,dir.x);
+  if(side.lengthSq()<.0001)side.set(1,0,0);
+  else side.normalize();
+
+  const speed=player?.vel?.length?.()||0;
+  const speedN=clamp(speed/42,0,1);
+  const lateral=player?.vel?.dot?.(side)||0;
+  const t=clock?.elapsedTime||0;
+  const tension=swingAnchor?clamp(dist/Math.max(ropeLength,.001),.76,1.12):1;
+  const slack=swingAnchor?clamp(1.05-tension,0,.20):.04;
+  const sagAmp=clamp(dist*.00145,.018,.075)*(1+slack*.9);
+  const swayAmp=(.008+speedN*.032)*(swingAnchor?1:.45);
+  const lateralLag=clamp(-lateral*.00125,-.025,.025);
+
+  for(let i=0;i<count;i++){
+    const f=i/(count-1);
+    const arch=Math.sin(Math.PI*f);
+    const x=THREE.MathUtils.lerp(origin.x,b.x,f);
+    const y=THREE.MathUtils.lerp(origin.y,b.y,f)-arch*sagAmp;
+    const z=THREE.MathUtils.lerp(origin.z,b.z,f);
+    const sway=arch*(Math.sin(t*4.15+f*3.2)*swayAmp+lateralLag);
+    const k=i*3;
+    arr[k]=x+side.x*sway;
+    arr[k+1]=y;
+    arr[k+2]=z+side.z*sway;
+  }
+  attr.needsUpdate=true;
 }
 function updateWebLine(){if(swingAnchor)drawWeb(player.pos,swingAnchor);}
 
@@ -958,7 +990,7 @@ function animateScene(dt,t){
   const horizontalSpeed=Math.hypot(player.vel.x,player.vel.z);
   const runAmount=player.grounded?clamp(speed/14,0,1):0;
   const swingPose=!!swingAnchor;
-  swingBlend=THREE.MathUtils.damp(swingBlend,swingPose?1:0,swingPose?7.2:5.2,dt);
+  swingBlend=THREE.MathUtils.damp(swingBlend,swingPose?1:0,swingPose?6.3:4.4,dt);
   const swingWeight=clamp(swingBlend,0,1);
   const airborne=!player.grounded;
   const phase=t*(6.8+runAmount*1.9);

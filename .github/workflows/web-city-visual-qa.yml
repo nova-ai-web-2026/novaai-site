@@ -46,7 +46,7 @@ jobs:
             let body=fs.readFileSync(target);
             if(file.endsWith('.js')){
               let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
-              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,city,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,city,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
               body=Buffer.from(code);
             }
             res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
@@ -75,6 +75,8 @@ jobs:
             await page.waitForFunction(()=>window.__worldQA.player.pos.x>1.3,{timeout:30000});
             await page.keyboard.up('KeyD');
             report.moved=await page.evaluate(()=>window.__worldQA.state);
+            await page.keyboard.down('ShiftLeft');await page.keyboard.down('KeyW');await page.waitForTimeout(650);await page.keyboard.up('KeyW');await page.keyboard.up('ShiftLeft');
+            report.sprinted=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('Space');
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>1.8,{timeout:30000});
             report.jumped=await page.evaluate(()=>window.__worldQA.state);
@@ -90,6 +92,38 @@ jobs:
             await page.keyboard.press('KeyM');await page.waitForTimeout(80);
             report.audioMuted=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyM');
+
+            await page.evaluate(()=>{const q=window.__worldQA;q.player.pos.set(0,3,0);q.player.vel.set(0,0,0);});
+            await page.waitForTimeout(250);
+            await page.keyboard.press('KeyE');await page.waitForTimeout(220);
+            report.zipTest=await page.evaluate(()=>window.__worldQA.state);
+            await page.keyboard.press('KeyR');await page.waitForTimeout(140);
+            report.heavyAttack=await page.evaluate(()=>window.__worldQA.state);
+
+            const soakStart=Date.now();
+            let soakCycles=0;
+            while(Date.now()-soakStart<120000){
+              const shift=soakCycles%3===0;
+              if(shift)await page.keyboard.down('ShiftLeft');
+              await page.keyboard.down(soakCycles%2===0?'KeyW':'KeyD');
+              await page.waitForTimeout(420);
+              await page.keyboard.up(soakCycles%2===0?'KeyW':'KeyD');
+              if(shift)await page.keyboard.up('ShiftLeft');
+
+              if(soakCycles%2===0)await page.keyboard.press('Space');
+              if(soakCycles%3===0){
+                await page.keyboard.down('KeyQ');
+                await page.waitForTimeout(650);
+                await page.keyboard.up('KeyQ');
+              }
+              if(soakCycles%4===0)await page.keyboard.press('KeyE');
+              await page.keyboard.press(soakCycles%2===0?'KeyF':'KeyR');
+              await page.waitForTimeout(360);
+              soakCycles++;
+            }
+            report.soak=await page.evaluate((cycles)=>({cycles,state:window.__worldQA.state,calls:window.__worldQA.renderer.info.render.calls,triangles:window.__worldQA.renderer.info.render.triangles}),soakCycles);
+            report.soak.durationMs=Date.now()-soakStart;
+
             await page.evaluate(()=>{window.__worldQA.renderer.setAnimationLoop(null);document.exitPointerLock?.();document.getElementById('toast').classList.remove('show');});
             for(const [name,p,l] of [['aerial',[84,76,133],[0,26,-35]],['street',[16,5.8,29],[16,12,-80]],['street-end',[16,7,142],[16,24,242]],['skyline',[132,148,161],[0,30,-35]]]){
               await page.evaluate(([p,l])=>{const q=window.__worldQA;q.camera.position.fromArray(p);q.camera.lookAt(...l);q.renderer.render(q.scene,q.camera);},[p,l]);
@@ -97,10 +131,14 @@ jobs:
               report[name]=await page.evaluate(()=>({calls:window.__worldQA.renderer.info.render.calls,triangles:window.__worldQA.renderer.info.render.triangles}));
             }
             report.movementPassed=report.moved.position[0]-report.before.position[0]>.2;
+            report.sprintPassed=report.sprinted.speed>report.moved.speed;
             report.jumpPassed=report.jumped.position[1]>report.moved.position[1];report.swingPassed=report.swung.swing;
             report.releasePassed=report.released.swing===false&&report.released.sfxStats.release>0&&report.released.speed>2;
             report.windPassed=report.swung.windBody>.001&&report.swung.windAir>=0;
             report.audioPassed=report.audio.audioState==='running'&&report.audio.sfxStats.start>0&&report.audio.sfxStats.jump>0&&report.audio.sfxStats.web>0&&report.audio.sfxStats.attack>0&&report.audioMuted.muted===true;
+            report.zipPassed=(report.zipTest.sfxStats.zip||0)>0;
+            report.heavyAttackPassed=(report.heavyAttack.sfxStats.heavySwing||0)>0;
+            report.soakPassed=report.soak.durationMs>=120000&&report.soak.calls>0&&report.soak.state.health>0;
             report.missionUIPassed=report.before.mission===0&&report.before.beacons===3&&report.missionUI.trackerVisible&&report.missionUI.text.includes('MISSION 1/4');
 
             for(let i=0;i<3;i++){
@@ -121,7 +159,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.movementPassed||!report.jumpPassed||!report.swingPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs

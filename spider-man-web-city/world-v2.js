@@ -363,7 +363,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     }
   }
 
-  // Finished street-end belt: textured, complete architecture on every avenue exit.
+  // Finished street-end belt: full façades and grounded storefronts on every avenue exit.
   const edgeRoads=[];
   for(let i=-6;i<=6;i++)edgeRoads.push(i*32+16);
 
@@ -387,35 +387,62 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(let i=0;i<edgeRoads.length;i++){
       const p=edgeRoads[i];
       const edge=side<2?(side===0?-236:236):(side===2?-236:236);
-      const w=rnd(18,25),d=rnd(17,23),h=rnd(34,82);
+      const w=rnd(19.5,25.5),d=rnd(18.5,24.5),h=rnd(43,86);
       const x=side<2?p:edge,z=side<2?edge:p;
       const bw=side<2?w:d,bz=side<2?d:w;
-      const baseH=Math.min(5.0,Math.max(3.8,h*.08));
+      const baseH=Math.min(4.8,Math.max(3.9,h*.075));
       const outerStyle=(i+side)%outerFacadeMaterials.length;
       const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
 
-      box(m.coping,[x,baseH/2,z],[bw*1.05,baseH,bz*1.05],[0,0,0],0x69777c);
-      box(outerFacadeMaterials[outerStyle],[x,(h+baseH)/2,z],[bw,h-baseH,bz]);
+      // Keep the same textured façade all the way to street level so the end buildings
+      // read as finished architecture instead of dark placeholder podiums.
+      box(outerFacadeMaterials[outerStyle],[x,h/2,z],[bw,h,bz]);
+      box(m.coping,[x,1.0,z],[bw*1.035,2.0,bz*1.035],[0,0,0],0x69777c);
       box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
       box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
       box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
 
-      for(let yy=baseH+13;yy<h-6;yy+=18){
+      for(let yy=baseH+11;yy<h-6;yy+=17){
         if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.03)],[bw*.94,.16,.07]);
         else box(m.cream,[x+faceSign*(bw/2+.03),yy,z],[.07,.16,bz*.94]);
       }
 
+      const storefrontCount=3;
       if(side<2){
-        box(m.glass,[x,2.15,z+faceSign*(bz/2+.052)],[Math.min(bw*.52,10),2.8,.085]);
-        box(m.dark,[x,3.72,z+faceSign*(bz/2+.042)],[Math.min(bw*.60,11),.24,.10],[0,0,0],0x3b474d);
+        const faceZ=z+faceSign*(bz/2+.06);
+        const span=bw*.80,slot=span/storefrontCount;
+        for(let s=0;s<storefrontCount;s++){
+          const px=x+(s-(storefrontCount-1)/2)*slot;
+          box(m.dark,[px,2.05,faceZ],[slot*.84,2.84,.13]);
+          box(m.glass,[px,2.05,faceZ+faceSign*.035],[slot*.72,2.56,.075]);
+        }
+        const doorX=x+((i+side)%2?slot*.34:-slot*.34);
+        box(m.dark,[doorX,1.82,faceZ+faceSign*.075],[1.14,2.52,.08]);
+        box(m.glass,[doorX,1.82,faceZ+faceSign*.12],[.92,2.28,.055]);
+        box(m.dark,[x,3.62,faceZ+faceSign*.10],[bw*.88,.22,.42]);
+        box(m.cream,[x,4.10,faceZ+faceSign*.055],[bw*.91,.17,.11]);
       }else{
-        box(m.glass,[x+faceSign*(bw/2+.052),2.15,z],[.085,2.8,Math.min(bz*.52,10)]);
-        box(m.dark,[x+faceSign*(bw/2+.042),3.72,z],[.10,.24,Math.min(bz*.60,11)],[0,0,0],0x3b474d);
+        const faceX=x+faceSign*(bw/2+.06);
+        const span=bz*.80,slot=span/storefrontCount;
+        for(let s=0;s<storefrontCount;s++){
+          const pz=z+(s-(storefrontCount-1)/2)*slot;
+          box(m.dark,[faceX,2.05,pz],[.13,2.84,slot*.84]);
+          box(m.glass,[faceX+faceSign*.035,2.05,pz],[.075,2.56,slot*.72]);
+        }
+        const doorZ=z+((i+side)%2?slot*.34:-slot*.34);
+        box(m.dark,[faceX+faceSign*.075,1.82,doorZ],[.08,2.52,1.14]);
+        box(m.glass,[faceX+faceSign*.12,1.82,doorZ],[.055,2.28,.92]);
+        box(m.dark,[faceX+faceSign*.10,3.62,z],[.42,.22,bz*.88]);
+        box(m.cream,[faceX+faceSign*.055,4.10,z],[.11,.17,bz*.91]);
       }
 
+      if((i+side)%3===0){
+        box(m.steel,[x,h+3.35,z],[bw*.28,2.1,bz*.25]);
+        box(m.dark,[x,h+4.45,z],[bw*.32,.18,bz*.29]);
+      }
       if((i+side)%4===0){
-        box(m.steel,[x,h+4.2,z],[.14,4.0,.14]);
-        inst(sphere,m.red,[x,h+6.3,z],[.075,.075,.075]);
+        box(m.steel,[x,h+5.15,z],[.14,4.0,.14]);
+        inst(sphere,m.red,[x,h+7.25,z],[.075,.075,.075]);
       }
     }
   }
@@ -463,7 +490,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.1';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
+  scene.userData.worldVersion='2.2';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
   return {
     city,
     update(dt,t,playerPosition){
