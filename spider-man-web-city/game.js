@@ -1049,11 +1049,15 @@ function ensureAudio(){
   const windLength=Math.max(1,Math.floor(audioCtx.sampleRate*2.4));
   windBuffer=audioCtx.createBuffer(1,windLength,audioCtx.sampleRate);
   const windData=windBuffer.getChannelData(0);
-  let smooth=0;
+  let smooth=0,windPeak=.0001;
   for(let i=0;i<windLength;i++){
-    smooth=smooth*.988+(Math.random()*2-1)*.012;
-    windData[i]=smooth*.94+(Math.random()*2-1)*.06;
+    smooth=smooth*.982+(Math.random()*2-1)*.018;
+    const sample=smooth*.90+(Math.random()*2-1)*.10;
+    windData[i]=sample;
+    windPeak=Math.max(windPeak,Math.abs(sample));
   }
+  const windScale=.72/windPeak;
+  for(let i=0;i<windLength;i++)windData[i]*=windScale;
 
   windSource=audioCtx.createBufferSource();
   windSource.buffer=windBuffer;
@@ -1144,10 +1148,16 @@ function sfx(name,intensity=1){
       tone(330,390,.11,.035,"triangle",0);tone(495,585,.12,.030,"triangle",.07);tone(660,780,.16,.028,"triangle",.14);
       break;
     case "jump":
-      tone(220,410,.11,.038*k,"triangle");noise(.04,.015*k,1050,"highpass");
+      noise(.085,.050*k,420,"lowpass");
+      noise(.070,.030*k,980,"bandpass",.006);
+      snap(1750,.018*k,.018,.004);
+      tone(112,68,.075,.022*k,"sine");
       break;
     case "wallJump":
-      tone(285,560,.13,.045*k,"triangle");noise(.05,.019*k,1250,"highpass");
+      noise(.105,.056*k,500,"lowpass");
+      noise(.090,.034*k,920,"bandpass",.006);
+      snap(1550,.023*k,.022,.004);
+      tone(126,66,.090,.026*k,"sine");
       break;
     case "web":
       snap(3300,.060*k,.024,0);
@@ -1213,17 +1223,17 @@ function sfx(name,intensity=1){
 function updateWind(speed,swinging,grounded){
   if(!audioCtx||!windBodyGain||!windBodyFilter||!windAirGain||!windAirFilter)return;
   const airborne=!grounded;
-  const normalized=airborne?clamp((speed-8)/36,0,1):0;
-  const swingLift=swinging?1.12:1;
+  const normalized=airborne?clamp((speed-4.5)/34,0,1):0;
+  const swingLift=swinging?1.16:1;
 
-  const bodyTarget=Math.pow(normalized,.88)*.096*swingLift;
-  const airTarget=Math.pow(normalized,1.85)*.014*(swinging?1.06:1);
+  const bodyTarget=Math.pow(normalized,.82)*.125*swingLift;
+  const airTarget=Math.pow(normalized,1.65)*.024*(swinging?1.08:1);
 
-  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.18);
-  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.22);
+  windBodyGain.gain.setTargetAtTime(sfxMuted?0:bodyTarget,audioCtx.currentTime,.12);
+  windAirGain.gain.setTargetAtTime(sfxMuted?0:airTarget,audioCtx.currentTime,.16);
 
-  windBodyFilter.frequency.setTargetAtTime(205+speed*12+(swinging?38:0),audioCtx.currentTime,.18);
-  windAirFilter.frequency.setTargetAtTime(720+speed*12+(swinging?78:0),audioCtx.currentTime,.22);
+  windBodyFilter.frequency.setTargetAtTime(235+speed*15+(swinging?58:0),audioCtx.currentTime,.13);
+  windAirFilter.frequency.setTargetAtTime(780+speed*13+(swinging?105:0),audioCtx.currentTime,.16);
 }
 
 function toggleSound(){
