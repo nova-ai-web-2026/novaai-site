@@ -331,23 +331,53 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const w=rnd(18,25),d=rnd(17,23),h=rnd(34,82);
       const x=side<2?p:edge,z=side<2?edge:p;
       const bw=side<2?w:d,bz=side<2?d:w;
+      const facadeSpan=side<2?bw:bz;
       const color=skylineColors[(i+side*2)%skylineColors.length];
+      const baseH=Math.min(5.0,Math.max(3.8,h*.08));
 
-      box(m.dark,[x,h*.08,z],[bw*1.10,h*.16,bz*1.10],[0,0,0],0x39464d);
-      box(m.coping,[x,h*.52,z],[bw,h*.72,bz],[0,0,0],color);
-      box(m.dark,[x,h*.91,z],[bw*.76,h*.10,bz*.76],[0,0,0],0x46535a);
-      box(m.coping,[x,h+.22,z],[bw*.80,.44,bz*.80],[0,0,0],0xa8b1b2);
+      // Finished massing: normal ground floor, full tower, cornice and stepped rooftop.
+      box(m.coping,[x,baseH/2,z],[bw*1.05,baseH,bz*1.05],[0,0,0],0x59676d);
+      box(m.coping,[x,(h+baseH)/2,z],[bw,h-baseH,bz],[0,0,0],color);
+      box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
+      box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
+      box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
 
-      for(let row=0;row<Math.min(7,Math.max(3,Math.floor(h/10)));row++){
-        const yy=7+row*8.2;
+      const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
+      const cols=Math.max(3,Math.min(5,Math.floor(facadeSpan/4.3)));
+      const step=facadeSpan/(cols+.55);
+      const winW=Math.min(2.9,step*.66);
+      const maxRows=Math.min(11,Math.max(4,Math.floor((h-baseH-5)/5.4)));
+
+      // Real window panels instead of horizontal stripes.
+      for(let row=0;row<maxRows;row++){
+        const yy=baseH+4.0+row*5.35;
         if(yy>h-5)break;
-        if(side<2) box(m.glass,[x,yy,z+(side===0?1:-1)*(bz/2+.04)],[bw*.68,.70,.07]);
-        else box(m.glass,[x+(side===2?1:-1)*(bw/2+.04),yy,z],[.07,.70,bz*.68]);
+        for(let col=0;col<cols;col++){
+          const offset=(col-(cols-1)/2)*step;
+          if(side<2){
+            box(m.glass,[x+offset,yy,z+faceSign*(bz/2+.045)],[winW,1.65,.075]);
+            box(m.coping,[x+offset,yy-1.05,z+faceSign*(bz/2+.038)],[winW+.18,.12,.09],[0,0,0],0xb7b8b0);
+          }else{
+            box(m.glass,[x+faceSign*(bw/2+.045),yy,z+offset],[.075,1.65,winW]);
+            box(m.coping,[x+faceSign*(bw/2+.038),yy-1.05,z+offset],[.09,.12,winW+.18],[0,0,0],0xb7b8b0);
+          }
+        }
+      }
+
+      // Ground-floor entrance/shopfront makes the street termination feel intentional, not unfinished.
+      if(side<2){
+        box(m.glass,[x,2.15,z+faceSign*(bz/2+.052)],[Math.min(bw*.52,10),2.8,.085]);
+        box(m.dark,[x,3.72,z+faceSign*(bz/2+.042)],[Math.min(bw*.60,11),.24,.10],[0,0,0],0x3b474d);
+        for(const sx of [-1,1])box(m.coping,[x+sx*Math.min(bw*.29,5.4),2.15,z+faceSign*(bz/2+.055)],[.16,3.0,.09]);
+      }else{
+        box(m.glass,[x+faceSign*(bw/2+.052),2.15,z],[.085,2.8,Math.min(bz*.52,10)]);
+        box(m.dark,[x+faceSign*(bw/2+.042),3.72,z],[.10,.24,Math.min(bz*.60,11)],[0,0,0],0x3b474d);
+        for(const sz of [-1,1])box(m.coping,[x+faceSign*(bw/2+.055),2.15,z+sz*Math.min(bz*.29,5.4)],[.09,3.0,.16]);
       }
 
       if((i+side)%4===0){
-        box(m.steel,[x,h+2.4,z],[.16,4.4,.16]);
-        inst(sphere,m.red,[x,h+4.7,z],[.08,.08,.08]);
+        box(m.steel,[x,h+4.2,z],[.14,4.0,.14]);
+        inst(sphere,m.red,[x,h+6.3,z],[.075,.075,.075]);
       }
     }
   }
