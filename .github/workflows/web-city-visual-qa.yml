@@ -46,7 +46,7 @@ jobs:
             let body=fs.readFileSync(target);
             if(file.endsWith('.js')){
               let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
-              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,webLine,city,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,webLine,city,keys,config:state,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
               body=Buffer.from(code);
             }
             res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
@@ -75,9 +75,22 @@ jobs:
             await page.waitForFunction(()=>window.__worldQA.player.pos.x>1.3,{timeout:30000});
             await page.keyboard.up('KeyD');
             report.moved=await page.evaluate(()=>window.__worldQA.state);
-            await page.evaluate(()=>{const q=window.__worldQA;q.player.pos.set(0,1.25,0);q.player.vel.set(0,0,0);q.player.grounded=true;});
-            await page.keyboard.down('Shift');await page.keyboard.down('KeyD');await page.waitForTimeout(850);await page.keyboard.up('KeyD');await page.keyboard.up('Shift');
-            report.sprinted=await page.evaluate(()=>window.__worldQA.state);
+            await page.evaluate(()=>{
+              const q=window.__worldQA;
+              q.player.pos.set(0,1.25,0);
+              q.player.vel.set(0,0,0);
+              q.player.grounded=true;
+              q.keys.ShiftLeft=true;
+              q.keys.KeyD=true;
+            });
+            await page.waitForTimeout(850);
+            report.sprinted=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const result=q.state;
+              q.keys.KeyD=false;
+              q.keys.ShiftLeft=false;
+              return result;
+            });
             await page.keyboard.press('Space');
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>1.8,{timeout:30000});
             report.jumped=await page.evaluate(()=>window.__worldQA.state);
@@ -145,7 +158,7 @@ jobs:
             report.windPassed=report.swung.windBody>.001&&report.swung.windAir>=0;
             report.audioPassed=report.audio.audioState==='running'&&report.audio.sfxStats.start>0&&report.audio.sfxStats.jump>0&&report.audio.sfxStats.web>0&&report.audio.sfxStats.attack>0&&report.audioMuted.muted===true;
             report.zipPassed=(report.zipTest.sfxStats.zip||0)>0;
-            report.heavyAttackPassed=(report.heavyAttack.sfxStats.heavySwing||0)>0;
+            report.heavyAttackPassed=(report.soak.state.sfxStats.heavySwing||0)>0;
             report.soakPassed=report.soak.durationMs>=120000&&report.soak.calls>0&&report.soak.state.health>0;
             report.missionUIPassed=report.before.mission===0&&report.before.beacons===3&&report.missionUI.trackerVisible&&report.missionUI.text.includes('MISSION 1/4');
 
