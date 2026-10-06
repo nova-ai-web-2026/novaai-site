@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=2.2-edge-finish";
+import { createCityWorld } from "./world-v2.js?v=2.3-edge-continuation";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
@@ -46,7 +46,7 @@ const isTouch = matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoin
 
 const state = {
   groundY: 1.25,
-  worldHalf: 205,
+  worldHalf: 220,
   gravity: 24,
   baseSpeed: 12,
   sprintSpeed: 20,
@@ -990,7 +990,7 @@ function animateScene(dt,t){
   const horizontalSpeed=Math.hypot(player.vel.x,player.vel.z);
   const runAmount=player.grounded?clamp(speed/14,0,1):0;
   const swingPose=!!swingAnchor;
-  swingBlend=THREE.MathUtils.damp(swingBlend,swingPose?1:0,swingPose?6.3:4.4,dt);
+  swingBlend=THREE.MathUtils.damp(swingBlend,swingPose?1:0,swingPose?6.3:3.3,dt);
   const swingWeight=clamp(swingBlend,0,1);
   const airborne=!player.grounded;
   const phase=t*(6.8+runAmount*1.9);
@@ -1041,9 +1041,9 @@ function animateScene(dt,t){
         elbowX=-.10-Math.max(0,armCycle)*.34*runAmount;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,swingPose?7.4:8.5,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,swingPose?7.4:8.5,dt);
-      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,swingPose?8.0:9.5,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,shoulderX,swingWeight>.01?7.4:8.5,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,shoulderZ,swingWeight>.01?7.4:8.5,dt);
+      if(elbow)elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,elbowX,swingWeight>.01?8.0:9.5,dt);
     }
 
     if(part.userData.kind==="leg"){
@@ -1073,9 +1073,9 @@ function animateScene(dt,t){
         kneeX=-Math.max(0,-stride)*.56*runAmount-.04;
       }
 
-      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,swingPose?7.0:8.2,dt);
-      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,hipZ,swingPose?6.8:8.2,dt);
-      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,swingPose?7.6:9,dt);
+      part.rotation.x=THREE.MathUtils.damp(part.rotation.x,hipX,swingWeight>.01?7.0:8.2,dt);
+      part.rotation.z=THREE.MathUtils.damp(part.rotation.z,hipZ,swingWeight>.01?6.8:8.2,dt);
+      if(knee)knee.rotation.x=THREE.MathUtils.damp(knee.rotation.x,kneeX,swingWeight>.01?7.6:9,dt);
     }
   }
 
