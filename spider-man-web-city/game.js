@@ -32,6 +32,7 @@ let started = false, won = false;
 let yaw = 0, pitch = -0.16;
 let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let swingBlend = 0;
+let lastSwingSide = 1;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
@@ -996,7 +997,7 @@ function animateScene(dt,t){
   const phase=t*(6.8+runAmount*1.9);
   const rise=clamp(player.vel.y/16,-1,1);
   const speedN=clamp(speed/32,0,1);
-  let activeSwingSide=1;
+  let activeSwingSide=lastSwingSide;
   let ropeForward=.5;
   let ropeHeight=.35;
 
@@ -1004,6 +1005,7 @@ function animateScene(dt,t){
     const toAnchor=swingAnchor.clone().sub(player.pos).normalize();
     const right=new THREE.Vector3(-player.facing.z,0,player.facing.x).normalize();
     activeSwingSide=toAnchor.dot(right)>=0?1:-1;
+    lastSwingSide=activeSwingSide;
     ropeForward=clamp(toAnchor.dot(player.facing),-1,1);
     ropeHeight=clamp(toAnchor.y,-.15,.95);
   }
