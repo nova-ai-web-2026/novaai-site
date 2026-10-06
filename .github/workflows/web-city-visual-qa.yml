@@ -166,6 +166,12 @@ jobs:
               });
               const expectedYaw=Math.atan2(-q.player.facing.x,-q.player.facing.z);
               const yawDelta=Math.atan2(Math.sin(q.playerMesh.rotation.y-expectedYaw),Math.cos(q.playerMesh.rotation.y-expectedYaw));
+              const targetWrapYaw=-Math.PI+.03;
+              q.playerMesh.rotation.y=Math.PI-.03;
+              q.player.facing.set(-Math.sin(targetWrapYaw),0,-Math.cos(targetWrapYaw)).normalize();
+              q.player.vel.set(0,0,0);q.player.grounded=true;
+              q.stepPlayer(1/60);
+              const yawWrapDelta=Math.atan2(Math.sin(q.playerMesh.rotation.y-targetWrapYaw),Math.cos(q.playerMesh.rotation.y-targetWrapYaw));
               return {
                 armOpposition:a0[0]*a0[1]<0,
                 legOpposition:l0[0]*l0[1]<0,
@@ -174,6 +180,7 @@ jobs:
                 animationChanges:a0.some((v,i)=>Math.abs(v-a1[i])>.01)&&l0.some((v,i)=>Math.abs(v-l1[i])>.01),
                 facingLength:q.player.facing.length(),
                 yawDelta,
+                yawWrapDelta,
                 footYDelta:Math.abs(footYs[0]-footYs[1]),
                 footYMean:(footYs[0]+footYs[1])/2,
                 bodyPitch:q.playerMesh.rotation.x,
@@ -219,6 +226,7 @@ jobs:
               runAnimationChanges:report.runRig.animationChanges,
               facingNormalized:Math.abs(report.runRig.facingLength-1)<.02,
               runFacingAligned:Math.abs(report.runRig.yawDelta)<.75,
+              yawWrapUsesShortestPath:Math.abs(report.runRig.yawWrapDelta)<.35,
               feetSymmetric:report.runRig.footYDelta<.22,
               feetNearGround:report.runRig.footYMean>-1&&report.runRig.footYMean<1.5,
               runPitchBounded:Math.abs(report.runRig.bodyPitch)<.25,
