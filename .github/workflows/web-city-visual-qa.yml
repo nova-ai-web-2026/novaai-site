@@ -12,7 +12,7 @@ concurrency:
 jobs:
   browser-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -73,6 +73,17 @@ jobs:
             await page.screenshot({path:'qa-output/spawn.png'});
             await page.keyboard.down('KeyD');
             await page.waitForFunction(()=>window.__worldQA.player.pos.x>1.3,{timeout:30000});
+            report.runRig=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').map(a=>({side:a.userData.side,x:a.rotation.x,z:a.rotation.z,elbow:a.userData.elbow?.rotation.x??null}));
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').map(l=>({side:l.userData.side,x:l.rotation.x,z:l.rotation.z,knee:l.userData.knee?.rotation.x??null}));
+              const front=q.player.pos.clone().set(0,0,-1).applyQuaternion(q.playerMesh.quaternion).normalize();
+              const facing=q.player.facing.clone().normalize();
+              const camDir=q.player.pos.clone();q.camera.getWorldDirection(camDir);
+              const target=q.player.pos.clone().add(q.player.pos.clone().set(0,1.15,0));
+              const toPlayer=target.sub(q.camera.position).normalize();
+              return {arms,legs,front:front.toArray(),facing:facing.toArray(),frontDot:front.dot(facing),cameraDistance:q.camera.position.distanceTo(q.player.pos),cameraDot:camDir.dot(toPlayer)};
+            });
             await page.keyboard.up('KeyD');
             report.moved=await page.evaluate(()=>window.__worldQA.state);
             report.sprintLogic=await page.evaluate(()=>{
@@ -100,6 +111,12 @@ jobs:
             await page.keyboard.press('Space');
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>1.8,{timeout:30000});
             report.jumped=await page.evaluate(()=>window.__worldQA.state);
+            report.jumpRig=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').map(a=>({side:a.userData.side,x:a.rotation.x,z:a.rotation.z,elbow:a.userData.elbow?.rotation.x??null}));
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').map(l=>({side:l.userData.side,x:l.rotation.x,z:l.rotation.z,knee:l.userData.knee?.rotation.x??null}));
+              return {arms,legs,mesh:[q.playerMesh.rotation.x,q.playerMesh.rotation.y,q.playerMesh.rotation.z]};
+            });
             await page.keyboard.down('KeyQ');
             await page.waitForFunction(()=>window.__worldQA.state.swing,{timeout:30000});
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>5,{timeout:30000});
@@ -109,9 +126,26 @@ jobs:
               const lx=(a[0]+a[(n-1)*3])/2,ly=(a[1]+a[(n-1)*3+1])/2,lz=(a[2]+a[(n-1)*3+2])/2;
               return {visible:q.webLine.visible,points:n,curvature:Math.hypot(a[m]-lx,a[m+1]-ly,a[m+2]-lz)};
             });
+            report.swingRig=await page.evaluate(()=>{
+              const q=window.__worldQA,a=q.webLine.geometry.attributes.position.array,n=q.webLine.geometry.attributes.position.count;
+              const start=q.player.pos.clone().set(a[0],a[1],a[2]);
+              const anchor=q.player.pos.clone().set(a[(n-1)*3],a[(n-1)*3+1],a[(n-1)*3+2]);
+              const right=q.player.pos.clone().set(-q.player.facing.z,0,q.player.facing.x).normalize();
+              const activeSide=anchor.clone().sub(q.player.pos).dot(right)>=0?1:-1;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').map(ar=>{const hp=q.player.pos.clone();ar.userData.hand?.getWorldPosition(hp);return {side:ar.userData.side,x:ar.rotation.x,z:ar.rotation.z,elbow:ar.userData.elbow?.rotation.x??null,hand:hp.toArray(),webStartDistance:hp.distanceTo(start)};});
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').map(l=>({side:l.userData.side,x:l.rotation.x,z:l.rotation.z,knee:l.userData.knee?.rotation.x??null}));
+              const front=q.player.pos.clone().set(0,0,-1).applyQuaternion(q.playerMesh.quaternion).normalize();
+              return {activeSide,arms,legs,mesh:[q.playerMesh.rotation.x,q.playerMesh.rotation.y,q.playerMesh.rotation.z],frontDot:front.dot(q.player.facing.clone().normalize()),start:start.toArray(),anchor:anchor.toArray()};
+            });
             await page.screenshot({path:'qa-output/swing.png'});
             await page.keyboard.up('KeyQ');await page.waitForTimeout(180);
             report.released=await page.evaluate(()=>window.__worldQA.state);
+            report.releaseRig=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').map(a=>({side:a.userData.side,x:a.rotation.x,z:a.rotation.z,elbow:a.userData.elbow?.rotation.x??null}));
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').map(l=>({side:l.userData.side,x:l.rotation.x,z:l.rotation.z,knee:l.userData.knee?.rotation.x??null}));
+              return {arms,legs,mesh:[q.playerMesh.rotation.x,q.playerMesh.rotation.y,q.playerMesh.rotation.z]};
+            });
             await page.keyboard.press('KeyF');await page.waitForTimeout(120);
             report.audio=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyM');await page.waitForTimeout(80);
@@ -126,9 +160,25 @@ jobs:
             await page.keyboard.press('KeyR');await page.waitForTimeout(220);
             report.heavyAttack=await page.evaluate(()=>window.__worldQA.state);
 
+            report.collisionTest=await page.evaluate(()=>{
+              const q=window.__worldQA,b=q.city.find(x=>Math.hypot(x.x,x.z)>20);
+              q.player.pos.set(b.x,2,b.z);q.player.vel.set(0,0,0);q.player.grounded=false;
+              q.stepPlayer(1/60);
+              const hx=b.w/2+.55,hz=b.d/2+.55;
+              return {inside:Math.abs(q.player.pos.x-b.x)<hx&&Math.abs(q.player.pos.z-b.z)<hz,pos:q.player.pos.toArray(),building:{x:b.x,z:b.z,w:b.w,d:b.d,h:b.h}};
+            });
+            report.boundsTest=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              q.player.pos.set(204.8,1.25,0);q.player.vel.set(24,0,0);q.player.grounded=true;
+              for(let i=0;i<12;i++)q.stepPlayer(1/60);
+              const result={x:q.player.pos.x,vx:q.player.vel.x,limit:q.config.worldHalf};
+              q.player.pos.set(0,3,0);q.player.vel.set(0,0,0);
+              return result;
+            });
+
             const soakStart=Date.now();
             let soakCycles=0;
-            while(Date.now()-soakStart<120000){
+            while(Date.now()-soakStart<300000){
               const shift=soakCycles%3===0;
               if(shift)await page.keyboard.down('ShiftLeft');
               await page.keyboard.down(soakCycles%2===0?'KeyW':'KeyD');
@@ -156,6 +206,23 @@ jobs:
               await page.screenshot({path:`qa-output/${name}.png`});
               report[name]=await page.evaluate(()=>({calls:window.__worldQA.renderer.info.render.calls,triangles:window.__worldQA.renderer.info.render.triangles}));
             }
+            const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+            report.rigPartsPassed=report.runRig.arms.length===2&&report.runRig.legs.length===2&&report.runRig.arms.every(x=>Number.isFinite(x.elbow))&&report.runRig.legs.every(x=>Number.isFinite(x.knee));
+            report.runAnimationPassed=Math.abs(report.runRig.arms[0].x-report.runRig.arms[1].x)>.08&&Math.abs(report.runRig.legs[0].x-report.runRig.legs[1].x)>.08;
+            report.kneeDirectionPassed=report.runRig.legs.every(x=>x.knee<.12)&&report.runRig.legs.some(x=>x.knee<-.05);
+            report.characterFacingPassed=report.runRig.frontDot>.82&&report.swingRig.frontDot>.72;
+            report.jumpPosePassed=[...report.jumpRig.arms.flatMap(x=>[x.x,x.z,x.elbow]),...report.jumpRig.legs.flatMap(x=>[x.x,x.z,x.knee]),...report.jumpRig.mesh].every(Number.isFinite);
+            const activeArm=report.swingRig.arms.find(x=>x.side===report.swingRig.activeSide),inactiveArm=report.swingRig.arms.find(x=>x.side!==report.swingRig.activeSide);
+            report.swingArmPassed=!!activeArm&&!!inactiveArm&&activeArm.x>.85&&activeArm.x>inactiveArm.x+.55;
+            report.webHandPassed=Math.min(...report.swingRig.arms.map(x=>x.webStartDistance))<.22&&activeArm.webStartDistance<inactiveArm.webStartDistance;
+            report.swingLegPassed=report.swingRig.legs.every(x=>x.knee<.08)&&report.swingRig.legs.some(x=>x.knee<-.18);
+            report.swingBodyPassed=Number.isFinite(report.swingRig.mesh[0])&&Number.isFinite(report.swingRig.mesh[2])&&Math.abs(report.swingRig.mesh[0])<.45&&Math.abs(report.swingRig.mesh[2])<.35;
+            const releasedActive=report.releaseRig.arms.find(x=>x.side===report.swingRig.activeSide);
+            report.releasePosePassed=!!releasedActive&&releasedActive.x<activeArm.x-.08;
+            report.cameraPassed=report.runRig.cameraDistance>4&&report.runRig.cameraDistance<18&&report.runRig.cameraDot>.80;
+            report.collisionPassed=report.collisionTest.inside===false;
+            report.boundsPassed=Math.abs(report.boundsTest.x)<=report.boundsTest.limit+.001;
+            report.characterSuitePassed=report.rigPartsPassed&&report.runAnimationPassed&&report.kneeDirectionPassed&&report.characterFacingPassed&&report.jumpPosePassed&&report.swingArmPassed&&report.webHandPassed&&report.swingLegPassed&&report.swingBodyPassed&&report.releasePosePassed;
             report.movementPassed=report.moved.position[0]-report.before.position[0]>.2;
             report.sprintPassed=report.sprintLogic.sprint.speed>report.sprintLogic.normal.speed+3&&report.sprintLogic.sprintSpeed>report.sprintLogic.baseSpeed;
             report.jumpPassed=report.jumped.position[1]>report.moved.position[1];report.swingPassed=report.swung.swing;
@@ -165,7 +232,7 @@ jobs:
             report.audioPassed=report.audio.audioState==='running'&&report.audio.sfxStats.start>0&&report.audio.sfxStats.jump>0&&report.audio.sfxStats.web>0&&report.audio.sfxStats.attack>0&&report.audioMuted.muted===true;
             report.zipPassed=(report.zipTest.sfxStats.zip||0)>0;
             report.heavyAttackPassed=(report.soak.state.sfxStats.heavySwing||0)>0;
-            report.soakPassed=report.soak.durationMs>=120000&&report.soak.calls>0&&report.soak.state.health>0;
+            report.soakPassed=report.soak.durationMs>=300000&&report.soak.calls>0&&report.soak.state.health>0;
             report.missionUIPassed=report.before.mission===0&&report.before.beacons===3&&report.missionUI.trackerVisible&&report.missionUI.text.includes('MISSION 1/4');
 
             for(let i=0;i<3;i++){
@@ -186,7 +253,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.characterSuitePassed||!report.cameraPassed||!report.collisionPassed||!report.boundsPassed||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs
