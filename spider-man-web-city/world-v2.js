@@ -112,7 +112,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   // Paint is batched; markings stop before junctions rather than crossing them.
   for(let lane=-6;lane<=6;lane++){
     const r=lane*32+16;
-    for(let cell=-7;cell<=6;cell++){
+    for(let cell=-7;cell<=7;cell++){
       const c=cell*32;
       for(const off of [-5,1,7]){
         box(m.yellow,[r,.017,c+off],[.12,.012,2.7]);box(m.yellow,[c+off,.018,r],[2.7,.012,.12]);
@@ -123,7 +123,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       }
     }
   }
-  for(let ix=-6;ix<6;ix++)for(let iz=-6;iz<6;iz++){
+  for(let ix=-6;ix<=6;ix++)for(let iz=-6;iz<=6;iz++){
     const x=ix*32+16,z=iz*32+16;
     for(let j=-3;j<=3;j++)for(const s of [-1,1]){
       box(m.paint,[x+j*1.12,.02,z+s*6.1],[.48,.012,2.2]);
@@ -274,7 +274,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     box(m.steel,[x+Math.sin(angle)*.40,5.10,z+Math.cos(angle)*.40],[.08,.085,.86],[0,angle,0]);
     box(m.light,[x+Math.sin(angle)*.8,5.04,z+Math.cos(angle)*.8],[.28,.075,.50],[0,angle,0]);
   }
-  for(let ix=-5;ix<=5;ix++)for(let iz=-5;iz<=5;iz++){
+  for(let ix=-6;ix<=6;ix++)for(let iz=-6;iz<=6;iz++){
     if(ix===0&&iz===0)continue;
     const x=ix*32,z=iz*32;
     lamp(x+10.1,z+9.8,Math.PI/2);
@@ -393,14 +393,25 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const baseH=Math.min(4.8,Math.max(3.9,h*.075));
       const outerStyle=(i+side)%outerFacadeMaterials.length;
       const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
+      const endCap=i===edgeRoads.length-1;
+      const edgeAccent=[0xf0b39f,0xadcfe0,0xd8c892,0xc4b9dc][side];
 
       // Keep the same textured façade all the way to street level so the end buildings
       // read as finished architecture instead of dark placeholder podiums.
-      box(outerFacadeMaterials[outerStyle],[x,h/2,z],[bw,h,bz]);
+      box(outerFacadeMaterials[outerStyle],[x,h/2,z],[bw,h,bz],[0,0,0],endCap?edgeAccent:null);
       box(m.coping,[x,1.0,z],[bw*1.035,2.0,bz*1.035],[0,0,0],0x69777c);
       box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
       box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
       box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
+
+      if(endCap){
+        if(side<2){
+          for(const sx of [-1,1])box(m.paint,[x+sx*bw*.34,h*.50,z+faceSign*(bz/2+.075)],[.18,h*.70,.08],[0,0,0],edgeAccent);
+        }else{
+          for(const sz of [-1,1])box(m.paint,[x+faceSign*(bw/2+.075),h*.50,z+sz*bz*.34],[.08,h*.70,.18],[0,0,0],edgeAccent);
+        }
+        box(m.paint,[x,h+2.36,z],[bw*.46,.12,bz*.46],[0,0,0],edgeAccent);
+      }
 
       for(let yy=baseH+11;yy<h-6;yy+=17){
         if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.03)],[bw*.94,.16,.07]);
@@ -465,7 +476,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   const carColors=[0xc5a540,0x823e36,0xb9c2c6,0x385c72,0x323f48,0x789084];
   for(let i=0;i<carCount;i++){
     const axis=i%2,dir=i%4<2?1:-1,lane=[-112,-80,-48,-16,16,48,80,112,144][i%9];
-    cars.push({axis,dir,lane,t:rnd(-199,199),speed:rnd(7.3,11.4)});bodyMesh.setColorAt(i,new THREE.Color(carColors[i%carColors.length]));
+    cars.push({axis,dir,lane,t:rnd(-219,219),speed:rnd(7.3,11.4)});bodyMesh.setColorAt(i,new THREE.Color(carColors[i%carColors.length]));
   }
   const root=new THREE.Object3D(),part=new THREE.Object3D(),matrix=new THREE.Matrix4();
   function carPart(mesh,index,p,s,rot=[0,0,0]){
@@ -476,7 +487,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const nearCross=((car.t-16+3200)%32),red=(Math.floor(t/8)%2)!==car.axis;
       const stop=red&&(car.dir>0?nearCross>23&&nearCross<27:nearCross>5&&nearCross<9);
       car.t+=car.speed*car.dir*dt*(stop?.035:1);
-      if(car.t>216)car.t=-216;if(car.t< -216)car.t=216;
+      if(car.t>232)car.t=-232;if(car.t< -232)car.t=232;
       root.position.set(car.axis?car.t:car.lane+car.dir*2.5,0,car.axis?car.lane-car.dir*2.5:car.t);
       root.rotation.y=car.axis?(car.dir>0?-Math.PI/2:Math.PI/2):(car.dir>0?Math.PI:0);root.updateMatrix();
       carPart(bodyMesh,i,[0,.68,0],[1.66,.47,3.75]);carPart(cabinMesh,i,[0,1.055,.08],[1.35,.46,1.76]);
@@ -490,7 +501,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.2';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6};
+  scene.userData.worldVersion='2.3';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:4};
   return {
     city,
     update(dt,t,playerPosition){
