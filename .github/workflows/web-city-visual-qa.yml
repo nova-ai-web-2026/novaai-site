@@ -5,7 +5,7 @@ on:
       - 'spider-man-web-city/**'
       - '.github/workflows/web-city-visual-qa.yml'
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: web-city-qa-${{ github.ref }}
   cancel-in-progress: true
@@ -46,7 +46,7 @@ jobs:
             let body=fs.readFileSync(target);
             if(file.endsWith('.js')){
               let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
-              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,webLine,city,keys,config:state,stepPlayer:updatePlayer,get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,webLine,city,keys,config:state,stepPlayer:updatePlayer,stepAnimation:animateScene,get swingBlend(){return swingBlend},get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
               body=Buffer.from(code);
             }
             res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
@@ -110,8 +110,79 @@ jobs:
               return {visible:q.webLine.visible,points:n,curvature:Math.hypot(a[m]-lx,a[m+1]-ly,a[m+2]-lz)};
             });
             await page.screenshot({path:'qa-output/swing.png'});
-            await page.keyboard.up('KeyQ');await page.waitForTimeout(180);
+            report.swingRig=await page.evaluate(()=>{
+              const q=window.__worldQA,T=window.THREE||null;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').sort((a,b)=>a.userData.side-b.userData.side);
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').sort((a,b)=>a.userData.side-b.userData.side);
+              q.playerMesh.updateMatrixWorld(true);
+              const finiteNode=n=>[n.position.x,n.position.y,n.position.z,n.rotation.x,n.rotation.y,n.rotation.z,n.scale.x,n.scale.y,n.scale.z].every(Number.isFinite);
+              const first=[q.webLine.geometry.attributes.position.array[0],q.webLine.geometry.attributes.position.array[1],q.webLine.geometry.attributes.position.array[2]];
+              const handDistances=arms.map(a=>{
+                const h=a.userData.hand;
+                const v={x:0,y:0,z:0};
+                const p=h.getWorldPosition({x:0,y:0,z:0,set(){return this},copy(o){this.x=o.x;this.y=o.y;this.z=o.z;return this},sub(){return this}});
+                return Math.hypot(first[0]-p.x,first[1]-p.y,first[2]-p.z);
+              });
+              const expectedYaw=Math.atan2(-q.player.facing.x,-q.player.facing.z);
+              const yawDelta=Math.atan2(Math.sin(q.playerMesh.rotation.y-expectedYaw),Math.cos(q.playerMesh.rotation.y-expectedYaw));
+              return {
+                armCount:arms.length,
+                legCount:legs.length,
+                elbows:arms.filter(a=>a.userData.elbow).length,
+                knees:legs.filter(l=>l.userData.knee).length,
+                hands:arms.filter(a=>a.userData.hand).length,
+                activeArmRaised:Math.max(...arms.map(a=>a.rotation.x)),
+                elbowsBack:arms.every(a=>a.userData.elbow.rotation.x<.10),
+                kneesBack:legs.every(l=>l.userData.knee.rotation.x<.10),
+                bodyPitch:q.playerMesh.rotation.x,
+                bodyRoll:q.playerMesh.rotation.z,
+                yawDelta,
+                webToNearestHand:Math.min(...handDistances),
+                swingBlend:q.swingBlend,
+                allFinite:q.playerMesh.children.every(finiteNode),
+                visualOffset:q.playerMesh.userData.visualOffset,
+                webPoints:q.webLine.geometry.attributes.position.count
+              };
+            });
+            await page.keyboard.up('KeyQ');await page.waitForTimeout(220);
             report.released=await page.evaluate(()=>window.__worldQA.state);
+            report.runRig=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').sort((a,b)=>a.userData.side-b.userData.side);
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').sort((a,b)=>a.userData.side-b.userData.side);
+              q.player.pos.set(0,q.config.groundY,0);
+              q.player.vel.set(9,0,-4);
+              q.player.grounded=true;
+              q.player.facing.set(.65,0,-.76).normalize();
+              for(let i=0;i<28;i++)q.stepAnimation(1/60,5+i/60);
+              const a0=arms.map(a=>a.rotation.x),l0=legs.map(l=>l.rotation.x),k0=legs.map(l=>l.userData.knee.rotation.x);
+              const e0=arms.map(a=>a.userData.elbow.rotation.x);
+              for(let i=0;i<14;i++)q.stepAnimation(1/60,5.7+i/60);
+              const a1=arms.map(a=>a.rotation.x),l1=legs.map(l=>l.rotation.x);
+              q.playerMesh.updateMatrixWorld(true);
+              const footYs=legs.map(l=>{
+                const foot=l.userData.knee.children.find(n=>n.geometry?.type==='BoxGeometry');
+                const p=foot.getWorldPosition({x:0,y:0,z:0,set(){return this},copy(o){this.x=o.x;this.y=o.y;this.z=o.z;return this}});
+                return p.y;
+              });
+              const expectedYaw=Math.atan2(-q.player.facing.x,-q.player.facing.z);
+              const yawDelta=Math.atan2(Math.sin(q.playerMesh.rotation.y-expectedYaw),Math.cos(q.playerMesh.rotation.y-expectedYaw));
+              return {
+                armOpposition:a0[0]*a0[1]<0,
+                legOpposition:l0[0]*l0[1]<0,
+                kneesBack:k0.every(v=>v<.02),
+                elbowsBent:e0.every(v=>v<.02),
+                animationChanges:a0.some((v,i)=>Math.abs(v-a1[i])>.01)&&l0.some((v,i)=>Math.abs(v-l1[i])>.01),
+                facingLength:q.player.facing.length(),
+                yawDelta,
+                footYDelta:Math.abs(footYs[0]-footYs[1]),
+                footYMean:(footYs[0]+footYs[1])/2,
+                bodyPitch:q.playerMesh.rotation.x,
+                bodyRoll:q.playerMesh.rotation.z,
+                fov:q.camera.fov,
+                cameraDistance:q.camera.position.distanceTo(q.player.pos)
+              };
+            });
             await page.keyboard.press('KeyF');await page.waitForTimeout(120);
             report.audio=await page.evaluate(()=>window.__worldQA.state);
             await page.keyboard.press('KeyM');await page.waitForTimeout(80);
@@ -126,9 +197,41 @@ jobs:
             await page.keyboard.press('KeyR');await page.waitForTimeout(220);
             report.heavyAttack=await page.evaluate(()=>window.__worldQA.state);
 
+            report.characterAnimationChecks={
+              topology:report.swingRig.armCount===2&&report.swingRig.legCount===2,
+              elbowRig:report.swingRig.elbows===2,
+              kneeRig:report.swingRig.knees===2,
+              handRig:report.swingRig.hands===2,
+              swingArmRaised:report.swingRig.activeArmRaised>.15,
+              swingElbowsNatural:report.swingRig.elbowsBack,
+              swingKneesBackward:report.swingRig.kneesBack,
+              swingPitchBounded:Math.abs(report.swingRig.bodyPitch)<.38,
+              swingRollBounded:Math.abs(report.swingRig.bodyRoll)<.28,
+              swingFacingAligned:Math.abs(report.swingRig.yawDelta)<.75,
+              webStartsNearHand:report.swingRig.webToNearestHand<1.25,
+              swingBlendActive:report.swingRig.swingBlend>.12&&report.swingRig.swingBlend<=1.01,
+              transformsFinite:report.swingRig.allFinite,
+              visualOffsetSane:report.swingRig.visualOffset>.5&&report.swingRig.visualOffset<1.8,
+              webHasCurvePoints:report.swingRig.webPoints>=9,
+              runArmOpposition:report.runRig.armOpposition,
+              runLegOpposition:report.runRig.legOpposition,
+              runKneesBackward:report.runRig.kneesBack,
+              runElbowsBent:report.runRig.elbowsBent,
+              runAnimationChanges:report.runRig.animationChanges,
+              facingNormalized:Math.abs(report.runRig.facingLength-1)<.02,
+              runFacingAligned:Math.abs(report.runRig.yawDelta)<.75,
+              feetSymmetric:report.runRig.footYDelta<.22,
+              feetNearGround:report.runRig.footYMean>-1&&report.runRig.footYMean<1.5,
+              runPitchBounded:Math.abs(report.runRig.bodyPitch)<.25,
+              runRollBounded:Math.abs(report.runRig.bodyRoll)<.25,
+              cameraFovSane:report.runRig.fov>=60&&report.runRig.fov<=90,
+              cameraDistanceSane:report.runRig.cameraDistance>4&&report.runRig.cameraDistance<25
+            };
+            report.characterAnimationPassed=Object.values(report.characterAnimationChecks).every(Boolean);
+
             const soakStart=Date.now();
             let soakCycles=0;
-            while(Date.now()-soakStart<120000){
+            while(Date.now()-soakStart<300000){
               const shift=soakCycles%3===0;
               if(shift)await page.keyboard.down('ShiftLeft');
               await page.keyboard.down(soakCycles%2===0?'KeyW':'KeyD');
@@ -165,7 +268,7 @@ jobs:
             report.audioPassed=report.audio.audioState==='running'&&report.audio.sfxStats.start>0&&report.audio.sfxStats.jump>0&&report.audio.sfxStats.web>0&&report.audio.sfxStats.attack>0&&report.audioMuted.muted===true;
             report.zipPassed=(report.zipTest.sfxStats.zip||0)>0;
             report.heavyAttackPassed=(report.soak.state.sfxStats.heavySwing||0)>0;
-            report.soakPassed=report.soak.durationMs>=120000&&report.soak.calls>0&&report.soak.state.health>0;
+            report.soakPassed=report.soak.durationMs>=300000&&report.soak.calls>0&&report.soak.state.health>0;
             report.missionUIPassed=report.before.mission===0&&report.before.beacons===3&&report.missionUI.trackerVisible&&report.missionUI.text.includes('MISSION 1/4');
 
             for(let i=0;i<3;i++){
@@ -186,7 +289,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.characterAnimationPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs
@@ -196,3 +299,15 @@ jobs:
           name: web-city-visual-qa
           path: qa-output
           retention-days: 3
+      - name: Persist latest QA report
+        if: always()
+        run: |
+          test -f qa-output/report.json || exit 0
+          mkdir -p qa
+          cp qa-output/report.json qa/web-city-latest-report.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/web-city-latest-report.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record Web City 5-minute QA report [skip ci]"
+          git push
