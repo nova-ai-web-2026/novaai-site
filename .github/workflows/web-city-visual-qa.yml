@@ -46,7 +46,7 @@ jobs:
             let body=fs.readFileSync(target);
             if(file.endsWith('.js')){
               let code=body.toString().replaceAll('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js','/__vendor/three.module.js');
-              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={scene,camera,renderer,player,playerMesh,webLine,city,keys,config:state,stepPlayer:updatePlayer,stepAnimation:animateScene,get swingBlend(){return swingBlend},get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
+              if(file==='spider-man-web-city/game.js')code+='\nwindow.__worldQA={THREE,scene,camera,renderer,player,playerMesh,webLine,city,keys,config:state,stepPlayer:updatePlayer,stepAnimation:animateScene,get swingBlend(){return swingBlend},get state(){return {position:player.pos.toArray(),velocity:player.vel.toArray(),speed:player.vel.length(),grounded:player.grounded,swing:!!swingAnchor,zip:!!zipTarget,web,health,mission:missionIndex,beacons:beacons.length,enemies:enemies.filter(e=>e.alive).length,won,version:scene.userData.worldVersion,audioState:audioCtx?.state||null,muted:sfxMuted,windBody:windBodyGain?.gain?.value||0,windAir:windAirGain?.gain?.value||0,sfxStats:{...sfxStats}}},activateNearestBeacon(){if(!beacons.length)return false;let best=beacons[0],bestD=best.position.distanceToSquared(player.pos);for(const b of beacons){const d=b.position.distanceToSquared(player.pos);if(d<bestD){best=b;bestD=d;}}player.pos.copy(best.position);player.vel.set(0,0,0);updateMission(.016,clock?.elapsedTime||0);return true;}};';
               body=Buffer.from(code);
             }
             res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');
@@ -111,7 +111,7 @@ jobs:
             });
             await page.screenshot({path:'qa-output/swing.png'});
             report.swingRig=await page.evaluate(()=>{
-              const q=window.__worldQA,T=window.THREE||null;
+              const q=window.__worldQA;
               const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm').sort((a,b)=>a.userData.side-b.userData.side);
               const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg').sort((a,b)=>a.userData.side-b.userData.side);
               q.playerMesh.updateMatrixWorld(true);
@@ -119,8 +119,7 @@ jobs:
               const first=[q.webLine.geometry.attributes.position.array[0],q.webLine.geometry.attributes.position.array[1],q.webLine.geometry.attributes.position.array[2]];
               const handDistances=arms.map(a=>{
                 const h=a.userData.hand;
-                const v={x:0,y:0,z:0};
-                const p=h.getWorldPosition({x:0,y:0,z:0,set(){return this},copy(o){this.x=o.x;this.y=o.y;this.z=o.z;return this},sub(){return this}});
+                const p=h.getWorldPosition(new q.THREE.Vector3());
                 return Math.hypot(first[0]-p.x,first[1]-p.y,first[2]-p.z);
               });
               const expectedYaw=Math.atan2(-q.player.facing.x,-q.player.facing.z);
@@ -162,7 +161,7 @@ jobs:
               q.playerMesh.updateMatrixWorld(true);
               const footYs=legs.map(l=>{
                 const foot=l.userData.knee.children.find(n=>n.geometry?.type==='BoxGeometry');
-                const p=foot.getWorldPosition({x:0,y:0,z:0,set(){return this},copy(o){this.x=o.x;this.y=o.y;this.z=o.z;return this}});
+                const p=foot.getWorldPosition(new q.THREE.Vector3());
                 return p.y;
               });
               const expectedYaw=Math.atan2(-q.player.facing.x,-q.player.facing.z);
