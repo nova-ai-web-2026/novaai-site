@@ -70,6 +70,37 @@ jobs:
               trackerVisible:getComputedStyle(document.getElementById('objectiveTracker')).display!=='none',
               distance:document.getElementById('objectiveDistance').textContent
             }));
+            report.worldAudit=await page.evaluate(()=>{
+              const q=window.__worldQA,seen=new Set(),styles=new Set();
+              let invalidDimensions=0,duplicateCenters=0;
+              for(const b of q.city){
+                const key=b.x.toFixed(3)+':'+b.z.toFixed(3);
+                if(seen.has(key))duplicateCenters++;else seen.add(key);
+                if(![b.x,b.z,b.w,b.d,b.h].every(Number.isFinite)||b.w<=0||b.d<=0||b.h<=3)invalidDimensions++;
+                if(Number.isInteger(b.style))styles.add(b.style);
+              }
+              const stats=q.scene.userData.worldStats||{};
+              return {
+                worldVersion:q.scene.userData.worldVersion,
+                count:q.city.length,
+                invalidDimensions,
+                duplicateCenters,
+                styleCount:styles.size,
+                edgeBuildings:q.city.filter(b=>b.edge).length,
+                heroEdgeBuildings:q.city.filter(b=>b.hero).length,
+                stats
+              };
+            });
+            report.worldAuditPassed=
+              report.worldAudit.invalidDimensions===0&&
+              report.worldAudit.duplicateCenters===0&&
+              report.worldAudit.count>=200&&
+              report.worldAudit.styleCount>=6&&
+              report.worldAudit.edgeBuildings>=48&&
+              report.worldAudit.heroEdgeBuildings===4&&
+              report.worldAudit.stats?.buildingAudit?.invalidBuildings===0&&
+              report.worldAudit.stats?.buildingAudit?.duplicateCenters===0&&
+              report.worldAudit.stats?.visualOuterBuildings>=52;
             await page.screenshot({path:'qa-output/spawn.png'});
             await page.keyboard.down('KeyD');
             await page.waitForFunction(()=>window.__worldQA.player.pos.x>1.3,{timeout:30000});
@@ -170,7 +201,7 @@ jobs:
               q.playerMesh.rotation.y=Math.PI-.03;
               q.player.facing.set(-Math.sin(targetWrapYaw),0,-Math.cos(targetWrapYaw)).normalize();
               q.player.vel.set(0,0,0);q.player.grounded=true;
-              q.stepPlayer(1/60);
+              q.stepAnimation(1/60,6.2);
               const yawWrapDelta=Math.atan2(Math.sin(q.playerMesh.rotation.y-targetWrapYaw),Math.cos(q.playerMesh.rotation.y-targetWrapYaw));
               return {
                 armOpposition:a0[0]*a0[1]<0,
@@ -187,6 +218,54 @@ jobs:
                 bodyRoll:q.playerMesh.rotation.z,
                 fov:q.camera.fov,
                 cameraDistance:q.camera.position.distanceTo(q.player.pos)
+              };
+            });
+            report.poseRig=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const arms=q.playerMesh.children.filter(p=>p.userData.kind==='arm');
+              const legs=q.playerMesh.children.filter(p=>p.userData.kind==='leg');
+              const finite=()=>q.playerMesh.children.every(n=>[
+                n.position.x,n.position.y,n.position.z,
+                n.rotation.x,n.rotation.y,n.rotation.z,
+                n.scale.x,n.scale.y,n.scale.z
+              ].every(Number.isFinite));
+
+              q.player.pos.set(0,q.config.groundY,0);
+              q.player.vel.set(0,0,0);q.player.grounded=true;q.player.facing.set(0,0,-1);
+              for(let i=0;i<60;i++)q.stepAnimation(1/60,7+i/60);
+              const idleArmMax=Math.max(...arms.map(a=>Math.abs(a.rotation.x)));
+              const idleLegMax=Math.max(...legs.map(l=>Math.abs(l.rotation.x)));
+              const idlePitch=q.playerMesh.rotation.x;
+
+              q.player.grounded=false;q.player.vel.set(3,10,-6);
+              for(let i=0;i<24;i++)q.stepAnimation(1/60,8+i/60);
+              const jumpPitch=q.playerMesh.rotation.x;
+              const jumpKnees=legs.map(l=>l.userData.knee.rotation.x);
+
+              q.player.vel.set(3,-12,-6);
+              for(let i=0;i<24;i++)q.stepAnimation(1/60,8.5+i/60);
+              const fallPitch=q.playerMesh.rotation.x;
+              const fallKnees=legs.map(l=>l.userData.knee.rotation.x);
+
+              q.player.pos.set(0,q.config.groundY,0);
+              q.player.vel.set(0,0,0);q.player.grounded=true;
+              q.playerMesh.rotation.y=0;
+              q.player.facing.set(0,0,1);
+              for(let i=0;i<45;i++)q.stepAnimation(1/60,9+i/60);
+              const targetYaw=Math.PI;
+              const yaw180Delta=Math.atan2(
+                Math.sin(q.playerMesh.rotation.y-targetYaw),
+                Math.cos(q.playerMesh.rotation.y-targetYaw)
+              );
+
+              return {
+                idleArmMax,idleLegMax,idlePitch,
+                jumpPitch,fallPitch,
+                jumpKneesBack:jumpKnees.every(v=>v<.08),
+                fallKneesBack:fallKnees.every(v=>v<.08),
+                jumpFallPoseDifferent:Math.abs(jumpPitch-fallPitch)>.08,
+                yaw180Delta,
+                finite:finite()
               };
             });
             await page.keyboard.press('KeyF');await page.waitForTimeout(120);
@@ -232,7 +311,15 @@ jobs:
               runPitchBounded:Math.abs(report.runRig.bodyPitch)<.25,
               runRollBounded:Math.abs(report.runRig.bodyRoll)<.25,
               cameraFovSane:report.runRig.fov>=60&&report.runRig.fov<=90,
-              cameraDistanceSane:report.runRig.cameraDistance>4&&report.runRig.cameraDistance<25
+              cameraDistanceSane:report.runRig.cameraDistance>4&&report.runRig.cameraDistance<25,
+              idleArmsRelaxed:report.poseRig.idleArmMax<.22,
+              idleLegsRelaxed:report.poseRig.idleLegMax<.22,
+              idlePitchStable:Math.abs(report.poseRig.idlePitch)<.10,
+              jumpKneesNatural:report.poseRig.jumpKneesBack,
+              fallKneesNatural:report.poseRig.fallKneesBack,
+              jumpFallPoseDistinct:report.poseRig.jumpFallPoseDifferent,
+              yaw180FacingAligned:Math.abs(report.poseRig.yaw180Delta)<.12,
+              poseTransformsFinite:report.poseRig.finite
             };
             report.characterAnimationPassed=Object.values(report.characterAnimationChecks).every(Boolean);
 
@@ -296,7 +383,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.characterAnimationPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.worldAuditPassed||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.characterAnimationPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs
