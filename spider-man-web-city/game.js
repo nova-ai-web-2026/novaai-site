@@ -47,7 +47,7 @@ const isTouch = matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoin
 
 const state = {
   groundY: 1.25,
-  worldHalf: 220,
+  worldHalf: 252,
   gravity: 24,
   baseSpeed: 12,
   sprintSpeed: 20,
@@ -56,6 +56,10 @@ const state = {
 
 function rand(a,b){ return a + Math.random() * (b-a); }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function dampAngle(current,target,lambda,dt){
+  const delta=Math.atan2(Math.sin(target-current),Math.cos(target-current));
+  return current+delta*(1-Math.exp(-lambda*dt));
+}
 function flatDist(a,b){ const dx=a.x-b.x,dz=a.z-b.z; return Math.hypot(dx,dz); }
 
 function init(){
@@ -753,8 +757,6 @@ function updatePlayer(dt){
   if(Math.abs(player.pos.z)>state.worldHalf){player.pos.z=clamp(player.pos.z,-state.worldHalf,state.worldHalf);player.vel.z*=-.25;}
 
   playerMesh.position.set(player.pos.x,player.pos.y+(playerMesh.userData.visualOffset||0),player.pos.z);
-  const faceYaw=Math.atan2(-player.facing.x,-player.facing.z);
-  playerMesh.rotation.y=THREE.MathUtils.lerp(playerMesh.rotation.y,faceYaw,.18);
   const sp=player.vel.length();
   const localRight=new THREE.Vector3(-player.facing.z,0,player.facing.x);
   const lateralSpeed=player.vel.dot(localRight);
@@ -986,6 +988,15 @@ function drawMap(){
 
 function animateScene(dt,t){
   if(!playerMesh)return;
+
+  // Rendering owns the visual transform. This keeps paused/QA frames and gameplay frames identical.
+  playerMesh.position.set(
+    player.pos.x,
+    player.pos.y+(playerMesh.userData.visualOffset||0),
+    player.pos.z
+  );
+  const faceYaw=Math.atan2(-player.facing.x,-player.facing.z);
+  playerMesh.rotation.y=dampAngle(playerMesh.rotation.y,faceYaw,11.5,dt);
 
   const speed=player.vel.length();
   const horizontalSpeed=Math.hypot(player.vel.x,player.vel.z);
