@@ -70,7 +70,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   }
   const sky=texture(skyCanvas,false);sky.mapping=THREE.EquirectangularReflectionMapping;
   scene.background=sky;scene.environment=sky;scene.environmentIntensity=.52;
-  scene.fog=new THREE.Fog(0xbac8d0,90,440);
+  scene.fog=new THREE.Fog(0xbac8d0,95,560);
   renderer.toneMappingExposure=1.02;
   scene.add(new THREE.HemisphereLight(0xd5eaff,0x8a7558,1.42));
   const sun=new THREE.DirectionalLight(0xffe0b2,2.65);
@@ -104,15 +104,15 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     return texture(c);
   }
   const asphalt=surfaceTexture('road');asphalt.repeat.set(96,96);
-  const terrain=new THREE.Mesh(new THREE.PlaneGeometry(660,660),std(0xffffff,.96,{map:asphalt}));
+  const terrain=new THREE.Mesh(new THREE.PlaneGeometry(760,760),std(0xffffff,.96,{map:asphalt}));
   terrain.rotation.x=-Math.PI/2;terrain.receiveShadow=true;scene.add(terrain);
   const pavingMap=surfaceTexture('paving'), pavingMat=std(0xffffff,.92,{map:pavingMap});
   const pavingGeometry=new THREE.PlaneGeometry(22,22);pavingGeometry.attributes.uv.array.forEach((_,i,a)=>a[i]*=5.5);
 
   // Paint is batched; markings stop before junctions rather than crossing them.
-  for(let lane=-6;lane<=6;lane++){
+  for(let lane=-7;lane<=7;lane++){
     const r=lane*32+16;
-    for(let cell=-7;cell<=7;cell++){
+    for(let cell=-9;cell<=9;cell++){
       const c=cell*32;
       for(const off of [-5,1,7]){
         box(m.yellow,[r,.017,c+off],[.12,.012,2.7]);box(m.yellow,[c+off,.018,r],[2.7,.012,.12]);
@@ -123,7 +123,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       }
     }
   }
-  for(let ix=-6;ix<=6;ix++)for(let iz=-6;iz<=6;iz++){
+  for(let ix=-7;ix<=7;ix++)for(let iz=-7;iz<=7;iz++){
     const x=ix*32+16,z=iz*32+16;
     for(let j=-3;j<=3;j++)for(const s of [-1,1]){
       box(m.paint,[x+j*1.12,.02,z+s*6.1],[.48,.012,2.2]);
@@ -329,7 +329,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     const count=ring===0?104:72;
     for(let i=0;i<count;i++){
       const a=i/count*Math.PI*2+rnd(-.012,.012);
-      const r=ring===0?rnd(238,285):rnd(300,365);
+      const r=ring===0?rnd(315,375):rnd(400,500);
       const h=ring===0?rnd(28,86):rnd(20,64);
       const w=rnd(9,20),d=rnd(9,20);
       const x=Math.cos(a)*r,z=Math.sin(a)*r;
@@ -363,9 +363,10 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     }
   }
 
-  // Finished street-end belt: full façades and grounded storefronts on every avenue exit.
-  const edgeRoads=[];
-  for(let i=-6;i<=6;i++)edgeRoads.push(i*32+16);
+  // Continuation district: keep the avenues open instead of capping them with buildings.
+  // The first ring is playable/collidable; the second ring is visual depth only.
+  const edgeBlocks=[];
+  for(let i=-6;i<=6;i++)edgeBlocks.push(i*32);
 
   const outerFacadeMaterials=facadeMaterials.map((base,idx)=>{
     const mat=base.clone();
@@ -374,89 +375,142 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const tex=base[key].clone();
       tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
       const glassy=idx===2||idx===4;
-      tex.repeat.set(glassy?2.8:2.35,glassy?5.4:4.8);
+      tex.repeat.set(glassy?2.7:2.25,glassy?5.2:4.6);
       tex.needsUpdate=true;
       mat[key]=tex;
     }
-    mat.roughness=(idx===2||idx===4)?.38:.76;
-    mat.envMapIntensity=(idx===2||idx===4)?.72:.16;
+    mat.roughness=(idx===2||idx===4)?.36:.74;
+    mat.envMapIntensity=(idx===2||idx===4)?.76:.18;
     return mat;
   });
 
+  // Four deliberately colored landmark buildings make each world edge feel authored.
+  const heroColors=[0xb95846,0x397f8c,0xc3963f,0x6e5aa0];
+  const heroMaterials=heroColors.map((color,side)=>{
+    const mat=outerFacadeMaterials[(side*2+1)%outerFacadeMaterials.length].clone();
+    mat.color.setHex(color);
+    mat.roughness=.50;
+    mat.envMapIntensity=.34;
+    mat.emissive=new THREE.Color(color).multiplyScalar(.045);
+    mat.emissiveIntensity=.24;
+    return mat;
+  });
+
+  let continuationBuildings=0,heroEdgeBuildings=0,visualOuterBuildings=0;
   for(let side=0;side<4;side++){
-    for(let i=0;i<edgeRoads.length;i++){
-      const p=edgeRoads[i];
-      const edge=side<2?(side===0?-236:236):(side===2?-236:236);
-      const w=rnd(19.5,25.5),d=rnd(18.5,24.5),h=rnd(43,86);
+    const edge=side<2?(side===0?-224:224):(side===2?-224:224);
+    const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
+
+    for(let i=0;i<edgeBlocks.length;i++){
+      const p=edgeBlocks[i];
+      const hero=p===0;
+      const w=hero?22.4:rnd(17.0,21.0);
+      const d=hero?21.0:rnd(17.0,21.0);
+      const h=hero?72+side*5:rnd(34,72);
       const x=side<2?p:edge,z=side<2?edge:p;
       const bw=side<2?w:d,bz=side<2?d:w;
-      const baseH=Math.min(4.8,Math.max(3.9,h*.075));
-      const outerStyle=(i+side)%outerFacadeMaterials.length;
-      const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
-      const endCap=i===edgeRoads.length-1;
-      const edgeAccent=[0xf0b39f,0xadcfe0,0xd8c892,0xc4b9dc][side];
+      const style=(i+side*2)%outerFacadeMaterials.length;
+      const bodyMat=hero?heroMaterials[side]:outerFacadeMaterials[style];
 
-      // Keep the same textured façade all the way to street level so the end buildings
-      // read as finished architecture instead of dark placeholder podiums.
-      box(outerFacadeMaterials[outerStyle],[x,h/2,z],[bw,h,bz],[0,0,0],endCap?edgeAccent:null);
-      box(m.coping,[x,1.0,z],[bw*1.035,2.0,bz*1.035],[0,0,0],0x69777c);
-      box(m.cream,[x,h-2.0,z],[bw*1.015,.28,bz*1.015]);
-      box(m.dark,[x,h+1.05,z],[bw*.72,2.0,bz*.72],[0,0,0],0x49565d);
-      box(m.coping,[x,h+2.14,z],[bw*.76,.26,bz*.76],[0,0,0],0xa8b1b2);
+      box(bodyMat,[x,h/2,z],[bw,h,bz]);
+      box(m.coping,[x,.92,z],[bw*1.035,1.84,bz*1.035],[0,0,0],hero?0x515c61:0x69777c);
+      box(m.cream,[x,h-1.65,z],[bw*1.012,.26,bz*1.012]);
+      box(m.dark,[x,h+.82,z],[bw*.68,1.55,bz*.66],[0,0,0],hero?0x343c42:0x49565d);
+      box(m.coping,[x,h+1.67,z],[bw*.72,.20,bz*.70],[0,0,0],hero?heroColors[side]:0xa8b1b2);
 
-      if(endCap){
-        if(side<2){
-          for(const sx of [-1,1])box(m.paint,[x+sx*bw*.34,h*.50,z+faceSign*(bz/2+.075)],[.18,h*.70,.08],[0,0,0],edgeAccent);
-        }else{
-          for(const sz of [-1,1])box(m.paint,[x+faceSign*(bw/2+.075),h*.50,z+sz*bz*.34],[.08,h*.70,.18],[0,0,0],edgeAccent);
-        }
-        box(m.paint,[x,h+2.36,z],[bw*.46,.12,bz*.46],[0,0,0],edgeAccent);
+      // Horizontal façade breaks keep these close buildings from reading as single slabs.
+      for(let yy=11;yy<h-6;yy+=15){
+        if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.035)],[bw*.92,.13,.075]);
+        else box(m.cream,[x+faceSign*(bw/2+.035),yy,z],[.075,.13,bz*.92]);
       }
 
-      for(let yy=baseH+11;yy<h-6;yy+=17){
-        if(side<2)box(m.cream,[x,yy,z+faceSign*(bz/2+.03)],[bw*.94,.16,.07]);
-        else box(m.cream,[x+faceSign*(bw/2+.03),yy,z],[.07,.16,bz*.94]);
-      }
-
-      const storefrontCount=3;
+      // Ground-floor storefronts always face back toward the playable city.
+      const storefrontCount=hero?4:3;
       if(side<2){
-        const faceZ=z+faceSign*(bz/2+.06);
-        const span=bw*.80,slot=span/storefrontCount;
-        for(let s=0;s<storefrontCount;s++){
-          const px=x+(s-(storefrontCount-1)/2)*slot;
-          box(m.dark,[px,2.05,faceZ],[slot*.84,2.84,.13]);
-          box(m.glass,[px,2.05,faceZ+faceSign*.035],[slot*.72,2.56,.075]);
+        const faceZ=z+faceSign*(bz/2+.065);
+        const span=bw*.82,slot=span/storefrontCount;
+        for(let k=0;k<storefrontCount;k++){
+          const px=x+(k-(storefrontCount-1)/2)*slot;
+          box(m.dark,[px,2.02,faceZ],[slot*.82,2.76,.13]);
+          box(m.glass,[px,2.02,faceZ+faceSign*.038],[slot*.70,2.47,.075]);
         }
-        const doorX=x+((i+side)%2?slot*.34:-slot*.34);
-        box(m.dark,[doorX,1.82,faceZ+faceSign*.075],[1.14,2.52,.08]);
-        box(m.glass,[doorX,1.82,faceZ+faceSign*.12],[.92,2.28,.055]);
-        box(m.dark,[x,3.62,faceZ+faceSign*.10],[bw*.88,.22,.42]);
-        box(m.cream,[x,4.10,faceZ+faceSign*.055],[bw*.91,.17,.11]);
+        box(m.dark,[x,3.55,faceZ+faceSign*.10],[bw*.88,.20,.40]);
+        inst(unitPlane,signs[(side+i)%signs.length],[x,3.98,faceZ+faceSign*.125],[bw*.64,.54,1],[0,faceSign>0?0:Math.PI,0]);
       }else{
-        const faceX=x+faceSign*(bw/2+.06);
-        const span=bz*.80,slot=span/storefrontCount;
-        for(let s=0;s<storefrontCount;s++){
-          const pz=z+(s-(storefrontCount-1)/2)*slot;
-          box(m.dark,[faceX,2.05,pz],[.13,2.84,slot*.84]);
-          box(m.glass,[faceX+faceSign*.035,2.05,pz],[.075,2.56,slot*.72]);
+        const faceX=x+faceSign*(bw/2+.065);
+        const span=bz*.82,slot=span/storefrontCount;
+        for(let k=0;k<storefrontCount;k++){
+          const pz=z+(k-(storefrontCount-1)/2)*slot;
+          box(m.dark,[faceX,2.02,pz],[.13,2.76,slot*.82]);
+          box(m.glass,[faceX+faceSign*.038,2.02,pz],[.075,2.47,slot*.70]);
         }
-        const doorZ=z+((i+side)%2?slot*.34:-slot*.34);
-        box(m.dark,[faceX+faceSign*.075,1.82,doorZ],[.08,2.52,1.14]);
-        box(m.glass,[faceX+faceSign*.12,1.82,doorZ],[.055,2.28,.92]);
-        box(m.dark,[faceX+faceSign*.10,3.62,z],[.42,.22,bz*.88]);
-        box(m.cream,[faceX+faceSign*.055,4.10,z],[.11,.17,bz*.91]);
+        box(m.dark,[faceX+faceSign*.10,3.55,z],[.40,.20,bz*.88]);
+        inst(unitPlane,signs[(side+i)%signs.length],[faceX+faceSign*.125,3.98,z],[bz*.64,.54,1],[0,faceSign>0?-Math.PI/2:Math.PI/2,0]);
       }
 
-      if((i+side)%3===0){
-        box(m.steel,[x,h+3.35,z],[bw*.28,2.1,bz*.25]);
-        box(m.dark,[x,h+4.45,z],[bw*.32,.18,bz*.29]);
+      if(hero){
+        heroEdgeBuildings++;
+        // Strong colored ribs + a stepped crown give the four edge landmarks unique silhouettes.
+        if(side<2){
+          for(const sx of [-1,1])box(m.paint,[x+sx*bw*.35,h*.53,z+faceSign*(bz/2+.08)],[.20,h*.78,.10],[0,0,0],heroColors[side]);
+        }else{
+          for(const sz of [-1,1])box(m.paint,[x+faceSign*(bw/2+.08),h*.53,z+sz*bz*.35],[.10,h*.78,.20],[0,0,0],heroColors[side]);
+        }
+        box(m.dark,[x,h+3.25,z],[bw*.48,3.0,bz*.46],[0,0,0],0x30383e);
+        box(m.paint,[x,h+4.84,z],[bw*.52,.18,bz*.50],[0,0,0],heroColors[side]);
+        box(m.steel,[x,h+7.2,z],[.13,4.6,.13]);
+        inst(sphere,m.red,[x,h+9.55,z],[.09,.09,.09]);
+      }else if((i+side)%3===0){
+        box(m.steel,[x,h+2.75,z],[bw*.27,1.75,bz*.24]);
       }
-      if((i+side)%4===0){
-        box(m.steel,[x,h+5.15,z],[.14,4.0,.14]);
-        inst(sphere,m.red,[x,h+7.25,z],[.075,.075,.075]);
-      }
+
+      // These are real buildings: collisions and web anchors continue one block farther.
+      city.push({x,z,w:bw,d:bz,h,style,mesh:null,edge:true,hero});
+      continuationBuildings++;
     }
   }
+
+  // A second lower-detail ring prevents the first continuation row from becoming a new hard horizon.
+  const outerBlocks=[];
+  for(let i=-7;i<=7;i++)outerBlocks.push(i*32);
+  for(let side=0;side<4;side++){
+    const edge=side<2?(side===0?-288:288):(side===2?-288:288);
+    for(let i=0;i<outerBlocks.length;i++){
+      const p=outerBlocks[i];
+      const x=side<2?p:edge,z=side<2?edge:p;
+      const w=rnd(15.5,20.5),d=rnd(15.5,20.5),h=rnd(25,58);
+      const bw=side<2?w:d,bz=side<2?d:w;
+      const style=(i+side+3)%outerFacadeMaterials.length;
+      box(outerFacadeMaterials[style],[x,h/2,z],[bw,h,bz]);
+      box(m.dark,[x,h+.32,z],[bw+.14,.58,bz+.14]);
+      if((i+side)%3===0)box(m.steel,[x,h+1.65,z],[bw*.32,2.2,bz*.28]);
+      visualOuterBuildings++;
+    }
+  }
+
+  // Building-by-building audit is exposed to QA so every collider/anchor descriptor gets checked.
+  const seenCenters=new Set();
+  const styleCounts=Array(6).fill(0);
+  let invalidBuildings=0,duplicateCenters=0,minBuildingHeight=Infinity,maxBuildingHeight=0;
+  for(const b of city){
+    const key=`${b.x.toFixed(3)}:${b.z.toFixed(3)}`;
+    if(seenCenters.has(key))duplicateCenters++; else seenCenters.add(key);
+    if(!Number.isFinite(b.x)||!Number.isFinite(b.z)||!Number.isFinite(b.w)||!Number.isFinite(b.d)||!Number.isFinite(b.h)||b.w<=0||b.d<=0||b.h<=3)invalidBuildings++;
+    if(Number.isInteger(b.style)&&b.style>=0&&b.style<styleCounts.length)styleCounts[b.style]++;
+    minBuildingHeight=Math.min(minBuildingHeight,b.h);
+    maxBuildingHeight=Math.max(maxBuildingHeight,b.h);
+  }
+  const buildingAudit={
+    checked:city.length,
+    invalidBuildings,
+    duplicateCenters,
+    styleCounts,
+    minBuildingHeight,
+    maxBuildingHeight,
+    continuationBuildings,
+    heroEdgeBuildings,
+    visualOuterBuildings
+  };
 
   finishPools();
 
@@ -501,7 +555,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.3';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:4};
+  scene.userData.worldVersion='2.4';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
