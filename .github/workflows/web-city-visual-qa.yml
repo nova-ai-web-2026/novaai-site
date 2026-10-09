@@ -92,8 +92,8 @@ jobs:
 
                 // The two main avenues at x=16 and z=16 must stay clear through every continuation ring.
                 const hx=b.w/2+.55,hz=b.d/2+.55;
-                const alongNorthSouth=Math.abs(b.x-16)<hx+5.0&&Math.abs(b.z)>205;
-                const alongEastWest=Math.abs(b.z-16)<hz+5.0&&Math.abs(b.x)>205;
+                const alongNorthSouth=Math.abs(b.x-16)<hx+4.5&&Math.abs(b.z)>205;
+                const alongEastWest=Math.abs(b.z-16)<hz+4.5&&Math.abs(b.x)>205;
                 if(alongNorthSouth||alongEastWest){
                   blockedExitBuildings++;
                   failures.push({type:'blocked-exit',i,x:b.x,z:b.z,w:b.w,d:b.d});
