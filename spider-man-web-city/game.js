@@ -626,6 +626,7 @@ function webZip(){
   if(!a)return toast("مفيش نقطة Web Zip مناسبة قدامك.");
   zipTarget=a.clone();web-=10;
   webAttachStartedAt=clock?.elapsedTime||0;
+  webOriginSmooth=getWebOrigin(a).clone();
   sfx("zip");
 }
 
@@ -883,10 +884,15 @@ function drawWeb(a,b){
     const lift=arch2*verticalLag;
     const trail=arch2*trailScale;
 
+    const rootBlend=Math.pow(1-pf,3);
+    const rootDx=(desiredOrigin.x-origin.x)*rootBlend;
+    const rootDy=(desiredOrigin.y-origin.y)*rootBlend;
+    const rootDz=(desiredOrigin.z-origin.z)*rootBlend;
+
     const k=i*3;
-    arr[k]=x+side.x*sway+upSide.x*lift-player.vel.x*trail;
-    arr[k+1]=y+upSide.y*lift-player.vel.y*trail*.14;
-    arr[k+2]=z+side.z*sway+upSide.z*lift-player.vel.z*trail;
+    arr[k]=x+rootDx+side.x*sway+upSide.x*lift-player.vel.x*trail;
+    arr[k+1]=y+rootDy+upSide.y*lift-player.vel.y*trail*.14;
+    arr[k+2]=z+rootDz+side.z*sway+upSide.z*lift-player.vel.z*trail;
   }
 
   webLine.material.opacity=.80+.14*reveal;
