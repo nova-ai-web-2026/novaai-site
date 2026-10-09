@@ -364,7 +364,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   }
 
   // Continuation district: keep the avenues open instead of capping them with buildings.
-  // The first ring is playable/collidable; the second ring is visual depth only.
+  // Edge continuation: all three visible rings participate in collisions/web anchors so roads never end at an invisible wall.
   const edgeBlocks=[];
   for(let i=-6;i<=6;i++)edgeBlocks.push(i*32);
 
@@ -396,7 +396,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     return mat;
   });
 
-  let continuationBuildings=0,heroEdgeBuildings=0,visualOuterBuildings=0;
+  let continuationBuildings=0,heroEdgeBuildings=0,visualOuterBuildings=0,playableOuterBuildings=0;
   for(let side=0;side<4;side++){
     const edge=side<2?(side===0?-224:224):(side===2?-224:224);
     const faceSign=side<2?(side===0?1:-1):(side===2?1:-1);
@@ -512,12 +512,14 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       }else if((i+side)%3===0){
         box(m.steel,[x,h+1.65,z],[bw*.32,2.2,bz*.28]);
       }
+      city.push({x,z,w:bw,d:bz,h,style,mesh:null,edge:true,outer:true});
       visualOuterBuildings++;
+      playableOuterBuildings++;
     }
   }
 
-  // Third sparse continuation ring: extends the city silhouette without adding collision cost.
-  let farContinuationBuildings=0;
+  // Third continuation ring: still lighter visually, but now collidable/playable so the avenue continues naturally.
+  let farContinuationBuildings=0,playableFarBuildings=0;
   const farBlocks=[];
   for(let i=-8;i<=8;i++)farBlocks.push(i*32);
   const farPalette=[0x7f8d91,0x8d8277,0x6f8790,0x968a78,0x73858a,0x8b7c86];
@@ -532,7 +534,9 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       box(outerFacadeMaterials[style],[x,h/2,z],[bw,h,bz],[0,0,0],farPalette[style]);
       box(m.dark,[x,h+.30,z],[bw+.10,.52,bz+.10]);
       if((i+side)%4===0)box(m.steel,[x,h+1.35,z],[bw*.26,1.55,bz*.23]);
+      city.push({x,z,w:bw,d:bz,h,style,mesh:null,edge:true,far:true});
       farContinuationBuildings++;
+      playableFarBuildings++;
     }
   }
 
@@ -558,7 +562,9 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     continuationBuildings,
     heroEdgeBuildings,
     visualOuterBuildings,
-    farContinuationBuildings
+    farContinuationBuildings,
+    playableOuterBuildings,
+    playableFarBuildings
   };
 
   finishPools();
@@ -604,7 +610,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.5';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,buildingAudit};
+  scene.userData.worldVersion='2.6';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
