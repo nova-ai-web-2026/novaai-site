@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=3.3-terminal-continuation";
+import { createCityWorld } from "./world-v2.js?v=3.4-playable-terminal";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
@@ -47,7 +47,7 @@ const isTouch = matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoin
 
 const state = {
   groundY: 1.25,
-  worldHalf: 378,
+  worldHalf: 466,
   gravity: 24,
   baseSpeed: 12,
   sprintSpeed: 20,
