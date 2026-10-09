@@ -518,23 +518,71 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     }
   }
 
-  // Third continuation ring: still lighter visually, but now collidable/playable so the avenue continues naturally.
-  let farContinuationBuildings=0,playableFarBuildings=0;
+  // Third continuation ring: fully playable. The four axis buildings are authored color landmarks.
+  let farContinuationBuildings=0,playableFarBuildings=0,farHeroBuildings=0;
   const farBlocks=[];
   for(let i=-8;i<=8;i++)farBlocks.push(i*32);
   const farPalette=[0x7f8d91,0x8d8277,0x6f8790,0x968a78,0x73858a,0x8b7c86];
+  const farHeroColors=[0xd8664f,0x278fa5,0xe0ad39,0x8064c4];
+  const farHeroMaterials=farHeroColors.map((color,side)=>{
+    const mat=heroMaterials[side].clone();
+    mat.color.setHex(color);
+    mat.roughness=.34;
+    mat.metalness=.16;
+    mat.envMapIntensity=.62;
+    mat.emissive=new THREE.Color(color).multiplyScalar(.085);
+    mat.emissiveIntensity=.38;
+    return mat;
+  });
+
   for(let side=0;side<4;side++){
     const edge=side<2?(side===0?-352:352):(side===2?-352:352);
+    const inward=side<2?(side===0?1:-1):(side===2?1:-1);
+
     for(let i=0;i<farBlocks.length;i++){
       const p=farBlocks[i];
+      const hero=p===0;
       const x=side<2?p:edge,z=side<2?edge:p;
-      const w=rnd(14.5,19.5),d=rnd(14.5,19.5),h=rnd(22,52);
+      const w=hero?21.8:rnd(14.5,19.5);
+      const d=hero?20.6:rnd(14.5,19.5);
+      const h=hero?58+side*4:rnd(22,52);
       const bw=side<2?w:d,bz=side<2?d:w;
       const style=(i+side*2+1)%outerFacadeMaterials.length;
-      box(outerFacadeMaterials[style],[x,h/2,z],[bw,h,bz],[0,0,0],farPalette[style]);
+      const bodyMat=hero?farHeroMaterials[side]:outerFacadeMaterials[style];
+
+      box(bodyMat,[x,h/2,z],[bw,h,bz],[0,0,0],hero?farHeroColors[side]:farPalette[style]);
       box(m.dark,[x,h+.30,z],[bw+.10,.52,bz+.10]);
-      if((i+side)%4===0)box(m.steel,[x,h+1.35,z],[bw*.26,1.55,bz*.23]);
-      city.push({x,z,w:bw,d:bz,h,style,mesh:null,edge:true,far:true});
+
+      if(hero){
+        farHeroBuildings++;
+        const accent=farHeroColors[side];
+
+        // Strong vertical rhythm on the inward-facing façade so the last buildings read as finished landmarks.
+        if(side<2){
+          const faceZ=z+inward*(bz/2+.055);
+          for(const sx of [-.31,0,.31])box(m.paint,[x+sx*bw,h*.50,faceZ],[sx===0?.18:.13,h*.70,.075],[0,0,0],accent);
+          for(const sx of [-.18,.18])box(m.glass,[x+sx*bw,h*.52,faceZ+inward*.018],[bw*.14,h*.45,.045]);
+          box(m.paint,[x,h*.26,faceZ+inward*.025],[bw*.68,.15,.075],[0,0,0],accent);
+          box(m.paint,[x,h*.74,faceZ+inward*.025],[bw*.68,.15,.075],[0,0,0],accent);
+        }else{
+          const faceX=x+inward*(bw/2+.055);
+          for(const sz of [-.31,0,.31])box(m.paint,[faceX,h*.50,z+sz*bz],[.075,h*.70,sz===0?.18:.13],[0,0,0],accent);
+          for(const sz of [-.18,.18])box(m.glass,[faceX+inward*.018,h*.52,z+sz*bz],[.045,h*.45,bz*.14]);
+          box(m.paint,[faceX+inward*.025,h*.26,z],[.075,.15,bz*.68],[0,0,0],accent);
+          box(m.paint,[faceX+inward*.025,h*.74,z],[.075,.15,bz*.68],[0,0,0],accent);
+        }
+
+        // Stepped roof crown + beacon make each of the four world exits recognizable from far away.
+        box(m.dark,[x,h+1.15,z],[bw*.70,1.7,bz*.67],[0,0,0],0x313b41);
+        box(m.dark,[x,h+2.65,z],[bw*.52,1.25,bz*.49],[0,0,0],0x39454b);
+        box(m.paint,[x,h+3.36,z],[bw*.58,.18,bz*.55],[0,0,0],accent);
+        box(m.steel,[x,h+5.35,z],[.12,3.8,.12]);
+        inst(sphere,m.red,[x,h+7.32,z],[.10,.10,.10]);
+      }else if((i+side)%4===0){
+        box(m.steel,[x,h+1.35,z],[bw*.26,1.55,bz*.23]);
+      }
+
+      city.push({x,z,w:bw,d:bz,h,style,mesh:null,edge:true,far:true,farHero:hero});
       farContinuationBuildings++;
       playableFarBuildings++;
     }
@@ -564,7 +612,8 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     visualOuterBuildings,
     farContinuationBuildings,
     playableOuterBuildings,
-    playableFarBuildings
+    playableFarBuildings,
+    farHeroBuildings
   };
 
   finishPools();
@@ -610,7 +659,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.6';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,buildingAudit};
+  scene.userData.worldVersion='2.6';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
