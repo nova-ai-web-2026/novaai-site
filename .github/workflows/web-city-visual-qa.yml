@@ -128,6 +128,39 @@ jobs:
               return {normal,sprint,baseSpeed:q.config.baseSpeed,sprintSpeed:q.config.sprintSpeed};
             });
             report.sprinted=report.sprintLogic.sprint;
+            report.edgeTraversal=await page.evaluate(()=>{
+              const q=window.__worldQA;
+              const clearKeys=()=>{for(const k of ['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight'])q.keys[k]=false;};
+              const run=(axis,sign)=>{
+                clearKeys();
+                q.player.vel.set(0,0,0);
+                q.player.grounded=true;
+                q.player.pos.set(axis==='x'?sign*230:16,q.config.groundY,axis==='z'?sign*230:16);
+                const key=axis==='x'?(sign>0?'KeyD':'KeyA'):(sign>0?'KeyS':'KeyW');
+                q.keys[key]=true;q.keys.ShiftLeft=true;
+                let min=Infinity,max=-Infinity;
+                for(let i=0;i<600;i++){
+                  q.stepPlayer(1/60);
+                  const v=axis==='x'?q.player.pos.x:q.player.pos.z;
+                  min=Math.min(min,v);max=Math.max(max,v);
+                }
+                clearKeys();
+                const final=axis==='x'?q.player.pos.x:q.player.pos.z;
+                return {final,min,max,furthest:sign>0?max:-min};
+              };
+              const result={
+                east:run('x',1),
+                west:run('x',-1),
+                south:run('z',1),
+                north:run('z',-1),
+                worldHalf:q.config.worldHalf,
+                outerColliders:q.city.filter(b=>b.outer).length,
+                farColliders:q.city.filter(b=>b.far).length
+              };
+              q.player.pos.set(0,q.config.groundY,0);q.player.vel.set(0,0,0);q.player.grounded=true;
+              clearKeys();
+              return result;
+            });
             await page.keyboard.press('Space');
             await page.waitForFunction(()=>window.__worldQA.player.pos.y>1.8,{timeout:30000});
             report.jumped=await page.evaluate(()=>window.__worldQA.state);
@@ -355,6 +388,11 @@ jobs:
             }
             report.movementPassed=report.moved.position[0]-report.before.position[0]>.2;
             report.sprintPassed=report.sprintLogic.sprint.speed>report.sprintLogic.normal.speed+3&&report.sprintLogic.sprintSpeed>report.sprintLogic.baseSpeed;
+            report.edgeTraversalPassed=
+              report.edgeTraversal.worldHalf>=360&&
+              report.edgeTraversal.outerColliders>=52&&
+              report.edgeTraversal.farColliders>=60&&
+              ['east','west','south','north'].every(k=>report.edgeTraversal[k].furthest>330);
             report.jumpPassed=report.jumped.position[1]>report.moved.position[1];report.swingPassed=report.swung.swing;
             report.webVisualPassed=report.webVisual.visible&&report.webVisual.points>=9&&report.webVisual.curvature>.002;
             report.releasePassed=report.released.swing===false&&report.released.sfxStats.release>0&&report.released.speed>2;
@@ -383,7 +421,7 @@ jobs:
             await mobile.close();
             fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
             await browser.close();server.close();
-            if(errors.length||!report.worldAuditPassed||!report.movementPassed||!report.sprintPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.characterAnimationPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
+            if(errors.length||!report.worldAuditPassed||!report.movementPassed||!report.sprintPassed||!report.edgeTraversalPassed||!report.jumpPassed||!report.swingPassed||!report.webVisualPassed||!report.releasePassed||!report.windPassed||!report.audioPassed||!report.zipPassed||!report.heavyAttackPassed||!report.characterAnimationPassed||!report.soakPassed||!report.missionUIPassed||!report.missionProgressionPassed||!report.mobile.controlsVisible)process.exitCode=1;
           })().catch(async e=>{report.failure=e.stack||String(e);fs.writeFileSync('qa-output/report.json',JSON.stringify(report,null,2));console.error(e);try{if(page&&!page.isClosed())await page.screenshot({path:'qa-output/error.png'});if(browser)await browser.close();}catch(_){}server.close();process.exitCode=1;});
           JS
           node /tmp/web-city-qa/check.cjs
