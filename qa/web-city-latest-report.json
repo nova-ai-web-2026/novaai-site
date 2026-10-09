@@ -1,5 +1,5 @@
 {
-  "commit": "cfb1b1d1ad3606d91f9fef87e593b949284736ee",
+  "commit": "3311191623f8349c5c72cd5415f970e4d6b69102",
   "errors": [],
   "before": {
     "position": [
@@ -25,8 +25,8 @@
     "version": "3.6",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.006222983822226524,
-    "windAir": 0.00006283074617385864,
+    "windBody": 0.005649120546877384,
+    "windAir": 0.000058433088270248845,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -284,8 +284,8 @@
     "version": "3.6",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.026123685762286186,
-    "windAir": 0.0010407429654151201,
+    "windBody": 0.026676667854189873,
+    "windAir": 0.0010726897744461894,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -296,15 +296,15 @@
   "swung": {
     "position": [
       0,
-      5.259812807948965,
-      -2.902242455408182
+      5.2446098436337145,
+      -2.8860886504298553
     ],
     "velocity": [
       0,
-      25.503089832214968,
-      -26.68507474719432
+      25.469055085247714,
+      -26.617957607297278
     ],
-    "speed": 36.912068558309954,
+    "speed": 36.840038465225,
     "grounded": false,
     "swing": true,
     "zip": false,
@@ -317,8 +317,8 @@
     "version": "3.6",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.12476127594709396,
-    "windAir": 0.019087109714746475,
+    "windBody": 0.12445221841335297,
+    "windAir": 0.018991775810718536,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -329,8 +329,8 @@
   },
   "webVisual": {
     "visible": true,
-    "points": 9,
-    "curvature": 0.055434088303573326
+    "points": 13,
+    "curvature": 0.13371689519616337
   },
   "swingRig": {
     "armCount": 2,
@@ -338,30 +338,30 @@
     "elbows": 2,
     "knees": 2,
     "hands": 2,
-    "activeArmRaised": 1.2541917396553828,
+    "activeArmRaised": 1.2760203573030462,
     "elbowsBack": true,
     "kneesBack": true,
-    "bodyPitch": -0.2074483324308559,
-    "bodyRoll": -0.030654397862791144,
-    "yawDelta": -0.013505808514066851,
-    "webToNearestHand": 4.265898111600728e-7,
-    "swingBlend": 0.829180869733942,
+    "bodyPitch": -0.21007378037018193,
+    "bodyRoll": -0.031145265168376488,
+    "yawDelta": -0.012489894198568115,
+    "webToNearestHand": 1.3574027007009712,
+    "swingBlend": 0.8363442266477331,
     "allFinite": true,
     "visualOffset": 1.2,
-    "webPoints": 9
+    "webPoints": 13
   },
   "released": {
     "position": [
       0,
-      8.225811827830487,
-      -6.376679796453957
+      8.41221684344991,
+      -6.612384100149225
     ],
     "velocity": [
       0,
-      28.011933495839514,
-      -37.7042517654548
+      27.89966466341666,
+      -37.89980058085326
     ],
-    "speed": 46.97104447814778,
+    "speed": 47.06151476949658,
     "grounded": false,
     "swing": false,
     "zip": false,
@@ -392,21 +392,21 @@
     "elbowsBent": true,
     "animationChanges": true,
     "facingLength": 1,
-    "yawDelta": 0.00022146817890100753,
+    "yawDelta": 0.00022179235911223838,
     "yawWrapDelta": -0.04953492099819925,
-    "footYDelta": 0.09247720184390174,
-    "footYMean": 0.15772822279788412,
-    "bodyPitch": -0.053361669298710085,
-    "bodyRoll": -0.008309437847100889,
-    "fov": 76.58433457045234,
-    "cameraDistance": 10.01359701502733
+    "footYDelta": 0.09252352276622111,
+    "footYMean": 0.15775381801721744,
+    "bodyPitch": -0.05342487156359857,
+    "bodyRoll": -0.00832125446894587,
+    "fov": 76.74873225323117,
+    "cameraDistance": 10.006033062359005
   },
   "poseRig": {
-    "idleArmMax": 0.00003799668047101561,
-    "idleLegMax": 0.00005315851910137124,
-    "idlePitch": -0.00029437308628566645,
-    "jumpPitch": -0.09650121163645237,
-    "fallPitch": 0.10342800442693256,
+    "idleArmMax": 0.00003799630894145687,
+    "idleLegMax": 0.000053164550276384525,
+    "idlePitch": -0.0002947217456514619,
+    "jumpPitch": -0.09650304140036253,
+    "fallPitch": 0.10342755734571299,
     "jumpKneesBack": true,
     "fallKneesBack": true,
     "jumpFallPoseDifferent": true,
@@ -570,7 +570,7 @@
     "swingPitchBounded": true,
     "swingRollBounded": true,
     "swingFacingAligned": true,
-    "webStartsNearHand": true,
+    "webStartsNearHand": false,
     "swingBlendActive": true,
     "transformsFinite": true,
     "visualOffsetSane": true,
@@ -598,25 +598,25 @@
     "yaw180FacingAligned": true,
     "poseTransformsFinite": true
   },
-  "characterAnimationPassed": true,
+  "characterAnimationPassed": false,
   "soak": {
     "cycles": 298,
     "state": {
       "position": [
-        31.920411817252365,
-        34.29929324245562,
-        -81.11489454383809
+        26.67327514006866,
+        34.39701578073596,
+        -72.57651603898248
       ],
       "velocity": [
-        -0.9072233396880748,
-        -5.647272677364519,
-        -7.502527666106396
+        12.99892759056296,
+        7.787979263274757,
+        -35.9233265936486
       ],
-      "speed": 9.434122336564991,
+      "speed": 38.98858978039392,
       "grounded": false,
       "swing": false,
       "zip": true,
-      "web": 3.621900000000052,
+      "web": 11.020999999999974,
       "health": 100,
       "mission": 0,
       "beacons": 3,
@@ -625,60 +625,60 @@
       "version": "3.6",
       "audioState": "running",
       "muted": false,
-      "windBody": 0.025561751797795296,
-      "windAir": 0.0009738116641528904,
+      "windBody": 0.125,
+      "windAir": 0.024000000208616257,
       "sfxStats": {
         "mission": 2,
         "start": 1,
         "land": 1,
-        "jump": 2,
-        "web": 20,
-        "release": 20,
-        "attack": 4,
-        "zip": 12,
-        "heavySwing": 5,
-        "wallJump": 20
+        "jump": 3,
+        "web": 21,
+        "release": 21,
+        "attack": 6,
+        "zip": 11,
+        "heavySwing": 3,
+        "wallJump": 22
       }
     },
-    "calls": 134,
-    "triangles": 414012,
-    "durationMs": 300668
+    "calls": 137,
+    "triangles": 414860,
+    "durationMs": 300401
   },
   "aerial": {
-    "calls": 165,
-    "triangles": 418668
+    "calls": 166,
+    "triangles": 418680
   },
   "street": {
-    "calls": 150,
-    "triangles": 417412
+    "calls": 151,
+    "triangles": 417420
   },
   "street-end": {
-    "calls": 67,
-    "triangles": 404168
+    "calls": 68,
+    "triangles": 404248
   },
   "terminal-three": {
-    "calls": 42,
-    "triangles": 273148
+    "calls": 40,
+    "triangles": 266010
   },
   "skyline": {
-    "calls": 170,
-    "triangles": 418796
+    "calls": 171,
+    "triangles": 418808
   },
   "far-north": {
-    "calls": 55,
-    "triangles": 401858
+    "calls": 54,
+    "triangles": 401390
   },
   "far-south": {
-    "calls": 55,
-    "triangles": 401532
+    "calls": 54,
+    "triangles": 401364
   },
   "far-west": {
-    "calls": 55,
-    "triangles": 402752
+    "calls": 56,
+    "triangles": 402764
   },
   "far-east": {
     "calls": 47,
-    "triangles": 385468
+    "triangles": 293528
   },
   "movementPassed": true,
   "sprintPassed": true,
@@ -708,7 +708,7 @@
     "grounded": false,
     "swing": false,
     "zip": true,
-    "web": 3.621900000000052,
+    "web": 11.020999999999974,
     "health": 100,
     "mission": 1,
     "beacons": 0,
@@ -717,19 +717,19 @@
     "version": "3.6",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.025676121935248375,
-    "windAir": 0.000993270194157958,
+    "windBody": 0.125,
+    "windAir": 0.024000000208616257,
     "sfxStats": {
       "mission": 3,
       "start": 1,
       "land": 1,
-      "jump": 2,
-      "web": 20,
-      "release": 20,
-      "attack": 4,
-      "zip": 12,
-      "heavySwing": 5,
-      "wallJump": 20,
+      "jump": 3,
+      "web": 21,
+      "release": 21,
+      "attack": 6,
+      "zip": 11,
+      "heavySwing": 3,
+      "wallJump": 22,
       "beacon": 3
     }
   },
