@@ -404,7 +404,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(let i=0;i<edgeBlocks.length;i++){
       const p=edgeBlocks[i];
       const hero=p===0;
-      const w=hero?22.4:rnd(17.0,21.0);
+      const w=hero?19.6:rnd(17.0,20.8);
       const d=hero?21.0:rnd(17.0,21.0);
       const h=hero?72+side*5:rnd(34,72);
       const x=side<2?p:edge,z=side<2?edge:p;
@@ -543,7 +543,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const p=farBlocks[i];
       const hero=p===0;
       const x=side<2?p:edge,z=side<2?edge:p;
-      const w=hero?21.8:rnd(14.5,19.5);
+      const w=hero?19.4:rnd(14.5,19.5);
       const d=hero?20.6:rnd(14.5,19.5);
       const h=hero?58+side*4:rnd(22,52);
       const bw=side<2?w:d,bz=side<2?d:w;
