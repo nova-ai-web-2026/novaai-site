@@ -322,8 +322,8 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   // Finished distant skyline: layered towers with visible façade bands and roof caps.
   const skylineBody=std(0xffffff,.82,{metalness:.06});
   const skylineGlass=std(0xffffff,.34,{metalness:.28});
-  const skylineWindow=new THREE.MeshBasicMaterial({color:0xa7c8d2,transparent:true,opacity:.32,side:THREE.DoubleSide});
-  const skylineWarm=new THREE.MeshBasicMaterial({color:0xe4c38d,transparent:true,opacity:.27,side:THREE.DoubleSide});
+  const skylineWindow=new THREE.MeshBasicMaterial({color:0x8fb9c8,transparent:true,opacity:.42,side:THREE.DoubleSide});
+  const skylineWarm=new THREE.MeshBasicMaterial({color:0xd8b878,transparent:true,opacity:.34,side:THREE.DoubleSide});
   const skylineAccentColors=[0xb96a57,0x4f8395,0xa78b55,0x756b98];
 
   for(let ring=0;ring<2;ring++){
@@ -357,17 +357,28 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       // looking like unfinished slabs when the player reached the edge district.
       const ca=Math.cos(a),sa=Math.sin(a);
       const faces=[
-        {ox:-sa*(d/2+.055),oz: ca*(d/2+.055),width:w,ry:-a},
-        {ox: sa*(d/2+.055),oz:-ca*(d/2+.055),width:w,ry:-a+Math.PI},
-        {ox: ca*(w/2+.055),oz: sa*(w/2+.055),width:d,ry:-a+Math.PI/2},
-        {ox:-ca*(w/2+.055),oz:-sa*(w/2+.055),width:d,ry:-a-Math.PI/2}
+        {ox:-sa*(d/2+.055),oz: ca*(d/2+.055),width:w,ry:-a,tx:ca,tz:sa},
+        {ox: sa*(d/2+.055),oz:-ca*(d/2+.055),width:w,ry:-a+Math.PI,tx:ca,tz:sa},
+        {ox: ca*(w/2+.055),oz: sa*(w/2+.055),width:d,ry:-a+Math.PI/2,tx:-sa,tz:ca},
+        {ox:-ca*(w/2+.055),oz:-sa*(w/2+.055),width:d,ry:-a-Math.PI/2,tx:-sa,tz:ca}
       ];
       const winMat=i%5===0?skylineWarm:skylineWindow;
       for(let row=0;row<Math.min(7,Math.floor(h/10));row++){
         const yy=6+row*9;
         if(yy>h-3)break;
         for(const f of faces){
-          inst(unitPlane,winMat,[x+f.ox,yy,z+f.oz],[f.width*.68,.66,1],[0,f.ry,0]);
+          inst(unitPlane,winMat,[x+f.ox,yy,z+f.oz],[f.width*.72,.72,1],[0,f.ry,0]);
+        }
+      }
+      // Three tall glass ribbons on every face keep far towers readable as finished buildings
+      // instead of pale slabs when viewed from the terminal district.
+      for(const f of faces){
+        for(const u of [-.27,0,.27]){
+          inst(unitPlane,winMat,[
+            x+f.ox+f.tx*u*f.width,
+            h*.52,
+            z+f.oz+f.tz*u*f.width
+          ],[Math.max(.70,f.width*.105),h*.60,1],[0,f.ry,0]);
         }
       }
       if(accentTower){
@@ -946,7 +957,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='3.5';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,playableTerminalBuildings,horizonContinuationBuildings,playableHorizonBuildings,buildingAudit};
+  scene.userData.worldVersion='3.6';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,playableTerminalBuildings,horizonContinuationBuildings,playableHorizonBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
