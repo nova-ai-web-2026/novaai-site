@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=2.9-edge-color-extension";
+import { createCityWorld } from "./world-v2.js?v=3.0-terminal-tail-color";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
