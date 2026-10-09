@@ -322,8 +322,9 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
   // Finished distant skyline: layered towers with visible façade bands and roof caps.
   const skylineBody=std(0xffffff,.82,{metalness:.06});
   const skylineGlass=std(0xffffff,.34,{metalness:.28});
-  const skylineWindow=new THREE.MeshBasicMaterial({color:0xa7c8d2,transparent:true,opacity:.28});
-  const skylineWarm=new THREE.MeshBasicMaterial({color:0xe4c38d,transparent:true,opacity:.22});
+  const skylineWindow=new THREE.MeshBasicMaterial({color:0xa7c8d2,transparent:true,opacity:.32,side:THREE.DoubleSide});
+  const skylineWarm=new THREE.MeshBasicMaterial({color:0xe4c38d,transparent:true,opacity:.27,side:THREE.DoubleSide});
+  const skylineAccentColors=[0xb96a57,0x4f8395,0xa78b55,0x756b98];
 
   for(let ring=0;ring<2;ring++){
     const count=ring===0?104:72;
@@ -335,7 +336,13 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const x=Math.cos(a)*r,z=Math.sin(a)*r;
       const glass=(i+ring)%4===0;
       const bodyMat=glass?skylineGlass:skylineBody;
-      const bodyColor=glass?[0x617d89,0x536d7a,0x71858b][i%3]:[0x8b9292,0x9c998f,0x7d898c,0xa59d8d][i%4];
+      const accentTower=ring===0&&i%26===0;
+      const mutedPalette=glass
+        ? [0x587786,0x4f6d7a,0x6b858d]
+        : [0x788487,0x8b7c70,0x70858c,0x8b7169,0x727e89,0x837387];
+      const bodyColor=accentTower
+        ? skylineAccentColors[Math.floor(i/26)%skylineAccentColors.length]
+        : mutedPalette[i%mutedPalette.length];
 
       box(bodyMat,[x,h/2,z],[w,h,d],[0,-a,0],bodyColor);
       box(m.dark,[x,h+.28,z],[w+.18,.55,d+.18],[0,-a,0]);
@@ -346,19 +353,25 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       }
       if(i%11===0)box(m.steel,[x,h+4.2,z],[.14,7.5,.14]);
 
-      // A few large window bands are enough at this distance and avoid blank unfinished slabs.
-      const faceX=Math.cos(a),faceZ=Math.sin(a);
+      // Finish all four tower faces. The old single inward band could leave pale side faces
+      // looking like unfinished slabs when the player reached the edge district.
+      const ca=Math.cos(a),sa=Math.sin(a);
+      const faces=[
+        {ox:-sa*(d/2+.055),oz: ca*(d/2+.055),width:w,ry:-a},
+        {ox: sa*(d/2+.055),oz:-ca*(d/2+.055),width:w,ry:-a+Math.PI},
+        {ox: ca*(w/2+.055),oz: sa*(w/2+.055),width:d,ry:-a+Math.PI/2},
+        {ox:-ca*(w/2+.055),oz:-sa*(w/2+.055),width:d,ry:-a-Math.PI/2}
+      ];
       const winMat=i%5===0?skylineWarm:skylineWindow;
       for(let row=0;row<Math.min(7,Math.floor(h/10));row++){
         const yy=6+row*9;
         if(yy>h-3)break;
-        const px=x-faceX*(Math.abs(faceX)>Math.abs(faceZ)?w/2+.05:d/2+.05);
-        const pz=z-faceZ*(Math.abs(faceX)>Math.abs(faceZ)?w/2+.05:d/2+.05);
-        if(Math.abs(faceX)>Math.abs(faceZ)){
-          inst(unitPlane,winMat,[px,yy,pz],[d*.62,.62,1],[0,faceX>0?-Math.PI/2:Math.PI/2,0]);
-        }else{
-          inst(unitPlane,winMat,[px,yy,pz],[w*.62,.62,1],[0,faceZ>0?Math.PI:0,0]);
+        for(const f of faces){
+          inst(unitPlane,winMat,[x+f.ox,yy,z+f.oz],[f.width*.68,.66,1],[0,f.ry,0]);
         }
+      }
+      if(accentTower){
+        box(m.paint,[x,h+.66,z],[w*.72,.14,d*.70],[0,-a,0],bodyColor);
       }
     }
   }
@@ -933,7 +946,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='3.4';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,playableTerminalBuildings,horizonContinuationBuildings,playableHorizonBuildings,buildingAudit};
+  scene.userData.worldVersion='3.5';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,playableTerminalBuildings,horizonContinuationBuildings,playableHorizonBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
