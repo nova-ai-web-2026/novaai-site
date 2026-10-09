@@ -34,8 +34,6 @@ let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let swingBlend = 0;
 let lastSwingSide = 1;
 let webAttachStartedAt = 0;
-let webOriginVisual = new THREE.Vector3();
-let webOriginReady = false;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
@@ -602,7 +600,6 @@ function beginSwing(){
   if(!a)return;
   swingAnchor=a;ropeLength=Math.max(8,player.pos.distanceTo(a)*.77);
   webAttachStartedAt=clock?.elapsedTime||0;
-  webOriginReady=false;
   webLine.visible=true;sfx("web");
 }
 
@@ -626,7 +623,6 @@ function webZip(){
   if(!a)return toast("مفيش نقطة Web Zip مناسبة قدامك.");
   zipTarget=a.clone();web-=10;
   webAttachStartedAt=clock?.elapsedTime||0;
-  webOriginReady=false;
   sfx("zip");
 }
 
@@ -826,15 +822,7 @@ function getWebOrigin(target){
 }
 
 function drawWeb(a,b){
-  const rawOrigin=getWebOrigin(b);
-  if(!webOriginReady){
-    webOriginVisual.copy(rawOrigin);
-    webOriginReady=true;
-  }else{
-    webOriginVisual.lerp(rawOrigin,.42);
-  }
-
-  const origin=webOriginVisual;
+  const origin=getWebOrigin(b);
   const attr=webLine.geometry.attributes.position;
   const arr=attr.array;
   const count=attr.count;
