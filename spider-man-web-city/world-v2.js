@@ -628,9 +628,10 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
 
   // Short visual continuation beyond the playable boundary. It sits on the existing terrain,
   // keeps the four main road gaps open, and prevents the far landmarks from reading as the last row.
-  let terminalVisualBuildings=0;
+  let terminalVisualBuildings=0,terminalTailBuildings=0;
   const terminalBlocks=[-64,-32,0,32,64,96,128];
   const terminalPalette=[0x79898e,0x8d8479,0x728a91,0x958976,0x71858b,0x897d88];
+  const terminalTailColors=[0xb85f4d,0x3f8298,0xc49a42];
   const terminalAccentMaterials=farHeroColors.map((color,side)=>{
     const mat=outerFacadeMaterials[(side+1)%outerFacadeMaterials.length].clone();
     mat.color.copy(new THREE.Color(color).lerp(new THREE.Color(0xffffff),.42));
@@ -639,6 +640,18 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     mat.envMapIntensity=.40;
     return mat;
   });
+  const terminalTailMaterials=Array.from({length:4},(_,side)=>
+    terminalTailColors.map((color,slot)=>{
+      const mat=outerFacadeMaterials[(side+slot+2)%outerFacadeMaterials.length].clone();
+      mat.color.setHex(color);
+      mat.roughness=.43;
+      mat.metalness=.055;
+      mat.envMapIntensity=.42;
+      mat.emissive=new THREE.Color(color).multiplyScalar(.025);
+      mat.emissiveIntensity=.18;
+      return mat;
+    })
+  );
 
   for(let side=0;side<4;side++){
     const edge=side<2?(side===0?-396:396):(side===2?-396:396);
@@ -651,8 +664,14 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
       const h=gateway?rnd(27,38):rnd(18,34);
       const bw=side<2?w:d,bz=side<2?d:w;
       const style=(i+side+2)%outerFacadeMaterials.length;
-      const bodyMat=gateway?terminalAccentMaterials[side]:outerFacadeMaterials[style];
-      box(bodyMat,[x,h/2,z],[bw,h,bz],[0,0,0],gateway?null:terminalPalette[style]);
+      const tailSlot=i-(terminalBlocks.length-3);
+      const terminalTail=tailSlot>=0;
+      const bodyMat=gateway
+        ? terminalAccentMaterials[side]
+        : terminalTail
+          ? terminalTailMaterials[side][tailSlot]
+          : outerFacadeMaterials[style];
+      box(bodyMat,[x,h/2,z],[bw,h,bz],[0,0,0],gateway||terminalTail?null:terminalPalette[style]);
       box(m.dark,[x,h+.24,z],[bw+.08,.44,bz+.08]);
       if(gateway){
         const accent=farHeroColors[side];
@@ -665,7 +684,34 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
           box(m.paint,[fx,h*.58,z],[.065,.14,bz*.62],[0,0,0],accent);
           for(const sz of [-.23,.23])box(m.glass,[fx+inward*.014,h*.51,z+sz*bz],[.04,h*.38,bz*.13]);
         }
+      }else if(terminalTail){
+        terminalTailBuildings++;
+        const accent=terminalTailColors[tailSlot];
+
+        // These are the literal last three visible buildings (64 / 96 / 128).
+        // Give them explicit paint, glazing, a finished ground floor and roof trim so none reads as an unpainted slab.
+        if(side<2){
+          const fz=z+inward*(bz/2+.045);
+          for(const sx of [-.34,.34])box(m.paint,[x+sx*bw,h*.52,fz],[.13,h*.68,.075],[0,0,0],accent);
+          box(m.paint,[x,h*.30,fz+inward*.018],[bw*.72,.16,.06],[0,0,0],accent);
+          box(m.paint,[x,h*.70,fz+inward*.018],[bw*.72,.16,.06],[0,0,0],accent);
+          for(const sx of [-.22,0,.22])box(m.glass,[x+sx*bw,h*.52,fz+inward*.028],[bw*.12,h*.38,.04]);
+          box(m.dark,[x,2.05,fz+inward*.055],[bw*.76,2.55,.10]);
+          box(m.glass,[x,2.05,fz+inward*.088],[bw*.65,2.22,.035]);
+        }else{
+          const fx=x+inward*(bw/2+.045);
+          for(const sz of [-.34,.34])box(m.paint,[fx,h*.52,z+sz*bz],[.075,h*.68,.13],[0,0,0],accent);
+          box(m.paint,[fx+inward*.018,h*.30,z],[.06,.16,bz*.72],[0,0,0],accent);
+          box(m.paint,[fx+inward*.018,h*.70,z],[.06,.16,bz*.72],[0,0,0],accent);
+          for(const sz of [-.22,0,.22])box(m.glass,[fx+inward*.028,h*.52,z+sz*bz],[.04,h*.38,bz*.12]);
+          box(m.dark,[fx+inward*.055,2.05,z],[.10,2.55,bz*.76]);
+          box(m.glass,[fx+inward*.088,2.05,z],[.035,2.22,bz*.65]);
+        }
+
+        box(m.paint,[x,h+.56,z],[bw*.62,.16,bz*.60],[0,0,0],accent);
+        box(m.dark,[x,h+1.25,z],[bw*.38,1.20,bz*.36]);
       }
+
       if((i+side)%3===0)box(m.steel,[x,h+1.05,z],[bw*.28,1.2,bz*.25]);
       terminalVisualBuildings++;
     }
@@ -755,7 +801,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='2.9';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,buildingAudit};
+  scene.userData.worldVersion='3.0';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
