@@ -34,6 +34,7 @@ let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let swingBlend = 0;
 let lastSwingSide = 1;
 let webAttachStartedAt = 0;
+let webOriginSmooth = null;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
@@ -321,7 +322,7 @@ function createPlayer(){
   playerMesh.scale.set(.96,.96,.96);
   scene.add(playerMesh);
 
-  const webPoints=Array.from({length:13},()=>new THREE.Vector3());
+  const webPoints=Array.from({length:19},()=>new THREE.Vector3());
   const webGeo = new THREE.BufferGeometry().setFromPoints(webPoints);
   webGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
   webLine = new THREE.Line(webGeo,new THREE.LineBasicMaterial({
@@ -600,6 +601,7 @@ function beginSwing(){
   if(!a)return;
   swingAnchor=a;ropeLength=Math.max(8,player.pos.distanceTo(a)*.77);
   webAttachStartedAt=clock?.elapsedTime||0;
+  webOriginSmooth=getWebOrigin(a).clone();
   webLine.visible=true;sfx("web");
 }
 
@@ -614,6 +616,7 @@ function releaseSwing(){
     sfx("release",clamp(releaseSpeed/28,.65,1.2));
   }
   swingAnchor=null;
+  webOriginSmooth=null;
   if(webLine)webLine.visible=false;
 }
 
@@ -822,51 +825,71 @@ function getWebOrigin(target){
 }
 
 function drawWeb(a,b){
-  const origin=getWebOrigin(b);
+  const desiredOrigin=getWebOrigin(b);
+  if(!webOriginSmooth)webOriginSmooth=desiredOrigin.clone();
+  else webOriginSmooth.lerp(desiredOrigin,.32);
+  const origin=webOriginSmooth;
+
   const attr=webLine.geometry.attributes.position;
   const arr=attr.array;
   const count=attr.count;
   const delta=b.clone().sub(origin);
   const dist=Math.max(.001,delta.length());
   const dir=delta.clone().multiplyScalar(1/dist);
+
   const side=new THREE.Vector3(-dir.z,0,dir.x);
   if(side.lengthSq()<.0001)side.set(1,0,0);
   else side.normalize();
 
+  const upSide=new THREE.Vector3().crossVectors(side,dir);
+  if(upSide.lengthSq()<.0001)upSide.set(0,1,0);
+  else upSide.normalize();
+
   const speed=player?.vel?.length?.()||0;
   const speedN=clamp(speed/42,0,1);
   const lateral=player?.vel?.dot?.(side)||0;
+  const vertical=player?.vel?.dot?.(upSide)||0;
   const t=clock?.elapsedTime||0;
   const age=Math.max(0,t-webAttachStartedAt);
-  const reveal=clamp(age/.115,0,1);
-  const settle=Math.exp(-age*7.5);
-  const tension=swingAnchor?clamp(dist/Math.max(ropeLength,.001),.76,1.12):1;
-  const slack=swingAnchor?clamp(1.05-tension,0,.20):.035;
-  const sagAmp=clamp(dist*.00215,.026,.135)*(1+slack*1.15)*(1-speedN*.22);
-  const swayAmp=(.006+speedN*.024)*(swingAnchor?1:.55);
-  const lateralLag=clamp(-lateral*.00105,-.021,.021);
-  const trailScale=.0042*speedN;
+
+  const revealRaw=clamp(age/.14,0,1);
+  const reveal=1-Math.pow(1-revealRaw,3);
+  const settle=Math.exp(-age*8.7);
+
+  const tension=swingAnchor?clamp(dist/Math.max(ropeLength,.001),.72,1.12):1;
+  const slack=swingAnchor?clamp(1.04-tension,0,.28):.025;
+  const taut=clamp((tension-.78)/.30,0,1);
+
+  const sagAmp=clamp(dist*.0025,.025,.17)*(1+slack*1.55)*(1-speedN*.24);
+  const swayAmp=(.004+speedN*.018)*(1-taut*.42);
+  const lateralLag=clamp(-lateral*.00125,-.028,.028);
+  const verticalLag=clamp(-vertical*.00042,-.010,.010);
+  const trailScale=.0036*speedN*(1-taut*.22);
 
   for(let i=0;i<count;i++){
     const f=i/(count-1);
     const pf=Math.min(f,reveal);
     const arch=Math.sin(Math.PI*pf);
+    const arch2=arch*arch;
+
     const x=THREE.MathUtils.lerp(origin.x,b.x,pf);
     const y=THREE.MathUtils.lerp(origin.y,b.y,pf)-arch*sagAmp;
     const z=THREE.MathUtils.lerp(origin.z,b.z,pf);
 
-    const naturalWave=Math.sin(t*3.15+pf*4.6)*swayAmp;
-    const attachSnap=Math.sin(pf*Math.PI*2.2-age*17)*settle*.032;
-    const sway=arch*(naturalWave+lateralLag+attachSnap);
-    const trail=arch*trailScale;
+    const breathing=Math.sin(t*2.35+pf*3.8)*swayAmp;
+    const fineRipple=Math.sin(t*5.2+pf*8.4)*swayAmp*.22*(1-taut);
+    const attachSnap=Math.sin(pf*Math.PI*2.05-age*18.5)*settle*.024;
+    const sway=arch*(breathing+fineRipple+lateralLag+attachSnap);
+    const lift=arch2*verticalLag;
+    const trail=arch2*trailScale;
 
     const k=i*3;
-    arr[k]=x+side.x*sway-player.vel.x*trail;
-    arr[k+1]=y-player.vel.y*trail*.20;
-    arr[k+2]=z+side.z*sway-player.vel.z*trail;
+    arr[k]=x+side.x*sway+upSide.x*lift-player.vel.x*trail;
+    arr[k+1]=y+upSide.y*lift-player.vel.y*trail*.14;
+    arr[k+2]=z+side.z*sway+upSide.z*lift-player.vel.z*trail;
   }
 
-  webLine.material.opacity=.82+.12*reveal;
+  webLine.material.opacity=.80+.14*reveal;
   attr.needsUpdate=true;
 }
 function updateWebLine(){if(swingAnchor)drawWeb(player.pos,swingAnchor);}
