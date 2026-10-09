@@ -33,6 +33,9 @@ let yaw = 0, pitch = -0.16;
 let swingHeld = false, swingAnchor = null, ropeLength = 0, zipTarget = null;
 let swingBlend = 0;
 let lastSwingSide = 1;
+let webAttachStartedAt = 0;
+let webOriginVisual = new THREE.Vector3();
+let webOriginReady = false;
 let attackCooldown = 0, comboTimer = 0, lastTime = 0, missionIndex = 0, beaconCount = 0;
 let score = 0, combo = 1, web = 100, health = 100, wallTouch = false;
 let toastTimer = 0;
@@ -320,10 +323,16 @@ function createPlayer(){
   playerMesh.scale.set(.96,.96,.96);
   scene.add(playerMesh);
 
-  const webPoints=Array.from({length:9},()=>new THREE.Vector3());
+  const webPoints=Array.from({length:13},()=>new THREE.Vector3());
   const webGeo = new THREE.BufferGeometry().setFromPoints(webPoints);
   webGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
-  webLine = new THREE.Line(webGeo,new THREE.LineBasicMaterial({color:0xeaf7ff,transparent:true,opacity:.92}));
+  webLine = new THREE.Line(webGeo,new THREE.LineBasicMaterial({
+    color:0xf2fbff,
+    transparent:true,
+    opacity:.94,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false
+  }));
   webLine.frustumCulled=false;
   webLine.visible=false;
   scene.add(webLine);
@@ -592,6 +601,8 @@ function beginSwing(){
   const a=findWebAnchor();
   if(!a)return;
   swingAnchor=a;ropeLength=Math.max(8,player.pos.distanceTo(a)*.77);
+  webAttachStartedAt=clock?.elapsedTime||0;
+  webOriginReady=false;
   webLine.visible=true;sfx("web");
 }
 
@@ -613,7 +624,10 @@ function webZip(){
   if(!started||web<12)return;
   const a=findWebAnchor();
   if(!a)return toast("مفيش نقطة Web Zip مناسبة قدامك.");
-  zipTarget=a.clone();web-=10;sfx("zip");
+  zipTarget=a.clone();web-=10;
+  webAttachStartedAt=clock?.elapsedTime||0;
+  webOriginReady=false;
+  sfx("zip");
 }
 
 function performAttack(heavy){
@@ -812,7 +826,15 @@ function getWebOrigin(target){
 }
 
 function drawWeb(a,b){
-  const origin=getWebOrigin(b);
+  const rawOrigin=getWebOrigin(b);
+  if(!webOriginReady){
+    webOriginVisual.copy(rawOrigin);
+    webOriginReady=true;
+  }else{
+    webOriginVisual.lerp(rawOrigin,.42);
+  }
+
+  const origin=webOriginVisual;
   const attr=webLine.geometry.attributes.position;
   const arr=attr.array;
   const count=attr.count;
@@ -827,24 +849,36 @@ function drawWeb(a,b){
   const speedN=clamp(speed/42,0,1);
   const lateral=player?.vel?.dot?.(side)||0;
   const t=clock?.elapsedTime||0;
+  const age=Math.max(0,t-webAttachStartedAt);
+  const reveal=clamp(age/.115,0,1);
+  const settle=Math.exp(-age*7.5);
   const tension=swingAnchor?clamp(dist/Math.max(ropeLength,.001),.76,1.12):1;
-  const slack=swingAnchor?clamp(1.05-tension,0,.20):.04;
-  const sagAmp=clamp(dist*.00145,.018,.075)*(1+slack*.9);
-  const swayAmp=(.008+speedN*.032)*(swingAnchor?1:.45);
-  const lateralLag=clamp(-lateral*.00125,-.025,.025);
+  const slack=swingAnchor?clamp(1.05-tension,0,.20):.035;
+  const sagAmp=clamp(dist*.00215,.026,.135)*(1+slack*1.15)*(1-speedN*.22);
+  const swayAmp=(.006+speedN*.024)*(swingAnchor?1:.55);
+  const lateralLag=clamp(-lateral*.00105,-.021,.021);
+  const trailScale=.0042*speedN;
 
   for(let i=0;i<count;i++){
     const f=i/(count-1);
-    const arch=Math.sin(Math.PI*f);
-    const x=THREE.MathUtils.lerp(origin.x,b.x,f);
-    const y=THREE.MathUtils.lerp(origin.y,b.y,f)-arch*sagAmp;
-    const z=THREE.MathUtils.lerp(origin.z,b.z,f);
-    const sway=arch*(Math.sin(t*4.15+f*3.2)*swayAmp+lateralLag);
+    const pf=Math.min(f,reveal);
+    const arch=Math.sin(Math.PI*pf);
+    const x=THREE.MathUtils.lerp(origin.x,b.x,pf);
+    const y=THREE.MathUtils.lerp(origin.y,b.y,pf)-arch*sagAmp;
+    const z=THREE.MathUtils.lerp(origin.z,b.z,pf);
+
+    const naturalWave=Math.sin(t*3.15+pf*4.6)*swayAmp;
+    const attachSnap=Math.sin(pf*Math.PI*2.2-age*17)*settle*.032;
+    const sway=arch*(naturalWave+lateralLag+attachSnap);
+    const trail=arch*trailScale;
+
     const k=i*3;
-    arr[k]=x+side.x*sway;
-    arr[k+1]=y;
-    arr[k+2]=z+side.z*sway;
+    arr[k]=x+side.x*sway-player.vel.x*trail;
+    arr[k+1]=y-player.vel.y*trail*.20;
+    arr[k+2]=z+side.z*sway-player.vel.z*trail;
   }
+
+  webLine.material.opacity=.82+.12*reveal;
   attr.needsUpdate=true;
 }
 function updateWebLine(){if(swingAnchor)drawWeb(player.pos,swingAnchor);}
