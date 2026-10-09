@@ -692,20 +692,37 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
         // Give them explicit paint, glazing, a finished ground floor and roof trim so none reads as an unpainted slab.
         if(side<2){
           const fz=z+inward*(bz/2+.045);
-          for(const sx of [-.34,.34])box(m.paint,[x+sx*bw,h*.52,fz],[.13,h*.68,.075],[0,0,0],accent);
-          box(m.paint,[x,h*.30,fz+inward*.018],[bw*.72,.16,.06],[0,0,0],accent);
-          box(m.paint,[x,h*.70,fz+inward*.018],[bw*.72,.16,.06],[0,0,0],accent);
-          for(const sx of [-.22,0,.22])box(m.glass,[x+sx*bw,h*.52,fz+inward*.028],[bw*.12,h*.38,.04]);
-          box(m.dark,[x,2.05,fz+inward*.055],[bw*.76,2.55,.10]);
-          box(m.glass,[x,2.05,fz+inward*.088],[bw*.65,2.22,.035]);
+
+          // Full painted façade skin: make the final three buildings unmistakably colored,
+          // even through fog / texture shading. Windows and trim sit above this layer.
+          box(m.paint,[x,h*.52,fz],[bw*.91,h*.82,.055],[0,0,0],accent);
+          for(const sx of [-.34,.34])box(m.paint,[x+sx*bw,h*.52,fz+inward*.010],[.13,h*.68,.075],[0,0,0],accent);
+          box(m.paint,[x,h*.30,fz+inward*.020],[bw*.76,.18,.065],[0,0,0],accent);
+          box(m.paint,[x,h*.70,fz+inward*.020],[bw*.76,.18,.065],[0,0,0],accent);
+
+          for(const sx of [-.22,0,.22])box(m.glass,[x+sx*bw,h*.52,fz+inward*.040],[bw*.12,h*.38,.045]);
+          box(m.dark,[x,2.05,fz+inward*.070],[bw*.78,2.55,.11]);
+          box(m.glass,[x,2.05,fz+inward*.105],[bw*.67,2.22,.040]);
+
+          // Small color returns onto both side faces so the paint still reads at oblique angles.
+          for(const sideX of [-1,1]){
+            box(m.paint,[x+sideX*(bw/2+.035),h*.54,z],[.05,h*.66,bz*.56],[0,0,0],accent);
+          }
         }else{
           const fx=x+inward*(bw/2+.045);
-          for(const sz of [-.34,.34])box(m.paint,[fx,h*.52,z+sz*bz],[.075,h*.68,.13],[0,0,0],accent);
-          box(m.paint,[fx+inward*.018,h*.30,z],[.06,.16,bz*.72],[0,0,0],accent);
-          box(m.paint,[fx+inward*.018,h*.70,z],[.06,.16,bz*.72],[0,0,0],accent);
-          for(const sz of [-.22,0,.22])box(m.glass,[fx+inward*.028,h*.52,z+sz*bz],[.04,h*.38,bz*.12]);
-          box(m.dark,[fx+inward*.055,2.05,z],[.10,2.55,bz*.76]);
-          box(m.glass,[fx+inward*.088,2.05,z],[.035,2.22,bz*.65]);
+
+          box(m.paint,[fx,h*.52,z],[.055,h*.82,bz*.91],[0,0,0],accent);
+          for(const sz of [-.34,.34])box(m.paint,[fx+inward*.010,h*.52,z+sz*bz],[.075,h*.68,.13],[0,0,0],accent);
+          box(m.paint,[fx+inward*.020,h*.30,z],[.065,.18,bz*.76],[0,0,0],accent);
+          box(m.paint,[fx+inward*.020,h*.70,z],[.065,.18,bz*.76],[0,0,0],accent);
+
+          for(const sz of [-.22,0,.22])box(m.glass,[fx+inward*.040,h*.52,z+sz*bz],[.045,h*.38,bz*.12]);
+          box(m.dark,[fx+inward*.070,2.05,z],[.11,2.55,bz*.78]);
+          box(m.glass,[fx+inward*.105,2.05,z],[.040,2.22,bz*.67]);
+
+          for(const sideZ of [-1,1]){
+            box(m.paint,[x,h*.54,z+sideZ*(bz/2+.035)],[bw*.56,h*.66,.05],[0,0,0],accent);
+          }
         }
 
         box(m.paint,[x,h+.56,z],[bw*.62,.16,bz*.60],[0,0,0],accent);
@@ -801,7 +818,7 @@ export function createCityWorld(THREE, scene, renderer, touch = false) {
     for(const mesh of [bodyMesh,cabinMesh,wheels,frontLights,tailLights,bumpers])mesh.instanceMatrix.needsUpdate=true;
   }
   updateCars(0,0);
-  scene.userData.worldVersion='3.0';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,buildingAudit};
+  scene.userData.worldVersion='3.2';scene.userData.worldStats={buildings:city.length,carCount,facadeStyles:6,edgeEndcaps:heroEdgeBuildings,continuationBuildings,visualOuterBuildings,farContinuationBuildings,playableOuterBuildings,playableFarBuildings,farHeroBuildings,farGatewayMateBuildings,terminalVisualBuildings,terminalTailBuildings,buildingAudit};
   return {
     city,
     update(dt,t,playerPosition){
