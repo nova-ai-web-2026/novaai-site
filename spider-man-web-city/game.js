@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=2.8-exit-clearance";
+import { createCityWorld } from "./world-v2.js?v=2.9-edge-color-extension";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
