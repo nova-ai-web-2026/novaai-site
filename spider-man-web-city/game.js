@@ -1,5 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { createCityWorld } from "./world-v2.js?v=3.4-playable-terminal";
+import { createCityWorld } from "./world-v2.js?v=3.5-finished-skyline";
 
 const el = id => document.getElementById(id);
 const gameEl = el("game");
