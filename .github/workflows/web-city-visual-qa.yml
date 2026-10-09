@@ -151,7 +151,9 @@ jobs:
               report.worldAudit.stats?.farHeroBuildings===4&&
               report.worldAudit.stats?.playableOuterBuildings>=52&&
               report.worldAudit.stats?.playableFarBuildings>=60&&
-              report.worldAudit.stats?.terminalTailBuildings===12;
+              report.worldAudit.stats?.terminalTailBuildings===16&&
+              report.worldAudit.stats?.playableTerminalBuildings>=52&&
+              report.worldAudit.stats?.playableHorizonBuildings>=60;
             await page.screenshot({path:'qa-output/spawn.png'});
             await page.keyboard.down('KeyD');
             await page.waitForFunction(()=>window.__worldQA.player.pos.x>1.3,{timeout:30000});
@@ -190,7 +192,7 @@ jobs:
                 const key=axis==='x'?(sign>0?'KeyD':'KeyA'):(sign>0?'KeyS':'KeyW');
                 q.keys[key]=true;q.keys.ShiftLeft=true;
                 let min=Infinity,max=-Infinity;
-                for(let i=0;i<600;i++){
+                for(let i=0;i<780;i++){
                   q.stepPlayer(1/60);
                   const v=axis==='x'?q.player.pos.x:q.player.pos.z;
                   min=Math.min(min,v);max=Math.max(max,v);
@@ -206,7 +208,9 @@ jobs:
                 north:run('z',-1),
                 worldHalf:q.config.worldHalf,
                 outerColliders:q.city.filter(b=>b.outer).length,
-                farColliders:q.city.filter(b=>b.far).length
+                farColliders:q.city.filter(b=>b.far).length,
+                terminalColliders:q.city.filter(b=>b.terminal).length,
+                horizonColliders:q.city.filter(b=>b.horizon).length
               };
               q.player.pos.set(0,q.config.groundY,0);q.player.vel.set(0,0,0);q.player.grounded=true;
               clearKeys();
@@ -450,10 +454,12 @@ jobs:
             report.movementPassed=report.moved.position[0]-report.before.position[0]>.2;
             report.sprintPassed=report.sprintLogic.sprint.speed>report.sprintLogic.normal.speed+3&&report.sprintLogic.sprintSpeed>report.sprintLogic.baseSpeed;
             report.edgeTraversalPassed=
-              report.edgeTraversal.worldHalf>=360&&
+              report.edgeTraversal.worldHalf>=460&&
               report.edgeTraversal.outerColliders>=52&&
               report.edgeTraversal.farColliders>=60&&
-              ['east','west','south','north'].every(k=>report.edgeTraversal[k].furthest>330);
+              report.edgeTraversal.terminalColliders>=52&&
+              report.edgeTraversal.horizonColliders>=60&&
+              ['east','west','south','north'].every(k=>report.edgeTraversal[k].furthest>450);
             report.jumpPassed=report.jumped.position[1]>report.moved.position[1];report.swingPassed=report.swung.swing;
             report.webVisualPassed=report.webVisual.visible&&report.webVisual.points>=9&&report.webVisual.curvature>.002;
             report.releasePassed=report.released.swing===false&&report.released.sfxStats.release>0&&report.released.speed>2;
