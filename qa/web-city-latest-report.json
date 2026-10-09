@@ -1,5 +1,5 @@
 {
-  "commit": "a67efa432f0a3762b362cc98718ac5a6d3c79998",
+  "commit": "6ee61b784193d3b8c968d569445d1886e5a71926",
   "errors": [],
   "before": {
     "position": [
@@ -22,11 +22,11 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.005649120546877384,
-    "windAir": 0.000058433088270248845,
+    "windBody": 0.006222983822226524,
+    "windAir": 0.00006283074617385864,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -39,39 +39,54 @@
     "distance": "32m"
   },
   "worldAudit": {
-    "worldVersion": "2.5",
-    "count": 220,
+    "worldVersion": "2.9",
+    "count": 348,
     "invalidDimensions": 0,
     "duplicateCenters": 0,
+    "overlapPairs": 0,
+    "blockedExitBuildings": 0,
+    "outOfTerrain": 0,
     "styleCount": 6,
-    "edgeBuildings": 52,
+    "edgeBuildings": 180,
     "heroEdgeBuildings": 4,
+    "farHeroBuildings": 4,
+    "outerBuildings": 60,
+    "farBuildings": 68,
+    "failures": [],
     "stats": {
-      "buildings": 220,
+      "buildings": 348,
       "carCount": 26,
       "facadeStyles": 6,
       "edgeEndcaps": 4,
       "continuationBuildings": 52,
       "visualOuterBuildings": 60,
       "farContinuationBuildings": 68,
+      "playableOuterBuildings": 60,
+      "playableFarBuildings": 68,
+      "farHeroBuildings": 4,
+      "farGatewayMateBuildings": 4,
+      "terminalVisualBuildings": 28,
       "buildingAudit": {
-        "checked": 220,
+        "checked": 348,
         "invalidBuildings": 0,
         "duplicateCenters": 0,
         "styleCounts": [
-          32,
-          22,
-          62,
-          31,
-          48,
-          25
+          53,
+          44,
+          82,
+          52,
+          69,
+          48
         ],
         "minBuildingHeight": 18.06,
         "maxBuildingHeight": 111.66000000000001,
         "continuationBuildings": 52,
         "heroEdgeBuildings": 4,
         "visualOuterBuildings": 60,
-        "farContinuationBuildings": 68
+        "farContinuationBuildings": 68,
+        "playableOuterBuildings": 60,
+        "playableFarBuildings": 68,
+        "farHeroBuildings": 4
       }
     }
   },
@@ -97,7 +112,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0,
@@ -130,7 +145,7 @@
       "beacons": 3,
       "enemies": 0,
       "won": false,
-      "version": "2.5",
+      "version": "2.9",
       "audioState": "running",
       "muted": false,
       "windBody": 0,
@@ -162,7 +177,7 @@
       "beacons": 3,
       "enemies": 0,
       "won": false,
-      "version": "2.5",
+      "version": "2.9",
       "audioState": "running",
       "muted": false,
       "windBody": 0,
@@ -197,7 +212,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0,
@@ -207,6 +222,35 @@
       "start": 1,
       "land": 1
     }
+  },
+  "edgeTraversal": {
+    "east": {
+      "final": 378,
+      "min": 230.04152567586505,
+      "max": 378,
+      "furthest": 378
+    },
+    "west": {
+      "final": -378,
+      "min": -378,
+      "max": -230.04152567586505,
+      "furthest": 378
+    },
+    "south": {
+      "final": 378,
+      "min": 230.04152567586505,
+      "max": 378,
+      "furthest": 378
+    },
+    "north": {
+      "final": -378,
+      "min": -378,
+      "max": -230.04152567586505,
+      "furthest": 378
+    },
+    "worldHalf": 378,
+    "outerColliders": 60,
+    "farColliders": 68
   },
   "jumped": {
     "position": [
@@ -229,11 +273,11 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.026428554207086563,
-    "windAir": 0.0010585215641185641,
+    "windBody": 0.026349535211920738,
+    "windAir": 0.0010539554059505463,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -244,15 +288,15 @@
   "swung": {
     "position": [
       0,
-      5.3757278392316845,
-      -3.0265356779722192
+      5.204359168359515,
+      -2.8434937811404852
     ],
     "velocity": [
       0,
-      25.752163036781532,
-      -27.180866702943927
+      25.377346285325896,
+      -26.43781389549506
     ],
-    "speed": 37.44293545912477,
+    "speed": 36.64652381956815,
     "grounded": false,
     "swing": true,
     "zip": false,
@@ -262,11 +306,11 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.12598177790641785,
-    "windAir": 0.01953304000198841,
+    "windBody": 0.12362369894981384,
+    "windAir": 0.01873738318681717,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -278,7 +322,7 @@
   "webVisual": {
     "visible": true,
     "points": 9,
-    "curvature": 0.05568150628412813
+    "curvature": 0.06637924977770643
   },
   "swingRig": {
     "armCount": 2,
@@ -286,14 +330,14 @@
     "elbows": 2,
     "knees": 2,
     "hands": 2,
-    "activeArmRaised": 1.1901701953252273,
+    "activeArmRaised": 1.4101802916513173,
     "elbowsBack": true,
     "kneesBack": true,
-    "bodyPitch": -0.21168803036647654,
-    "bodyRoll": 0.16256686019746952,
-    "yawDelta": 0.013808310334922913,
-    "webToNearestHand": 1.9553221618830005e-7,
-    "swingBlend": 0.8408184652420191,
+    "bodyPitch": -0.22256898165992967,
+    "bodyRoll": -0.03371330808115489,
+    "yawDelta": -0.008284363756944212,
+    "webToNearestHand": 4.651054367531283e-7,
+    "swingBlend": 0.8693064487943003,
     "allFinite": true,
     "visualOffset": 1.2,
     "webPoints": 9
@@ -301,15 +345,15 @@
   "released": {
     "position": [
       0,
-      8.526689200577,
-      -6.75914741752055
+      9.373468201754784,
+      -7.874584774738198
     ],
     "velocity": [
       0,
-      27.850920855210948,
-      -38.05601978958039
+      26.923923537283052,
+      -38.49179958586229
     ],
-    "speed": 47.15860933814904,
+    "speed": 46.97357016450477,
     "grounded": false,
     "swing": false,
     "zip": false,
@@ -319,7 +363,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0.14499999582767487,
@@ -335,26 +379,26 @@
   },
   "runRig": {
     "armOpposition": true,
-    "legOpposition": false,
+    "legOpposition": true,
     "kneesBack": true,
     "elbowsBent": true,
     "animationChanges": true,
     "facingLength": 1,
-    "yawDelta": -0.00027105995779908015,
+    "yawDelta": 0.00022313435199461382,
     "yawWrapDelta": -0.04953492099819925,
-    "footYDelta": 0.014422614839679548,
-    "footYMean": 0.12312223539452605,
-    "bodyPitch": -0.07037936881736004,
-    "bodyRoll": 0.007417984926463756,
-    "fov": 76.84575470031828,
-    "cameraDistance": 10.001651634788281
+    "footYDelta": 0.09270784818768185,
+    "footYMean": 0.15782669130250554,
+    "bodyPitch": -0.05372566786198274,
+    "bodyRoll": -0.008383074825764713,
+    "fov": 77.53129088765894,
+    "cameraDistance": 9.978523078284429
   },
   "poseRig": {
-    "idleArmMax": 0.004210541489905612,
-    "idleLegMax": 0.005663471595421874,
-    "idlePitch": -0.0014441155588702868,
-    "jumpPitch": -0.09664775107896656,
-    "fallPitch": 0.10340934226680801,
+    "idleArmMax": 0.00003798300471019919,
+    "idleLegMax": 0.000053171538319848106,
+    "idlePitch": -0.00029638110780902464,
+    "jumpPitch": -0.09651146793972118,
+    "fallPitch": 0.10342549924079358,
     "jumpKneesBack": true,
     "fallKneesBack": true,
     "jumpFallPoseDifferent": true,
@@ -382,7 +426,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0.14499999582767487,
@@ -418,11 +462,11 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": true,
-    "windBody": 0.0024952164385467768,
-    "windAir": 0.00044604146387428045,
+    "windBody": 0.0016144613036885858,
+    "windAir": 0.00028859887970611453,
     "sfxStats": {
       "mission": 2,
       "start": 1,
@@ -454,7 +498,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0,
@@ -491,7 +535,7 @@
     "beacons": 3,
     "enemies": 0,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
     "windBody": 0,
@@ -524,7 +568,7 @@
     "visualOffsetSane": true,
     "webHasCurvePoints": true,
     "runArmOpposition": true,
-    "runLegOpposition": false,
+    "runLegOpposition": true,
     "runKneesBackward": true,
     "runElbowsBent": true,
     "runAnimationChanges": true,
@@ -546,70 +590,87 @@
     "yaw180FacingAligned": true,
     "poseTransformsFinite": true
   },
-  "characterAnimationPassed": false,
+  "characterAnimationPassed": true,
   "soak": {
     "cycles": 298,
     "state": {
       "position": [
-        37.56141634898979,
-        37.44612914584794,
-        -103.59700492134121
+        36.89041858726029,
+        36.14039755525088,
+        -110.68584823305363
       ],
       "velocity": [
-        16.50283429693135,
-        3.61939824703081,
-        -21.313615482611237
+        19.01895092027251,
+        8.306717774639605,
+        -34.039570286539444
       ],
-      "speed": 27.197679835662246,
+      "speed": 39.867460410559225,
       "grounded": false,
       "swing": false,
       "zip": true,
-      "web": 6.432999999999975,
+      "web": 5.079999999999975,
       "health": 100,
       "mission": 0,
       "beacons": 3,
       "enemies": 0,
       "won": false,
-      "version": "2.5",
+      "version": "2.9",
       "audioState": "running",
       "muted": false,
-      "windBody": 0.08974824100732803,
-      "windAir": 0.012322303839027882,
+      "windBody": 0.141324982047081,
+      "windAir": 0.02455900050699711,
       "sfxStats": {
         "mission": 2,
         "start": 1,
         "land": 1,
         "jump": 2,
-        "web": 22,
-        "release": 22,
-        "attack": 4,
+        "web": 20,
+        "release": 20,
+        "attack": 10,
         "zip": 12,
-        "wallJump": 14,
-        "heavySwing": 6
+        "heavySwing": 2,
+        "wallJump": 11
       }
     },
-    "calls": 119,
-    "triangles": 375872,
-    "durationMs": 300530
+    "calls": 125,
+    "triangles": 379088,
+    "durationMs": 300749
   },
   "aerial": {
-    "calls": 158,
-    "triangles": 381208
+    "calls": 162,
+    "triangles": 384072
   },
   "street": {
-    "calls": 144,
-    "triangles": 379768
+    "calls": 148,
+    "triangles": 382824
   },
   "street-end": {
-    "calls": 54,
-    "triangles": 366036
+    "calls": 63,
+    "triangles": 369492
   },
   "skyline": {
-    "calls": 163,
-    "triangles": 381540
+    "calls": 164,
+    "triangles": 384164
+  },
+  "far-north": {
+    "calls": 51,
+    "triangles": 366590
+  },
+  "far-south": {
+    "calls": 51,
+    "triangles": 366564
+  },
+  "far-west": {
+    "calls": 52,
+    "triangles": 367884
+  },
+  "far-east": {
+    "calls": 42,
+    "triangles": 258568
   },
   "movementPassed": true,
   "sprintPassed": true,
+  "edgeTraversalPassed": true,
   "jumpPassed": true,
   "swingPassed": true,
   "webVisualPassed": true,
@@ -635,28 +696,28 @@
     "grounded": false,
     "swing": false,
     "zip": true,
-    "web": 6.432999999999975,
+    "web": 5.079999999999975,
     "health": 100,
     "mission": 1,
     "beacons": 0,
     "enemies": 6,
     "won": false,
-    "version": "2.5",
+    "version": "2.9",
     "audioState": "running",
     "muted": false,
-    "windBody": 0.08974331617355347,
-    "windAir": 0.012320843525230885,
+    "windBody": 0.14147573709487915,
+    "windAir": 0.024667922407388687,
     "sfxStats": {
       "mission": 3,
       "start": 1,
       "land": 1,
       "jump": 2,
-      "web": 22,
-      "release": 22,
-      "attack": 4,
+      "web": 20,
+      "release": 20,
+      "attack": 10,
       "zip": 12,
-      "wallJump": 14,
-      "heavySwing": 6,
+      "heavySwing": 2,
+      "wallJump": 11,
       "beacon": 3
     }
   },
@@ -683,7 +744,7 @@
       "beacons": 3,
       "enemies": 0,
       "won": false,
-      "version": "2.5",
+      "version": "2.9",
       "audioState": "running",
       "muted": false,
       "windBody": 0,
