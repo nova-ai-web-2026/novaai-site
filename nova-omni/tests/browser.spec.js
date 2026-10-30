@@ -584,6 +584,31 @@ test('during generation saved conversations cannot change and typing indicator i
  await expect(page.locator('#newChat')).toBeEnabled();
 });
 
+
+test('Arabic arithmetic works instantly without downloading any AI model',async({page})=>{
+ let externalCalls=0;
+ page.on('request',r=>{if(/huggingface|jsdelivr|ai-gateway\.vercel/.test(r.url()))externalCalls++;});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#send')).toBeDisabled();
+ await page.locator('#prompt').fill('احسب ٣ + ٤؟');
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('الناتج: 7');
+ await expect(page.locator('#start')).toBeEnabled();
+ expect(externalCalls).toBe(0);
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_sessions_v1')||'{}'));
+ expect(saved.sessions[0].messages.length).toBe(2);
+});
+test('ordinary questions without a loaded local AI cannot be submitted',async({page})=>{
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#prompt').fill('اشرح لي الثقوب السوداء');
+ await expect(page.locator('#send')).toBeDisabled();
+ await page.locator('#prompt').press('Enter');
+ await expect(page.locator('#notice')).toContainText('شغّل النموذج');
+ await expect(page.locator('.bubble')).toHaveCount(0);
+ await expect(page.locator('#prompt')).toHaveValue('اشرح لي الثقوب السوداء');
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
