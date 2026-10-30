@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090d18">
-<meta name="nova-local-version" content="1.0.0">
+<meta name="nova-local-version" content="1.2.0">
 <title>NOVA OMNI Local — Free AI on Your Device</title>
 <style>
 :root{color-scheme:dark;--bg:#090d18;--panel:#111a2c;--edge:#33415e;--text:#edf2ff;--muted:#a3b2d2;--accent:#a898ff;--good:#6ee3ba;--warn:#ffcb88}
@@ -26,7 +26,7 @@ select{background:#1a2540;border:1px solid #59658c;color:white;border-radius:10p
 textarea{background:#0d1424;border:1px solid #465472;border-radius:12px;color:#fff;resize:vertical;min-height:75px;padding:13px;width:100%}
 button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #a18fff;outline-offset:2px}
 #state{color:var(--warn);font-size:13px}#statusNote{font-size:12px}
-.disclaimer{font-size:12px;color:#acb9d4;line-height:1.6}
+.disclaimer{font-size:12px;color:#acb9d4;line-height:1.6}.setting{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.setting label{font-size:12px;color:#b2c2df}.setting select{max-width:230px}.subtle{font-size:12px;color:#a9b9db}.memoryInfo{margin-top:7px;color:#8be5bd;font-size:12px}
 @media(max-width:600px){.wrap{padding:12px 12px 20px}h1{font-size:19px}.panel{padding:12px}.composer{grid-template-columns:1fr}#chat{max-height:50vh;min-height:200px}.bubble{max-width:96%}}
 </style>
 </head>
@@ -38,10 +38,17 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
 </header>
 <section class="panel">
  <strong>ابدأ الذكاء الاصطناعي المحلي | Start free local AI</strong>
- <p class="disclaimer">يعمل على جهازك من غير AI Gateway أو بطاقة دفع. أول مرة لازم تحمل نموذج <b>Qwen3 0.6B</b> (مئات الميجابايت)، فاستخدم Wi-Fi لو بيانات الموبايل محدودة. الأداء أضعف من النماذج السحابية الكبيرة، وممكن ما يشتغلش على الأجهزة قليلة الذاكرة. النموذج بيتحمل من Hugging Face، وبعد التحميل معالجة الأسئلة محلية.</p>
+ <p class="disclaimer">الوضع الأساسي <b>Balanced · متوسط</b>: نموذج Qwen3 0.6B بذاكرة تشغيل متوسطة نسبيًا لنموذج محلي، ومحادثة بتفتكر آخر 14 رسالة أثناء الرد. كمان فيه وضع أخف للأجهزة الأضعف، لكنه أفضل للإنجليزي من العربي. النموذج محتاج تحميل كبير أول مرة من Hugging Face، وممكن يحتاج ذاكرة أعلى من حجم التحميل. استخدم Wi-Fi لو معاك باقة موبايل محدودة. كل الردود بتتولد على جهازك، من غير AI Gateway أو بطاقة دفع.</p>
  <div class="top">
+  <div class="setting"><label for="profile">قوة النموذج</label><select id="profile" aria-label="Local model size">
+    <option value="balanced">Balanced · Qwen3 0.6B (متوسط)</option>
+    <option value="lite">Lite · SmolLM2 135M (أخف، إنجليزي أفضل)</option>
+  </select></div>
   <button class="btn primary" id="start">Download & start · تحميل وتشغيل</button>
   <button class="btn danger" id="stop" disabled>Stop loading · إيقاف</button>
+  <div class="setting"><label for="memory">ذاكرة المحادثة</label><select id="memory" aria-label="Conversation memory length">
+   <option value="short">Short · 8 رسائل</option><option value="balanced" selected>Balanced · 14 رسالة</option><option value="extended">Extended · 18 رسالة</option>
+  </select></div>
   <label class="label" for="language">Response language</label>
   <select id="language">
    <option value="auto">Auto · تلقائي</option><option value="ar-eg">العربية المصرية</option><option value="ar">العربية</option><option value="en">English</option>
@@ -53,7 +60,8 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
  </div>
  <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
  <div id="state" role="status" aria-live="polite">Not started · لم يبدأ التحميل</div>
- <div id="statusNote" class="disclaimer">No prompts are sent to AI Gateway in local mode.</div>
+ <div id="statusNote" class="disclaimer">No prompts are sent to AI Gateway. The model stays in memory only while running.</div>
+<div class="memoryInfo" id="memoryInfo" aria-live="polite">Balanced memory: آخر 14 رسالة للسياق · المحادثات الأقدم محفوظة محليًا</div>
 </section>
 <section class="panel" style="display:flex;flex:1;min-height:320px;flex-direction:column">
  <div class="top" style="justify-content:space-between;margin-top:0;margin-bottom:8px">
@@ -65,65 +73,133 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
   <textarea id="prompt" placeholder="اكتب سؤالك هنا… / Type your question" maxlength="3000" aria-label="Message"></textarea>
   <button class="btn primary" id="send" disabled>Send · إرسال</button>
  </div>
- <p class="disclaimer">أول تشغيل يحتاج إنترنت لتحميل النموذج. بعد كده الملفات ممكن تفضل محفوظة في كاش المتصفح. الجودة وسرعة التشغيل بيعتمدوا على جهازك. المحادثة بتتحفظ محليًا في نفس المتصفح؛ امسحها بزر Clear chat.</p>
+ <p class="disclaimer">أول تشغيل يحتاج إنترنت. النموذج المحلي مجاني من ناحية رسوم AI، لكن التحميل يستهلك بيانات. ذاكرة المحادثة متوسطة افتراضيًا (14 رسالة تُمرّر للنموذج)، مع حفظ آخر 60 رسالة على الجهاز فقط؛ لا تُرفع المحادثات للسحابة، لكنها محفوظة في بيانات المتصفح ويمكن مسحها من هنا. تقدر تغير طول السياق من القائمة.</p>
 </section>
 </div>
 <script>
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
-const MODEL='onnx-community/Qwen3-0.6B-ONNX';
-let worker=null,ready=false,loading=false,generating=false;
+const HISTORY_LIMIT=60;
+const CONTEXT_DESCRIPTIONS={short:'آخر 8 رسائل',balanced:'آخر 14 رسالة',extended:'آخر 18 رسالة'};
+let worker=null,ready=false,loading=false,generating=false,pending=null,loadedProfile=null;
 let history=[];
-try{const v=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');if(Array.isArray(v))history=v.filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').slice(-20);}catch(e){}
+try{
+ const data=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');
+ if(Array.isArray(data))history=data.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string').slice(-HISTORY_LIMIT);
+}catch(e){}
 function display(){
  $('chat').replaceChildren();
- if(!history.length){const intro=document.createElement('p');intro.textContent='ابدأ بتحميل النموذج، وبعدها اكتب سؤالك. / Load the model first, then start chatting.';$('chat').append(intro);}
- for(const m of history){const node=document.createElement('div');node.className='bubble '+(m.role==='user'?'user':'ai');const name=document.createElement('b');name.textContent=m.role==='user'?'You':'NOVA Local';const t=document.createElement('div');t.textContent=m.content;node.append(name,t);$('chat').append(node);}
+ if(!history.length){
+  const tip=document.createElement('p');
+  tip.textContent='حمّل النموذج وبعدها اكتب سؤالك. / Load the model first, then start chatting.';
+  $('chat').append(tip);
+ }
+ for(const m of history){
+  const card=document.createElement('div');
+  card.className='bubble '+(m.role==='user'?'user':'ai');
+  const label=document.createElement('b');
+  label.textContent=m.role==='user'?'You':'NOVA Local';
+  const text=document.createElement('div');text.textContent=m.content;
+  card.append(label,text);$('chat').append(card);
+ }
  $('chat').scrollTop=$('chat').scrollHeight;
 }
-function save(){try{localStorage.setItem('nova_omni_local_history',JSON.stringify(history.slice(-20)));}catch(e){}}
-function state(message){$('state').textContent=message;}
-function stop(){if(worker)worker.terminate();worker=null;loading=false;ready=false;generating=false;$('send').disabled=true;$('start').disabled=false;$('stop').disabled=true;$('progress').style.display='none';state('Stopped. You can restart the local model.');}
+function save(){
+ try{localStorage.setItem('nova_omni_local_history',JSON.stringify(history.slice(-HISTORY_LIMIT)));}
+ catch(e){$('statusNote').textContent='The browser could not save chat history. This does not affect the current conversation.';}
+}
+function state(text){$('state').textContent=text;}
+function updateMemoryInfo(){
+ const depth=$('memory').value in CONTEXT_DESCRIPTIONS?$('memory').value:'balanced';
+ $('memoryInfo').textContent='ذاكرة المحادثة: '+CONTEXT_DESCRIPTIONS[depth]+' عند السؤال · محفوظ محليًا حتى آخر '+HISTORY_LIMIT+' رسالة.';
+}
+function stop(reason){
+ if(worker)worker.terminate();
+ worker=null;ready=false;loading=false;generating=false;pending=null;loadedProfile=null;
+ $('start').disabled=false;$('stop').disabled=true;$('send').disabled=true;
+ $('profile').disabled=false;$('prompt').disabled=false;$('clear').disabled=false;
+ $('progress').style.display='none';
+ state(reason||'Local model stopped. You can restart.');
+}
 $('start').addEventListener('click',()=>{
  if(loading||ready)return;
- if(!confirm('This will download a large free AI model (hundreds of MB) from Hugging Face. Mobile data charges from your provider may apply. Continue?'))return;
- loading=true;$('start').disabled=true;$('stop').disabled=false;state('Starting download…');
+ const model=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
+ if(!confirm('You are about to download '+model+' from Hugging Face. This can use hundreds of megabytes of internet data; carrier charges may apply. Load only one model at a time. Continue?'))return;
+ loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
+ state('Starting '+model+'…');
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
-  worker.onmessage=ev=>{
-   const data=ev.data||{};
-   if(data.type==='status')state(data.text||'Loading model…');
-   else if(data.type==='progress'){$('progress').style.display='block';$('progress').value=data.progress;state('Downloading model: '+Math.round(data.progress)+'%');}
-   else if(data.type==='ready'){ready=true;loading=false;$('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';state('✓ Local AI ready ('+data.device+'). No cloud API required.');}
-   else if(data.type==='answer'){
-    generating=false;history.push({role:'user',content:$('prompt').dataset.pending||''},{role:'assistant',content:String(data.answer||'')});
-    $('prompt').value='';delete $('prompt').dataset.pending;save();display();$('send').disabled=false;state('✓ Response generated on your device.');}
-   else if(data.type==='error'){
-    generating=false;const message='Local AI: '+String(data.message||'Unable to load').slice(0,270);
-    state(message+'. Your draft is still here.');
-    $('send').disabled=!ready;
-    if(data.stage==='load')stop();
+  worker.onmessage=event=>{
+   const data=event.data||{};
+   if(data.type==='status')state(String(data.text||'Loading…'));
+   else if(data.type==='progress'){
+    $('progress').style.display='block';$('progress').value=Number(data.progress)||0;
+    state('Downloading '+String(data.file||'model file')+' · '+Math.round(Number(data.progress)||0)+'% of this file');
+   }else if(data.type==='ready'){
+    ready=true;loading=false;loadedProfile=data.profile||$('profile').value;
+    $('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';
+    state('✓ AI local ready: '+(data.device||'device')+'. No AI Gateway used.');
+   }else if(data.type==='answer'){
+    if(!pending)return;
+    history.push({role:'user',content:pending},{role:'assistant',content:String(data.answer||'')});
+    history=history.slice(-HISTORY_LIMIT);
+    pending=null;generating=false;
+    $('prompt').value='';$('prompt').disabled=false;
+    $('send').disabled=false;$('clear').disabled=false;
+    save();display();updateMemoryInfo();
+    state('✓ Local reply generated. Context used: '+Number(data.contextMessages||0)+' messages.');
+   }else if(data.type==='error'){
+    const detail='Local AI error: '+String(data.message||'Unavailable').slice(0,280);
+    if(data.stage==='load'){
+     stop(detail+'. You can try the Lite model.');
+    }else{
+     generating=false;pending=null;
+     $('send').disabled=!ready;$('prompt').disabled=false;$('clear').disabled=false;
+     state(detail+'. Your draft is still here.');
+    }
    }
   };
-  worker.onerror=e=>{stop();state('Local AI failed to load. Check browser WebGPU support, device memory and model download connectivity.');};
-  worker.postMessage({type:'init'});
- }catch(e){stop();state('Could not start local AI: '+String(e.message||e));}
+  worker.onerror=event=>{
+   stop('The local model failed to load. Try the Lite profile or a browser with WebGPU support.');
+  };
+  worker.postMessage({type:'init',profile:$('profile').value});
+ }catch(error){stop('Unable to start the model: '+String(error.message||error));}
 });
-$('stop').addEventListener('click',stop);
-$('clear').addEventListener('click',()=>{history=[];save();display();});
+$('stop').addEventListener('click',()=>stop('Model stopped. Your chat and draft are preserved.'));
+$('clear').addEventListener('click',()=>{
+ if(generating){state('Cancel the current response before clearing the conversation.');return;}
+ history=[];save();display();updateMemoryInfo();
+});
 $('send').addEventListener('click',()=>{
- if(!worker||!ready||generating){state('Load the local model first.');return;}
- const text=$('prompt').value.trim();if(!text)return;
- generating=true;$('send').disabled=true;$('prompt').dataset.pending=text;
- state('Generating locally…');
- const messages=[...history.slice(-8),{role:'user',content:text}];
- worker.postMessage({type:'generate',history:messages,language:$('language').value});
+ if(!worker||!ready){state('First download and start the model.');return;}
+ if(generating)return;
+ const message=$('prompt').value.trim();if(!message)return;
+ generating=true;pending=message;
+ $('send').disabled=true;$('clear').disabled=true;$('prompt').disabled=true;
+ state('Generating locally with '+CONTEXT_DESCRIPTIONS[$('memory').value]+' of context…');
+ worker.postMessage({
+  type:'generate',
+  history:[...history.slice(-24),{role:'user',content:message}],
+  language:$('language').value,
+  memory:$('memory').value
+ });
 });
-$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('send').click();}});
-try{$('language').value=localStorage.getItem('nova_language')||'auto';}catch(e){}
+$('prompt').addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('send').click();}
+});
+try{
+ const savedLang=localStorage.getItem('nova_language')||'auto';
+ if([...$('language').options].some(x=>x.value===savedLang))$('language').value=savedLang;
+ const savedProfile=localStorage.getItem('nova_local_profile')||'balanced';
+ if([...$('profile').options].some(x=>x.value===savedProfile))$('profile').value=savedProfile;
+ const savedMemory=localStorage.getItem('nova_local_memory')||'balanced';
+ if([...$('memory').options].some(x=>x.value===savedMemory))$('memory').value=savedMemory;
+}catch(e){}
 $('language').addEventListener('change',()=>{try{localStorage.setItem('nova_language',$('language').value);}catch(e){}});
-display();
+$('profile').addEventListener('change',()=>{try{localStorage.setItem('nova_local_profile',$('profile').value);}catch(e){}});
+$('memory').addEventListener('change',()=>{try{localStorage.setItem('nova_local_memory',$('memory').value);}catch(e){}updateMemoryInfo();});
+updateMemoryInfo();display();
 })();
 </script>
 </body></html>
