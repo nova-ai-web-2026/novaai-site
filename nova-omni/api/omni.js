@@ -1,7 +1,21 @@
 'use strict';
 const {calculate}=require('../lib/math');
 const crypto=require('node:crypto');
-const modes={general:'openai/gpt-5.4',coding:'anthropic/claude-opus-4.6',maths:'openai/gpt-5.4',research:'openai/gpt-5.4',writing:'anthropic/claude-opus-4.6'};
+const FREE_MODELS=Object.freeze({
+ general:'nvidia/nemotron-3.5-lightning-free',
+ coding:'poolside/laguna-s-2.1-free',
+ maths:'nvidia/nemotron-3.5-lightning-free',
+ research:'nvidia/nemotron-3.5-lightning-free',
+ writing:'reflection/beam-free'
+});
+const paidModes=Object.freeze({
+ general:'openai/gpt-5.4',coding:'anthropic/claude-opus-4.6',maths:'openai/gpt-5.4',research:'openai/gpt-5.4',writing:'anthropic/claude-opus-4.6'
+});
+const FREE_ONLY=process.env.NOVA_FREE_ONLY!=='false';
+const modes=FREE_ONLY?FREE_MODELS:paidModes;
+const FREE_FALLBACKS=Object.freeze(['nvidia/nemotron-3.5-lightning-free','reflection/beam-free','poolside/laguna-s-2.1-free']);
+function freeModelAllowed(model){return typeof model==='string'&&FREE_FALLBACKS.includes(model);}
+
 const rate=new Map();
 const LANGUAGES=Object.freeze({
  auto:'Match the user language automatically',
@@ -101,6 +115,11 @@ async function apiModelRequest(url,secret,model,messages,timeout,direct){
  }finally{clearTimeout(timer);}
 }
 async function modelCall(model,messages,timeout,token){
+ if(FREE_ONLY){
+  if(!freeModelAllowed(model))throw aiError('free_only','Paid model access disabled. Choose a free AI Gateway model.',403);
+  if(!token)throw aiError('ai_not_configured','No AI Gateway credential configured. Create/activate an AI Gateway API key in your Vercel account.',503);
+  return apiModelRequest('https://ai-gateway.vercel.sh/v1/chat/completions',token,model,messages,timeout,false);
+ }
  const directKey=process.env.OPENAI_API_KEY;
  const preferred=process.env.NOVA_AI_PROVIDER==='openai'&&!!directKey;
  if(preferred||(!token&&directKey)){
@@ -143,7 +162,7 @@ module.exports=async function handler(req,res){
  if(req.method==='OPTIONS')return res.status(204).end();
  const b=body(req),action=String(req.query?.action||b.action||'health');
  if(req.method==='GET'){
-  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.4.0',ai:!!(gatewayToken(req)||process.env.OPENAI_API_KEY),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',provider:process.env.NOVA_AI_PROVIDER==='openai'&&!!process.env.OPENAI_API_KEY?'direct-openai':gatewayToken(req)?'vercel-ai-gateway':process.env.OPENAI_API_KEY?'direct-openai':'not-configured',languages:Object.keys(LANGUAGES),github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
+  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.5.0',freeOnly:FREE_ONLY,freeModels:FREE_ONLY?FREE_MODELS:null,ai:!!(gatewayToken(req)||(!FREE_ONLY&&process.env.OPENAI_API_KEY)),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',provider:FREE_ONLY?(gatewayToken(req)?'vercel-ai-gateway-free':'not-configured'):process.env.NOVA_AI_PROVIDER==='openai'&&!!process.env.OPENAI_API_KEY?'direct-openai':gatewayToken(req)?'vercel-ai-gateway':process.env.OPENAI_API_KEY?'direct-openai':'not-configured',languages:Object.keys(LANGUAGES),github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
   if(action==='calc'){try{return reply(res,200,{ok:true,value:calculate(String(req.query.expression||''))});}catch(e){return reply(res,400,{ok:false,error:e.message});}}
   if(action==='checks'){
    const tests=[['Precedence','2+3*4',14],['Parentheses','(2+3)*4',20],['Powers','2^3^2',512],['Square root','sqrt(144)+5',17],['Trigonometry','sin(pi/2)',1],['Unary minus','-3^2',-9],['Floating point','0.1+0.2',0.3],['Constants','pi-pi',0]];
@@ -161,13 +180,13 @@ module.exports=async function handler(req,res){
    if(!access(req))return reply(res,401,{ok:false,error:'Authentication required for model diagnostics'});
    if(limit(req))return reply(res,429,{ok:false,error:'Diagnostic request limit reached'});
    try{
-    const sample=await modelCall('openai/gpt-5.4-mini',[
+    const sample=await modelCall(FREE_ONLY?FREE_MODELS.general:'openai/gpt-5.4-mini',[
      {role:'system',content:'You are testing AI connectivity. Reply with a very short greeting in Arabic.'},
      {role:'user',content:'أهلاً'}
     ],14000,gatewayToken(req));
-    return reply(res,200,{ok:true,available:true,model:sample.model,language:'ar',sample:sample.answer.slice(0,240)});
+    return reply(res,200,{ok:true,available:true,freeOnly:FREE_ONLY,model:sample.model,language:'ar',sample:sample.answer.slice(0,240)});
    }catch(e){
-    return reply(res,200,{ok:true,available:false,code:e.code||'ai_request_failed',reason:String(e.message||'AI connection failed').slice(0,330)});
+    return reply(res,200,{ok:true,available:false,freeOnly:FREE_ONLY,code:e.code||'ai_request_failed',reason:String(e.message||'AI connection failed').slice(0,330)});
    }
   }
   if(action==='channels'){
@@ -182,11 +201,18 @@ module.exports=async function handler(req,res){
   if(action==='chat'){
    if(limit(req))return reply(res,429,{ok:false,error:'Hourly request limit reached'});
    const messages=cleanMessages(b.messages),mode=Object.hasOwn(modes,b.mode)?b.mode:'general',lang=Object.hasOwn(LANGUAGES,b.language)?b.language:'auto',primary=modes[mode],context=[{role:'system',content:system(mode,lang)},...messages];
-   let first;try{first=await modelCall(primary,context,31000,gatewayToken(req));}catch(e){if(!e.retryable||primary==='openai/gpt-5.4-mini')throw e;first=await modelCall('openai/gpt-5.4-mini',context,19000,gatewayToken(req));}
+   let first;
+   try{first=await modelCall(primary,context,31000,gatewayToken(req));}
+   catch(e){
+    if(!e.retryable)throw e;
+    const alternate=FREE_ONLY?FREE_FALLBACKS.find(m=>m!==primary):'openai/gpt-5.4-mini';
+    if(!alternate||primary===alternate)throw e;
+    first=await modelCall(alternate,context,19000,gatewayToken(req));
+   }
    let reviewed=false;
    if(b.deep===true){
     try{
-     const judge=primary==='anthropic/claude-opus-4.6'?'openai/gpt-5.4':'anthropic/claude-opus-4.6';
+     const judge=FREE_ONLY?(primary==='reflection/beam-free'?'nvidia/nemotron-3.5-lightning-free':'reflection/beam-free'):(primary==='anthropic/claude-opus-4.6'?'openai/gpt-5.4':'anthropic/claude-opus-4.6');
      const result=await modelCall(judge,[{role:'system',content:system(mode,lang)+'\nCritically review the following draft, correct errors, and return only your improved final answer. Never claim external verification.'},{role:'user',content:'Original request:\n'+messages.at(-1).content+'\n\nDraft answer:\n'+first.answer}],24000,gatewayToken(req));
      first={answer:result.answer,model:first.model+' + '+result.model};reviewed=true;
     }catch(e){reviewed=false;}

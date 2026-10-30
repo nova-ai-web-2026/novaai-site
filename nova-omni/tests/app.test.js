@@ -164,3 +164,51 @@ test('Diagnostics require authentication when outside Vercel SSO',async()=>{
  const r=await mockRequest('GET',{action:'diagnose'});
  assert.equal(r.statusCode,401);
 });
+
+test('Free-only gateway: health exposes actual free model IDs',async()=>{
+ const r=await mockRequest('GET',{action:'health'});
+ assert.equal(r.body.freeOnly,true);
+ assert.equal(r.body.freeModels.general,'nvidia/nemotron-3.5-lightning-free');
+ assert.equal(r.body.freeModels.coding,'poolside/laguna-s-2.1-free');
+ assert.equal(r.body.freeModels.writing,'reflection/beam-free');
+});
+test('Free-only gateway: no paid direct-provider fallback on HTTP 403 even with direct key configured',async()=>withStubProvider(async()=>{
+ process.env.OPENAI_API_KEY='fake-test-key';
+ let total=0;
+ global.fetch=async(url)=>{
+  total++;
+  assert.equal(url,'https://ai-gateway.vercel.sh/v1/chat/completions');
+  return {ok:false,status:403,json:async()=>({error:{type:'access_denied'}})};
+ };
+ const r=await mockRequest('POST',{action:'chat'},{
+  messages:[{role:'user',content:'مرحبا'}],mode:'general'
+ },{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,503);
+ assert.equal(r.body.code,'gateway_access_denied');
+ assert.equal(total,1);
+}));
+test('Free-only gateway: multilingual writing selects the free Reflection model',async()=>withStubProvider(async()=>{
+ let requestedModel=null;
+ global.fetch=async(url,options)=>{
+  assert.equal(url,'https://ai-gateway.vercel.sh/v1/chat/completions');
+  requestedModel=JSON.parse(options.body).model;
+  return {ok:true,status:200,json:async()=>({model:requestedModel,choices:[{message:{content:'Hola, ¿cómo estás?'}}]})};
+ };
+ const r=await mockRequest('POST',{action:'chat'},{
+  messages:[{role:'user',content:'Hola'}],mode:'writing',language:'es'
+ },{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,200);
+ assert.equal(requestedModel,'reflection/beam-free');
+}));
+test('Free-only gateway: connection diagnostic uses free model',async()=>withStubProvider(async()=>{
+ let used;
+ global.fetch=async(url,options)=>{
+  used=JSON.parse(options.body).model;
+  return {ok:true,status:200,json:async()=>({model:used,choices:[{message:{content:'أهلاً بك'}}]})};
+ };
+ const r=await mockRequest('GET',{action:'diagnose'},null,{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,200);
+ assert.equal(r.body.available,true);
+ assert.equal(r.body.freeOnly,true);
+ assert.equal(used,'nvidia/nemotron-3.5-lightning-free');
+}));
