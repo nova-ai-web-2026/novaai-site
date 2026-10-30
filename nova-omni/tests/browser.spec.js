@@ -321,6 +321,82 @@ test('local AI page is mobile responsive and worker endpoint is served',async({p
  const result=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
  expect(result.scroll).toBeLessThanOrEqual(result.viewport+2);
 });
+
+test('balanced local profile and memory are selected by default',async({page})=>{
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#profile')).toHaveValue('balanced');
+ await expect(page.locator('#memory')).toHaveValue('balanced');
+ await expect(page.locator('#memoryInfo')).toContainText('14');
+ await expect(page.locator('#memoryInfo')).toContainText('60');
+});
+test('local model profile and conversation memory can be changed and persist',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   constructor(){this.onmessage=null;}
+   postMessage(data){
+    window.__profileMessages??=[];window.__profileMessages.push(data);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',profile:data.profile,device:'wasm'}}));
+    if(data.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'answer',answer:'Local answer',contextMessages:5}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#profile').selectOption('lite');
+ await page.locator('#memory').selectOption('extended');
+ await page.locator('#start').click();
+ await expect(page.locator('#profile')).toBeDisabled();
+ await expect(page.locator('#state')).toContainText('ready');
+ await page.locator('#prompt').fill('Tell me something.');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('Local answer');
+ const posted=await page.evaluate(()=>window.__profileMessages);
+ expect(posted.find(x=>x.type==='init').profile).toBe('lite');
+ expect(posted.find(x=>x.type==='generate').memory).toBe('extended');
+ await page.locator('#stop').click();
+ await expect(page.locator('#profile')).toBeEnabled();
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('#profile')).toHaveValue('lite');
+ await expect(page.locator('#memory')).toHaveValue('extended');
+ await expect(page.locator('#memoryInfo')).toContainText('18');
+});
+test('simple calculations use a verified local math parser, not AI model guessing',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   postMessage(data){
+    window.__modelMessageTypes??=[];window.__modelMessageTypes.push(data.type);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'webgpu'}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#prompt').fill('What is 3 + 4? Reply with the number.');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai').last()).toContainText('7');
+ const messages=await page.evaluate(()=>window.__modelMessageTypes);
+ expect(messages).toEqual(['init']);
+ await page.locator('#prompt').fill('احسب ٣ + ٤؟');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai').last()).toContainText('الناتج: 7');
+});
+test('balanced context keeps long history locally without showing old messages to the model',async({page})=>{
+ await page.addInitScript(()=>{
+  const stored=Array.from({length:72},(_,i)=>({role:i%2?'assistant':'user',content:'Local history entry '+i}));
+  localStorage.setItem('nova_omni_local_history',JSON.stringify(stored));
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.bubble')).toHaveCount(60);
+ await expect(page.locator('#memory')).toHaveValue('balanced');
+ await expect(page.locator('#memoryInfo')).toContainText('14');
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
