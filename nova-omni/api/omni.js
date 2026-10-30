@@ -14,7 +14,13 @@ function applyCors(req,res){
 }
 
 function reply(res,status,data){res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');return res.status(status).json(data);}
+function vercelAuth(){return process.env.VERCEL==='1'&&process.env.NOVA_TRUST_VERCEL_AUTH==='true';}
+function gatewayToken(req){
+ const value=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||req.headers['x-vercel-oidc-token'];
+ return typeof value==='string'?value:'';
+}
 function access(req){
+ if(vercelAuth())return true;
  const secret=process.env.NOVA_ACCESS_KEY,provided=req.headers['x-nova-key'];
  if(!secret||typeof provided!=='string')return false;
  const a=Buffer.from(secret),b=Buffer.from(provided);
@@ -36,8 +42,8 @@ function system(mode){
  mode==='maths'?'Show calculations step by step and check the result.':null,
  mode==='research'?'Distinguish evidence from hypotheses and explicitly note the lack of live web browsing.':null].filter(Boolean).join('\n');
 }
-async function modelCall(model,messages,timeout){
- const token=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
+async function modelCall(model,messages,timeout,token){
+ token=token||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
  if(!token)throw Error('AI Gateway not configured');
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout||33000);
  try{
@@ -73,7 +79,7 @@ module.exports=async function handler(req,res){
  if(req.method==='OPTIONS')return res.status(204).end();
  const b=body(req),action=String(req.query?.action||b.action||'health');
  if(req.method==='GET'){
-  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.0.0',ai:!!(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN),secured:!!process.env.NOVA_ACCESS_KEY,github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
+  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.3.0',ai:!!gatewayToken(req),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
   if(action==='calc'){try{return reply(res,200,{ok:true,value:calculate(String(req.query.expression||''))});}catch(e){return reply(res,400,{ok:false,error:e.message});}}
   if(action==='checks'){
    const tests=[['Precedence','2+3*4',14],['Parentheses','(2+3)*4',20],['Powers','2^3^2',512],['Square root','sqrt(144)+5',17],['Trigonometry','sin(pi/2)',1],['Unary minus','-3^2',-9],['Floating point','0.1+0.2',0.3],['Constants','pi-pi',0]];
@@ -99,12 +105,12 @@ module.exports=async function handler(req,res){
   if(action==='chat'){
    if(limit(req))return reply(res,429,{ok:false,error:'Hourly request limit reached'});
    const messages=cleanMessages(b.messages),mode=Object.hasOwn(modes,b.mode)?b.mode:'general',primary=modes[mode],context=[{role:'system',content:system(mode)},...messages];
-   let first;try{first=await modelCall(primary,context,34000);}catch(e){if(primary==='openai/gpt-5.4-mini')throw e;first=await modelCall('openai/gpt-5.4-mini',context,20000);}
+   let first;try{first=await modelCall(primary,context,34000,gatewayToken(req));}catch(e){if(primary==='openai/gpt-5.4-mini')throw e;first=await modelCall('openai/gpt-5.4-mini',context,20000,gatewayToken(req));}
    let reviewed=false;
    if(b.deep===true){
     try{
      const judge=primary==='anthropic/claude-opus-4.6'?'openai/gpt-5.4':'anthropic/claude-opus-4.6';
-     const result=await modelCall(judge,[{role:'system',content:system(mode)+'\nCritically review the following draft, correct errors, and return only your improved final answer. Never claim external verification.'},{role:'user',content:'Original request:\n'+messages.at(-1).content+'\n\nDraft answer:\n'+first.answer}],24000);
+     const result=await modelCall(judge,[{role:'system',content:system(mode)+'\nCritically review the following draft, correct errors, and return only your improved final answer. Never claim external verification.'},{role:'user',content:'Original request:\n'+messages.at(-1).content+'\n\nDraft answer:\n'+first.answer}],24000,gatewayToken(req));
      first={answer:result.answer,model:first.model+' + '+result.model};reviewed=true;
     }catch(e){reviewed=false;}
    }
