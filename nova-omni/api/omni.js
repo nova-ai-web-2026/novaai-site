@@ -3,6 +3,23 @@ const {calculate}=require('../lib/math');
 const crypto=require('node:crypto');
 const modes={general:'openai/gpt-5.4',coding:'anthropic/claude-opus-4.6',maths:'openai/gpt-5.4',research:'openai/gpt-5.4',writing:'anthropic/claude-opus-4.6'};
 const rate=new Map();
+const LANGUAGES=Object.freeze({
+ auto:'Match the user language automatically',
+ ar:'Arabic (adapt to regional dialect, including Egyptian Arabic)',
+ en:'English',fr:'French',es:'Spanish',de:'German',pt:'Portuguese',
+ it:'Italian',ru:'Russian',tr:'Turkish',hi:'Hindi',ur:'Urdu',
+ zh:'Chinese',ja:'Japanese',ko:'Korean',id:'Indonesian',
+ bn:'Bengali',fa:'Persian',sw:'Swahili',vi:'Vietnamese',
+ th:'Thai',nl:'Dutch',pl:'Polish'
+});
+function aiError(code,message,status,retryable=false){
+ const e=new Error(message);e.code=code;e.status=status;e.retryable=retryable;return e;
+}
+function relevantErrorResponse(body){
+ const err=body&&body.error;
+ return {code:typeof err?.code==='string'?err.code:typeof err?.type==='string'?err.type:'unknown'};
+}
+
 function applyCors(req,res){
  const origin=req.headers.origin,allowed=process.env.NOVA_ALLOWED_ORIGIN||'https://nova-ai-web-2026.github.io';
  if(typeof origin==='string'&&origin===allowed){
@@ -16,7 +33,7 @@ function applyCors(req,res){
 function reply(res,status,data){res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');return res.status(status).json(data);}
 function vercelAuth(){return process.env.VERCEL==='1'&&process.env.NOVA_TRUST_VERCEL_AUTH==='true';}
 function gatewayToken(req){
- const value=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||req.headers['x-vercel-oidc-token'];
+ const value=process.env.AI_GATEWAY_API_KEY||req.headers['x-vercel-oidc-token']||process.env.VERCEL_OIDC_TOKEN;
  return typeof value==='string'?value:'';
 }
 function access(req){
@@ -33,26 +50,72 @@ function cleanMessages(m){
  const out=m.map(x=>{if(!x||!['user','assistant'].includes(x.role)||typeof x.content!=='string'||!x.content.trim()||x.content.length>12000)throw Error('Invalid message');return {role:x.role,content:x.content};});
  if(out.at(-1).role!=='user')throw Error('Last message must be user');return out;
 }
-function system(mode){
- return ['You are NOVA OMNI, a capable, careful and precise AI assistant. Respond in the same language as the user.',
- 'Be accurate, admit uncertainty, and never invent source links, tool executions, benchmark scores or capabilities.',
- 'You have no live web search in this chat endpoint. Do not present current information as checked.',
- 'Always provide age-appropriate safe assistance.',
- mode==='coding'?'Provide secure, working code; explicitly state when code has not been executed.':null,
- mode==='maths'?'Show calculations step by step and check the result.':null,
- mode==='research'?'Distinguish evidence from hypotheses and explicitly note the lack of live web browsing.':null].filter(Boolean).join('\n');
+function system(mode,language){
+ const preference=Object.hasOwn(LANGUAGES,language)?language:'auto';
+ return [
+  'You are NOVA OMNI, a capable, multilingual and precise AI assistant.',
+  'Understand questions in Arabic, English, French, Spanish, Chinese, Hindi, Urdu, Portuguese, Russian, Japanese, Korean, Turkish, Persian, Bengali, Swahili and many other languages.',
+  'Adapt naturally to the user language and dialect; when the user writes in Egyptian colloquial Arabic, answer in natural Egyptian Arabic unless requested otherwise.',
+  preference==='auto'?'Respond naturally in the language of the last user message unless the user explicitly requests a different output language.':('Respond in '+LANGUAGES[preference]+' unless the user explicitly asks for a translation into another language.'),
+  'Keep proper nouns, variable names, math expressions and programming identifiers accurate when switching language.',
+  'Be precise, admit uncertainty, and never invent citations, source links, tool usage, benchmark scores, or claims about live news access.',
+  'You have no live web search in this chat endpoint. Do not claim that current sources were checked.',
+  'Provide age-appropriate and safe guidance.',
+  mode==='coding'?'Use clear, secure and functional code; say when code has not been executed.':null,
+  mode==='maths'?'Solve maths and physics carefully, with clear step-by-step notation and checks.':null,
+  mode==='research'?'Distinguish confirmed evidence from hypotheses and limitations.':null,
+  mode==='writing'?'Match the user-requested style, audience and tone accurately.':null
+ ].filter(Boolean).join('\n');
+}
+async function apiModelRequest(url,secret,model,messages,timeout,direct){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeout||28000);
+ try{
+  let payload=direct?{model,messages,max_completion_tokens:2200}:{model,messages,max_tokens:2200};
+  const r=await fetch(url,{
+   method:'POST',
+   headers:{Authorization:'Bearer '+secret,'Content-Type':'application/json'},
+   body:JSON.stringify(payload),signal:controller.signal
+  });
+  let body={};
+  try{body=await r.json();}catch(e){throw aiError(direct?'direct_invalid_json':'gateway_invalid_json','AI provider returned an invalid response (HTTP '+r.status+').',r.status);}
+  if(!r.ok){
+   const prefix=direct?'Direct AI provider':'Vercel AI Gateway';
+   const details=relevantErrorResponse(body);
+   if(r.status===403)throw aiError(direct?'direct_forbidden':'gateway_access_denied',prefix+' rejected this project (403). Check account access, model permissions and AI Gateway activation/credits in your Vercel dashboard.',403);
+   if(r.status===401)throw aiError(direct?'direct_key_invalid':'gateway_authentication_failed',prefix+' rejected the credential (401). Check the server-side API key or Vercel OIDC authorization.',401);
+   if(r.status===402)throw aiError(direct?'direct_insufficient_credits':'gateway_insufficient_credits',prefix+' needs available usage credits or a valid billing configuration (402).',402);
+   if(r.status===429)throw aiError('ai_rate_limited','The AI provider is rate limiting requests (429).',429,true);
+   if(r.status===404)throw aiError('model_unavailable','The configured AI model is not available on this provider (404).',404,true);
+   if(r.status>=500)throw aiError('provider_unavailable','The AI service is currently unavailable (HTTP '+r.status+').',r.status,true);
+   throw aiError('provider_error',prefix+' could not process the request (HTTP '+r.status+'; '+details.code+').',r.status);
+  }
+  const content=body?.choices?.[0]?.message?.content;
+  const answer=typeof content==='string'?content:Array.isArray(content)?content.map(v=>v.text||'').join(''):'';
+  if(!answer.trim())throw aiError('empty_response','The AI provider returned an empty answer.',502,true);
+  return {answer,model:body.model||model};
+ }catch(e){
+  if(e.name==='AbortError')throw aiError('provider_timeout','The AI service timed out.',504,true);
+  throw e;
+ }finally{clearTimeout(timer);}
 }
 async function modelCall(model,messages,timeout,token){
- token=token||process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
- if(!token)throw Error('AI Gateway not configured');
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout||33000);
+ const directKey=process.env.OPENAI_API_KEY;
+ const preferred=process.env.NOVA_AI_PROVIDER==='openai'&&!!directKey;
+ if(preferred||(!token&&directKey)){
+  const directModel=process.env.NOVA_DIRECT_OPENAI_MODEL||'gpt-5.4-mini';
+  return apiModelRequest('https://api.openai.com/v1/chat/completions',directKey,directModel,messages,timeout,true);
+ }
+ if(!token)throw aiError('ai_not_configured','No AI provider credential is configured. Connect AI Gateway or add a provider API key in Vercel environment settings.',503);
  try{
-  const r=await fetch('https://ai-gateway.vercel.sh/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({model,messages,max_tokens:2500}),signal:controller.signal});
-  if(!r.ok)throw Error('AI Gateway HTTP '+r.status+(r.status===402?' - add credits':''));
-  const d=await r.json(),m=d?.choices?.[0]?.message?.content;
-  const answer=typeof m==='string'?m:Array.isArray(m)?m.map(x=>x.text||'').join(''):'';
-  if(!answer.trim())throw Error('Model returned no answer');return {answer,model:d.model||model};
- }finally{clearTimeout(timer);}
+  return await apiModelRequest('https://ai-gateway.vercel.sh/v1/chat/completions',token,model,messages,timeout,false);
+ }catch(e){
+  if(directKey&&['gateway_access_denied','gateway_authentication_failed','gateway_insufficient_credits','provider_unavailable'].includes(e.code)){
+   const directModel=process.env.NOVA_DIRECT_OPENAI_MODEL||'gpt-5.4-mini';
+   return apiModelRequest('https://api.openai.com/v1/chat/completions',directKey,directModel,messages,timeout,true);
+  }
+  throw e;
+ }
 }
 async function github(path,method,payload){
  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'nova-omni'};
@@ -79,7 +142,7 @@ module.exports=async function handler(req,res){
  if(req.method==='OPTIONS')return res.status(204).end();
  const b=body(req),action=String(req.query?.action||b.action||'health');
  if(req.method==='GET'){
-  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.3.0',ai:!!gatewayToken(req),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
+  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.4.0',ai:!!(gatewayToken(req)||process.env.OPENAI_API_KEY),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',provider:process.env.NOVA_AI_PROVIDER==='openai'&&!!process.env.OPENAI_API_KEY?'direct-openai':gatewayToken(req)?'vercel-ai-gateway':process.env.OPENAI_API_KEY?'direct-openai':'not-configured',languages:Object.keys(LANGUAGES),github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
   if(action==='calc'){try{return reply(res,200,{ok:true,value:calculate(String(req.query.expression||''))});}catch(e){return reply(res,400,{ok:false,error:e.message});}}
   if(action==='checks'){
    const tests=[['Precedence','2+3*4',14],['Parentheses','(2+3)*4',20],['Powers','2^3^2',512],['Square root','sqrt(144)+5',17],['Trigonometry','sin(pi/2)',1],['Unary minus','-3^2',-9],['Floating point','0.1+0.2',0.3],['Constants','pi-pi',0]];
@@ -93,6 +156,19 @@ module.exports=async function handler(req,res){
    const repo=String(req.query.repo||'');if(!validRepo(repo))return reply(res,400,{ok:false,error:'Use owner/repo'});
    try{const d=await github('/repos/'+repo);return reply(res,200,{ok:true,repository:{name:d.full_name,description:d.description,stars:d.stargazers_count,issues:d.open_issues_count,url:d.html_url,updated:d.updated_at}});}catch(e){return reply(res,502,{ok:false,error:e.message});}
   }
+  if(action==='diagnose'){
+   if(!access(req))return reply(res,401,{ok:false,error:'Authentication required for model diagnostics'});
+   if(limit(req))return reply(res,429,{ok:false,error:'Diagnostic request limit reached'});
+   try{
+    const sample=await modelCall('openai/gpt-5.4-mini',[
+     {role:'system',content:'You are testing AI connectivity. Reply with a very short greeting in Arabic.'},
+     {role:'user',content:'أهلاً'}
+    ],14000,gatewayToken(req));
+    return reply(res,200,{ok:true,available:true,model:sample.model,language:'ar',sample:sample.answer.slice(0,240)});
+   }catch(e){
+    return reply(res,200,{ok:true,available:false,code:e.code||'ai_request_failed',reason:String(e.message||'AI connection failed').slice(0,330)});
+   }
+  }
   if(action==='channels'){
    if(!access(req))return reply(res,401,{ok:false,error:'Site access key required'});
    try{const d=await slack('conversations.list?limit=100&types=public_channel,private_channel');return reply(res,200,{ok:true,channels:(d.channels||[]).filter(x=>!x.is_archived).map(x=>({id:x.id,name:x.name}))});}catch(e){return reply(res,502,{ok:false,error:e.message});}
@@ -104,13 +180,13 @@ module.exports=async function handler(req,res){
  try{
   if(action==='chat'){
    if(limit(req))return reply(res,429,{ok:false,error:'Hourly request limit reached'});
-   const messages=cleanMessages(b.messages),mode=Object.hasOwn(modes,b.mode)?b.mode:'general',primary=modes[mode],context=[{role:'system',content:system(mode)},...messages];
-   let first;try{first=await modelCall(primary,context,34000,gatewayToken(req));}catch(e){if(primary==='openai/gpt-5.4-mini')throw e;first=await modelCall('openai/gpt-5.4-mini',context,20000,gatewayToken(req));}
+   const messages=cleanMessages(b.messages),mode=Object.hasOwn(modes,b.mode)?b.mode:'general',lang=Object.hasOwn(LANGUAGES,b.language)?b.language:'auto',primary=modes[mode],context=[{role:'system',content:system(mode,lang)},...messages];
+   let first;try{first=await modelCall(primary,context,31000,gatewayToken(req));}catch(e){if(!e.retryable||primary==='openai/gpt-5.4-mini')throw e;first=await modelCall('openai/gpt-5.4-mini',context,19000,gatewayToken(req));}
    let reviewed=false;
    if(b.deep===true){
     try{
      const judge=primary==='anthropic/claude-opus-4.6'?'openai/gpt-5.4':'anthropic/claude-opus-4.6';
-     const result=await modelCall(judge,[{role:'system',content:system(mode)+'\nCritically review the following draft, correct errors, and return only your improved final answer. Never claim external verification.'},{role:'user',content:'Original request:\n'+messages.at(-1).content+'\n\nDraft answer:\n'+first.answer}],24000,gatewayToken(req));
+     const result=await modelCall(judge,[{role:'system',content:system(mode,lang)+'\nCritically review the following draft, correct errors, and return only your improved final answer. Never claim external verification.'},{role:'user',content:'Original request:\n'+messages.at(-1).content+'\n\nDraft answer:\n'+first.answer}],24000,gatewayToken(req));
      first={answer:result.answer,model:first.model+' + '+result.model};reviewed=true;
     }catch(e){reviewed=false;}
    }
@@ -128,5 +204,5 @@ module.exports=async function handler(req,res){
    const d=await slack('chat.postMessage',{channel,text:message});return reply(res,200,{ok:true,channel:d.channel,ts:d.ts});
   }
   return reply(res,404,{ok:false,error:'Unknown action'});
- }catch(e){return reply(res,502,{ok:false,error:(e.name==='AbortError'?'Provider timeout':String(e.message||e)).slice(0,220)});}
+ }catch(e){return reply(res,503,{ok:false,error:String(e.message||'AI provider request failed').slice(0,350),code:e.code||'request_failed'});}
 };
