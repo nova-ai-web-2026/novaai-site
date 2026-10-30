@@ -1,218 +1,432 @@
 <!doctype html>
-<html lang="ar" dir="auto">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090d18">
-<meta name="nova-local-version" content="1.3.0">
-<title>NOVA OMNI Local — Free AI on Your Device</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0f15">
+<meta name="nova-local-version" content="2.0.0">
+<meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
+<title>NOVA Local — Your private AI space</title>
 <style>
-:root{color-scheme:dark;--bg:#090d18;--panel:#111a2c;--edge:#33415e;--text:#edf2ff;--muted:#a3b2d2;--accent:#a898ff;--good:#6ee3ba;--warn:#ffcb88}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 55% -8%,#302c59,transparent 52%),var(--bg);color:var(--text);font:14px/1.6 system-ui,Arial,sans-serif}
-button,textarea,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
-.wrap{max-width:920px;margin:auto;padding:18px 20px 24px;min-height:100vh;display:flex;flex-direction:column;gap:14px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px}a{color:#b9b1ff}h1{font-size:22px;line-height:1.15;margin:0}h1 span{color:#ad9dff}p{margin:6px 0 0;color:var(--muted)}
-.panel{background:#111a2c;border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:0 10px 34px #0003}
-.label{color:var(--muted);font-size:12px}.top{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:12px}
-.btn{border:1px solid #59658c;color:#fff;background:#273654;border-radius:10px;padding:9px 15px;min-height:40px}
-.primary{background:linear-gradient(120deg,#a28aff,#70cbd8);color:#111627;border:0;font-weight:800}.danger{background:#27243b}
-select{background:#1a2540;border:1px solid #59658c;color:white;border-radius:10px;padding:9px;min-height:40px}
-#progress{width:100%;height:6px;accent-color:var(--accent);display:none;margin-top:12px}
-#chat{flex:1;min-height:280px;max-height:54vh;overflow:auto;display:flex;flex-direction:column;gap:11px;padding:4px 0}
-.bubble{max-width:85%;padding:12px 14px;border:1px solid #3c4867;background:#1a253b;border-radius:15px;white-space:pre-wrap;overflow-wrap:anywhere;align-self:flex-start}
-.bubble.user{background:#2c2a4e;border-color:#625999;align-self:flex-end}
-.bubble b{font-size:11px;color:#b0bbed;display:block;margin-bottom:4px}
-.composer{display:grid;grid-template-columns:1fr auto;gap:11px;align-items:stretch}
-textarea{background:#0d1424;border:1px solid #465472;border-radius:12px;color:#fff;resize:vertical;min-height:75px;padding:13px;width:100%}
-button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #a18fff;outline-offset:2px}
-#state{color:var(--warn);font-size:13px}#statusNote{font-size:12px}
-.disclaimer{font-size:12px;color:#acb9d4;line-height:1.6}.setting{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.setting label{font-size:12px;color:#b2c2df}.setting select{max-width:230px}.subtle{font-size:12px;color:#a9b9db}.memoryInfo{margin-top:7px;color:#8be5bd;font-size:12px}
-@media(max-width:600px){.wrap{padding:12px 12px 20px}h1{font-size:19px}.panel{padding:12px}.composer{grid-template-columns:1fr}#chat{max-height:50vh;min-height:200px}.bubble{max-width:96%}}
+:root{color-scheme:dark;--bg:#0c0f15;--rail:#11151d;--surface:#141923;--raised:#1a202c;--edge:#272e3b;--edge-strong:#364052;--text:#f0f3fb;--muted:#98a3b5;--muted2:#738095;--violet:#aca1ff;--violet-dark:#282440;--mint:#87dfcf;--warn:#f4c18b;--shadow:0 24px 80px rgba(0,0,0,.24)}
+*{box-sizing:border-box}
+html,body{margin:0;min-width:320px;min-height:100%;background:var(--bg)}
+body{font-family:Inter,"Segoe UI",Tahoma,Arial,system-ui,sans-serif;color:var(--text);font-size:14px;line-height:1.6}
+button,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.58}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--violet)!important;outline-offset:3px}
+button{-webkit-tap-highlight-color:transparent}
+svg{display:block;flex:none}
+.icon{width:19px;height:19px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100dvh;direction:rtl}
+.sidebar{background:var(--rail);border-inline-end:1px solid var(--edge);display:flex;flex-direction:column;padding:24px 15px 16px;gap:25px;position:sticky;top:0;height:100dvh;z-index:20}
+.brand{display:flex;gap:11px;align-items:center;padding:3px 10px}
+.brandIcon{width:40px;height:40px;border:1px solid #655db1;background:linear-gradient(135deg,#383464,#1e263f);border-radius:13px;display:grid;place-items:center;box-shadow:0 6px 20px #0005}
+.brandIcon span{font-size:25px;line-height:1;color:#cec6ff}
+.brandText{display:grid;gap:0}
+.brandText strong{font-weight:800;letter-spacing:.11em;font-size:15px;direction:ltr;text-align:left}
+.brandText small{color:var(--muted);font-size:11px;letter-spacing:.08em}
+.railSectionLabel{font-size:10px;color:#7a859b;font-weight:700;letter-spacing:.12em;padding:0 12px;margin-bottom:8px;text-transform:uppercase}
+.railNew{width:100%;display:flex;align-items:center;gap:10px;border:1px solid #4e466e;background:#242238;border-radius:11px;color:#f2efff;padding:11px 12px;font-weight:700;text-align:start;transition:background .18s,border-color .18s}
+.railNew:hover{background:#302c49;border-color:#8374b8}
+.railNav{display:grid;gap:4px}
+.railItem{display:flex;align-items:center;gap:12px;border:1px solid transparent;border-radius:10px;padding:11px 12px;color:#a5afc2;transition:background .18s}
+.railItem.selected{background:#201e34;border-color:#393357;color:#dcd6ff;font-weight:700}
+.railItem:hover{background:#1c2230;color:var(--text)}
+.railItem .icon{width:18px;height:18px}
+.railSpacer{flex:1}
+.privacyMini{padding:14px;border-radius:12px;border:1px solid #31443e;background:#15241f}
+.privacyMini strong{display:flex;gap:8px;align-items:center;color:#a7f3d9;font-size:12px}
+.privacyMini p{font-size:11px;color:#9fb2aa;line-height:1.6;margin:7px 0 0}
+.railFoot{font-size:10px;color:var(--muted2);padding:0 12px}
+.workspace{display:flex;flex-direction:column;min-width:0;min-height:100dvh;max-height:100dvh}
+.topbar{height:74px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 33px;border-bottom:1px solid var(--edge);gap:16px;background:rgba(13,17,24,.92)}
+.crumb{display:flex;align-items:center;gap:11px;min-width:0}
+.crumb span{font-size:12px;color:#8895aa}
+.crumb b{font-size:13px;font-weight:700;white-space:nowrap}
+.topActions{display:flex;gap:10px;align-items:center}
+.statusPill{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--edge-strong);border-radius:99px;background:#181e29;color:#c0c9d9;font-size:11px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:#aeb5c7;box-shadow:0 0 0 3px #59617320}
+.statusPill.live .dot{background:var(--mint);box-shadow:0 0 0 3px #64c3b522}
+.topButton{border:1px solid #343c4d;border-radius:10px;background:#1c2330;padding:10px;color:#cdd5e7;display:flex;align-items:center;gap:8px}
+.topButton:hover{background:#252d3d}
+.mobileOnly{display:none!important}
+.content{display:grid;grid-template-columns:minmax(0,1fr) 308px;min-height:0;flex:1}
+.conversation{min-width:0;min-height:0;display:flex;flex-direction:column;position:relative;background:radial-gradient(circle at 51% 21%,#22203966 0,transparent 35%),var(--bg)}
+.conversation:before{content:"";pointer-events:none;position:absolute;inset:0 0 auto;height:250px;background:radial-gradient(ellipse at 50% 0,#5c528b10,transparent 68%)}
+.feed{z-index:1;position:relative;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:36px max(25px,calc((100% - 740px)/2)) 22px;display:flex;flex-direction:column;gap:18px;scrollbar-color:#343b4b transparent}
+.welcome{margin:auto 0;display:flex;align-items:center;flex-direction:column;text-align:center;padding:28px 0 18px}
+.welcomeMark{width:70px;height:70px;display:grid;place-items:center;border-radius:23px;background:linear-gradient(150deg,#39365e,#1a2636);border:1px solid #5f578b;box-shadow:0 0 65px #9785ff1b,inset 0 1px #b6acff22;margin-bottom:29px}
+.welcomeMark span{font-size:34px;color:#c1b5ff}
+.eyebrow{color:#aca4df;font-weight:750;letter-spacing:.02em;font-size:12px;margin:0 0 12px}
+.welcome h1{font-size:clamp(29px,3.1vw,47px);line-height:1.37;letter-spacing:-.045em;font-weight:820;margin:0}
+.welcome h1 span{background:linear-gradient(110deg,#c6b9ff,#95e1d6);background-clip:text;-webkit-background-clip:text;color:transparent}
+.welcomeDesc{font-size:14px;line-height:1.9;color:#a5afc0;max-width:460px;margin:18px 0 26px}
+.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,590px)}
+.suggestion{display:flex;gap:12px;align-items:center;text-align:right;padding:15px;background:#171c27cc;border:1px solid #343947;border-radius:14px;color:#d9dfed;transition:transform .2s,border-color .2s,background .2s}
+.suggestion:hover{transform:translateY(-2px);border-color:#6f679a;background:#202434}
+.suggestion .tileIcon{height:34px;width:34px;display:grid;place-items:center;border:1px solid #46405f;border-radius:10px;background:#2a2540;color:#c5b8ff;font-size:15px;flex:none}
+.suggestion strong{display:block;font-size:12px;font-weight:750}
+.suggestion small{display:block;color:#8290a7;font-size:10px;margin-top:3px}
+.message{display:flex;gap:12px;max-width:100%;align-items:flex-start}
+.message.user{justify-content:flex-start}
+.message.ai{justify-content:flex-start}
+.messageAvatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:10px;background:#28243d;border:1px solid #4a446c;color:#cabfff;font-size:17px}
+.message.user .messageAvatar{background:#24363e;color:#b9eee7;border-color:#3c6867}
+.bubble{min-width:0;max-width:min(100%,640px);border:1px solid #2f3846;border-radius:4px 15px 15px 15px;background:#171e2a;padding:14px 17px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 4px 20px #0001}
+.bubble.user{background:#25253f;border-color:#494564;border-radius:15px 4px 15px 15px}
+.bubble b{display:block;color:#b6c2db;font-size:11px;font-weight:750;margin-bottom:8px}
+.bubble.user b{color:#c9bfff}
+.bubble>div{font-size:14px;line-height:1.95;unicode-bidi:plaintext}
+.composerDock{position:relative;z-index:1;padding:12px 28px 19px;background:linear-gradient(0deg,#0c0f15 88%,transparent)}
+.composerInner{max-width:775px;margin:0 auto}
+.notice{margin:0 0 10px;border:1px solid #64513f;color:#f4d5ae;background:#2d231b;border-radius:11px;padding:11px 13px;font-size:12px;line-height:1.65}
+.notice[hidden]{display:none}
+.composerBox{border:1px solid #485269;border-radius:16px;background:#1c2230;padding:13px 13px 10px;box-shadow:0 14px 45px #0003;transition:border-color .2s}
+.composerBox:focus-within{border-color:#9586ca}
+textarea{background:transparent;border:0;outline:0;color:var(--text);width:100%;resize:vertical;min-height:60px;max-height:170px;padding:4px 5px 8px;display:block;line-height:1.7}
+textarea::placeholder{color:#8995aa}
+.composerTools{border-top:1px solid #32394a;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.composerHint{display:flex;align-items:center;gap:8px;color:#8793a8;font-size:11px}
+.sendButton{border:0;background:linear-gradient(112deg,#c4b7ff,#9a8ef0);color:#16172a;padding:10px 17px;border-radius:11px;display:flex;align-items:center;gap:8px;font-weight:850;min-height:40px;box-shadow:0 4px 22px #9e82ff22}
+.sendButton:hover:not(:disabled){filter:brightness(1.1)}
+.underComposer{text-align:center;color:#69768d;font-size:10px;margin-top:9px}
+.panel{min-width:0;overflow:auto;background:var(--rail);border-inline-start:1px solid var(--edge);padding:24px 19px;scrollbar-color:#383e4b transparent}
+.panelTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:23px}
+.panelTitle{display:flex;gap:10px;align-items:center}
+.panelIcon{width:34px;height:34px;background:#26263f;color:#c4b5ff;display:grid;place-items:center;border:1px solid #45436e;border-radius:10px}
+.panelTitle strong{display:block;font-size:14px}
+.panelTitle small{display:block;color:#8794ab;font-size:11px}
+.sectionHead{display:flex;gap:7px;align-items:center;color:#aab6ca;font-size:11px;font-weight:800;margin:20px 0 10px}
+.sectionHead .icon{width:16px;height:16px}
+.field{display:grid;gap:7px;margin:0 0 15px}
+.field label{font-size:11px;color:#94a3bc;font-weight:650}
+.field select{width:100%;border:1px solid #3b4659;color:#eff2fa;background:#1c2431;border-radius:11px;min-height:46px;padding:0 12px;font-size:12px}
+.fieldHint{color:#738197;font-size:11px;line-height:1.6}
+.memoryInfo{font-size:11px;border:1px solid #334638;background:#18251f;border-radius:10px;color:#a6ebc9;padding:11px 12px;margin:0 0 8px}
+.modelMeta{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.statBox{border:1px solid #313849;border-radius:11px;padding:11px;background:#181e29}
+.statBox strong{display:block;font-size:13px;color:#e4e8f7}
+.statBox small{color:#8693a9;font-size:10px}
+.divider{border:0;border-top:1px solid var(--edge);margin:21px 0}
+.startButton{width:100%;border:1px solid #a69bfc;background:linear-gradient(110deg,#ada3ff,#9186dd);color:#111326;border-radius:12px;min-height:49px;padding:10px 12px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:9px}
+.startButton:hover:not(:disabled){filter:brightness(1.08)}
+.stopButton{width:100%;margin-top:8px;background:#1b222f;border:1px solid #3a465a;border-radius:11px;min-height:42px;color:#aebbd3;font-weight:650}
+.progressWrap{margin-top:12px}
+progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin:5px 0 0}
+#state{font-size:12px;color:#d5c7ad;line-height:1.7;margin:10px 0 0;overflow-wrap:anywhere}
+.note{color:#8997ad;line-height:1.75;font-size:11px;margin:9px 0 0}
+.privacyCard{margin-top:18px;border:1px solid #304c44;background:#15241e;border-radius:12px;padding:14px}
+.privacyCard strong{display:flex;gap:7px;align-items:center;font-size:12px;color:#a2eed6}
+.privacyCard p{color:#92b7ab;line-height:1.8;font-size:11px;margin:7px 0 0}
+.textButton{border:1px solid #384253;background:#1b222d;color:#c2cee0;padding:10px 12px;border-radius:10px;font-size:11px;display:flex;gap:8px;align-items:center;justify-content:center;width:100%;margin-top:12px}
+.textButton:hover{background:#222a38}
+.screenOverlay{display:none}
+@media(min-width:1680px){.content{grid-template-columns:minmax(0,1fr) 328px}.panel{padding:28px}}
+@media(max-width:1170px){.shell{grid-template-columns:205px minmax(0,1fr)}.content{grid-template-columns:minmax(0,1fr) 264px}.topbar{padding:0 22px}.panel{padding:20px 14px}.feed{padding-inline:22px}}
+@media(max-width:920px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;inset:0 auto 0 0;right:0;left:auto;width:252px;transform:translateX(105%);transition:transform .25s;z-index:32;box-shadow:var(--shadow)}.sidebar.open{transform:translateX(0)}.workspace{height:100dvh}.content{grid-template-columns:minmax(0,1fr)}.panel{position:fixed;top:0;bottom:0;left:0;right:auto;width:min(360px,100vw);z-index:33;transform:translateX(-105%);transition:transform .25s;border-inline-start:1px solid var(--edge-strong);box-shadow:var(--shadow)}.panel.open{transform:translateX(0)}.screenOverlay.open{position:fixed;display:block;inset:0;background:#060812a8;z-index:30}.mobileOnly{display:flex!important}.topbar{height:64px}.feed{padding-inline:max(18px,calc((100% - 730px)/2))}.welcome{padding:15px 0}}
+@media(max-width:600px){.topbar{height:58px;padding:0 13px}.crumb span{display:none}.topActions{gap:6px}.statusPill{padding:6px 9px;font-size:10px}.topButton{padding:8px;border-radius:9px}.topButton span{display:none}.feed{padding:20px 14px 12px;gap:13px}.welcomeMark{width:58px;height:58px;border-radius:19px;margin-bottom:19px}.welcomeMark span{font-size:28px}.eyebrow{font-size:11px}.welcome h1{font-size:29px;line-height:1.4}.welcomeDesc{font-size:12px;line-height:1.9;margin:13px 0 20px}.suggestions{gap:8px}.suggestion{padding:10px;gap:8px;border-radius:12px;min-height:64px}.suggestion .tileIcon{height:29px;width:29px;font-size:13px;border-radius:9px}.suggestion strong{font-size:11px}.suggestion small{font-size:9px}.composerDock{padding:8px 12px max(10px,env(safe-area-inset-bottom))}.composerBox{padding:11px}.composerHint{font-size:10px}.bubble{padding:11px 13px}.bubble>div{font-size:13px}.messageAvatar{width:28px;height:28px;border-radius:9px}.panel{padding:20px 16px}.underComposer{font-size:9px}}
+@media(max-width:375px){.suggestions{grid-template-columns:1fr 1fr}.welcome h1{font-size:26px}.statusPill{font-size:9px}.bubble{max-width:95%}}
+@media(max-height:650px){.welcome{margin:18px 0}.welcomeMark{margin-bottom:12px}.welcomeDesc{margin-bottom:12px}.feed{padding-block:15px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
- <div><h1>✦ NOVA <span>OMNI Local</span></h1><p>Free on-device AI · مجاني من غير مفتاح أو رصيد</p></div>
- <a href="./index.html" title="Main NOVA OMNI workspace">← Workspace</a>
-</header>
-<section class="panel">
- <strong>ابدأ الذكاء الاصطناعي المحلي | Start free local AI</strong>
- <p class="disclaimer">الوضع الأساسي <b>Balanced · متوسط</b>: نموذج Qwen3 0.6B بذاكرة تشغيل متوسطة نسبيًا لنموذج محلي، ومحادثة بتفتكر آخر 14 رسالة أثناء الرد. كمان فيه وضع أخف للأجهزة الأضعف، لكنه أفضل للإنجليزي من العربي. النموذج محتاج تحميل كبير أول مرة من Hugging Face، وممكن يحتاج ذاكرة أعلى من حجم التحميل. استخدم Wi-Fi لو معاك باقة موبايل محدودة. كل الردود بتتولد على جهازك، من غير AI Gateway أو بطاقة دفع.</p>
- <div class="top">
-  <div class="setting"><label for="profile">قوة النموذج</label><select id="profile" aria-label="Local model size">
-    <option value="balanced">Balanced · Qwen3 0.6B (متوسط)</option>
-    <option value="lite">Lite · SmolLM2 135M (أخف، إنجليزي أفضل)</option>
-  </select></div>
-  <button class="btn primary" id="start">Download & start · تحميل وتشغيل</button>
-  <button class="btn danger" id="stop" disabled>Stop loading · إيقاف</button>
-  <div class="setting"><label for="memory">ذاكرة المحادثة</label><select id="memory" aria-label="Conversation memory length">
-   <option value="short">Short · 8 رسائل</option><option value="balanced" selected>Balanced · 14 رسالة</option><option value="extended">Extended · 18 رسالة</option>
-  </select></div>
-  <label class="label" for="language">Response language</label>
-  <select id="language">
-   <option value="auto">Auto · تلقائي</option><option value="ar-eg">العربية المصرية</option><option value="ar">العربية</option><option value="en">English</option>
-   <option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option>
-   <option value="ru">Русский</option><option value="tr">Türkçe</option><option value="hi">हिन्दी</option><option value="ur">اردو</option><option value="zh">中文</option>
-   <option value="ja">日本語</option><option value="ko">한국어</option><option value="id">Indonesia</option><option value="bn">বাংলা</option><option value="fa">فارسی</option>
-   <option value="sw">Swahili</option><option value="vi">Tiếng Việt</option><option value="th">ไทย</option><option value="nl">Nederlands</option><option value="pl">Polski</option>
-  </select>
- </div>
- <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
- <div id="state" role="status" aria-live="polite">Not started · لم يبدأ التحميل</div>
- <div id="statusNote" class="disclaimer">No prompts are sent to AI Gateway. The model stays in memory only while running.</div>
-<div class="memoryInfo" id="memoryInfo" aria-live="polite">Balanced memory: لغاية 14 رسالة للسياق · المحادثات الأقدم محفوظة محليًا</div>
-</section>
-<section class="panel" style="display:flex;flex:1;min-height:320px;flex-direction:column">
- <div class="top" style="justify-content:space-between;margin-top:0;margin-bottom:8px">
-  <strong>💬 Local chat · محادثة محلية</strong>
-  <button class="btn danger" id="clear">Clear chat · مسح</button>
- </div>
- <div id="chat" aria-label="Conversation" aria-live="polite"></div>
- <div class="composer">
-  <textarea id="prompt" placeholder="اكتب سؤالك هنا… / Type your question" maxlength="3000" aria-label="Message"></textarea>
-  <button class="btn primary" id="send" disabled>Send · إرسال</button>
- </div>
- <p class="disclaimer">أول تشغيل يحتاج إنترنت. النموذج المحلي مجاني من ناحية رسوم AI، لكن التحميل يستهلك بيانات. ذاكرة المحادثة متوسطة افتراضيًا (14 رسالة تُمرّر للنموذج)، مع حفظ آخر 60 رسالة على الجهاز فقط؛ لا تُرفع المحادثات للسحابة، لكنها محفوظة في بيانات المتصفح ويمكن مسحها من هنا. الحسابات البسيطة بنحلّها بحاسبة محلية دقيقة بدل تخمين النموذج. تقدر تغير طول السياق من القائمة.</p>
-</section>
+<div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="القائمة">
+    <a class="brand" href="./local.html" aria-label="NOVA Local Home">
+      <div class="brandIcon" aria-hidden="true"><span>✦</span></div>
+      <div class="brandText"><strong>NOVA OMNI</strong><small>LOCAL WORKSPACE</small></div>
+    </a>
+    <div>
+      <div class="railSectionLabel">المساحة الخاصة</div>
+      <button class="railNew" id="newChat" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        محادثة جديدة
+      </button>
+    </div>
+    <nav class="railNav" aria-label="التنقل">
+      <a class="railItem selected" href="./local.html" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 20l1.2-4.4A8.5 8.5 0 1 1 20 11.5Z"/></svg>المحادثة المحلية</a>
+      <a class="railItem" href="./index.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>مساحة NOVA الرئيسية</a>
+    </nav>
+    <div class="railSpacer"></div>
+    <div class="privacyMini">
+      <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
+      <p>الردود بتتولد على جهازك. من غير حساب AI مدفوع أو إرسال رسائلك لـAI Gateway.</p>
+    </div>
+    <div class="railFoot">NOVA LOCAL v2.0 · FREE</div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="crumb">
+        <button class="topButton mobileOnly" id="toggleSidebar" type="button" aria-label="فتح القائمة" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <span>مساحة العمل</span><svg class="icon" style="width:13px;color:#657185" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg><b>المحادثة المحلية</b>
+      </div>
+      <div class="topActions">
+        <div class="statusPill" id="statusPill"><span class="dot" aria-hidden="true"></span><span id="statusLabel">غير مُشغّل</span></div>
+        <button class="topButton mobileOnly" id="toggleSettings" type="button" aria-label="فتح إعدادات النموذج" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+      </div>
+    </header>
+    <div class="content">
+      <main class="conversation" aria-label="NOVA Local conversation">
+        <div class="feed" id="chat" aria-live="polite" aria-label="Conversation">
+          <section class="welcome" id="welcome">
+            <div class="welcomeMark" aria-hidden="true"><span>✦</span></div>
+            <div class="eyebrow">✧ &nbsp; ذكاء اصطناعي شخصي · مجاني · خاص</div>
+            <h1>مساحتك للأفكار.<br><span>من غير حدود للفواتير.</span></h1>
+            <p class="welcomeDesc">اسأل، اكتب، أو جرّب فكرة جديدة. شغّل نموذجًا على جهازك وابدأ محادثة بذاكرة متوسطة، من غير مفاتيح API.</p>
+            <div class="suggestions">
+              <button class="suggestion" type="button" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>اشرح لي فكرة</strong><small>تعلم بطريقة سهلة</small></span></button>
+              <button class="suggestion" type="button" data-prompt="اكتب لي مقدمة قصيرة وجذابة لمشروع جديد."><span class="tileIcon">✎</span><span><strong>ساعدني في الكتابة</strong><small>صياغة وأفكار</small></span></button>
+              <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>جرّب حساب سريع</strong><small>حاسبة دقيقة محليًا</small></span></button>
+              <button class="suggestion" type="button" data-prompt="Hello! Can we practice speaking English together?"><span class="tileIcon">🌐</span><span><strong>تدرّب على لغة</strong><small>English وأكثر</small></span></button>
+            </div>
+          </section>
+        </div>
+        <div class="composerDock">
+          <div class="composerInner">
+            <div id="notice" class="notice" role="status" hidden></div>
+            <div class="composerBox">
+              <textarea id="prompt" rows="2" maxlength="3000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
+              <div class="composerTools">
+                <div class="composerHint"><svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 2v8M8 7l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>Enter للإرسال · Shift + Enter لسطر جديد</span></div>
+                <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
+              </div>
+            </div>
+            <div class="underComposer">الذكاء الاصطناعي المحلي ممكن يخطئ. الحسابات البسيطة بتتراجع بحاسبة دقيقة.</div>
+          </div>
+        </div>
+      </main>
+      <aside class="panel" id="settingsPanel" aria-label="إعدادات الذكاء الاصطناعي">
+        <div class="panelTop">
+          <div class="panelTitle">
+            <span class="panelIcon"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span>
+            <span><strong>إعدادات النموذج</strong><small>تتحكم في كل حاجة</small></span>
+          </div>
+          <button class="topButton mobileOnly" id="closeSettings" type="button" aria-label="إغلاق الإعدادات"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="sectionHead"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3h8l2 3v12l-2 3H8l-2-3V6Z"/><path d="M9 9h6v6H9Z"/></svg>الذكاء الاصطناعي</div>
+        <div class="field"><label for="profile">قوة النموذج</label>
+          <select id="profile" aria-label="Local model size">
+            <option value="balanced">Balanced · Qwen3 0.6B</option>
+            <option value="lite">Lite · SmolLM2 135M</option>
+          </select>
+          <span class="fieldHint">Balanced أفضل للعربي، وLite أصغر لكن أداؤه أضعف.</span>
+        </div>
+        <div class="modelMeta">
+          <div class="statBox"><strong>100% محلي</strong><small>بدون Gateway</small></div>
+          <div class="statBox"><strong>اختياري</strong><small>تنزيل النموذج</small></div>
+        </div>
+        <div class="sectionHead"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>المحادثة</div>
+        <div class="field"><label for="memory">ذاكرة المحادثة</label>
+          <select id="memory" aria-label="Conversation memory length">
+            <option value="short">Short · حتى 8 رسائل</option>
+            <option value="balanced" selected>Balanced · حتى 14 رسالة</option>
+            <option value="extended">Extended · حتى 18 رسالة</option>
+          </select>
+        </div>
+        <div class="memoryInfo" id="memoryInfo">ذاكرة متوسطة: لغاية 14 رسالة للسياق · محفوظ محليًا حتى 60 رسالة.</div>
+        <div class="field"><label for="language">لغة الرد</label>
+          <select id="language" aria-label="Response language">
+            <option value="auto">تلقائي · Auto</option><option value="ar-eg">المصري · العربية المصرية</option>
+            <option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option>
+            <option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option>
+            <option value="it">Italiano</option><option value="ru">Русский</option><option value="tr">Türkçe</option>
+            <option value="hi">हिन्दी</option><option value="ur">اردو</option><option value="zh">中文</option>
+            <option value="ja">日本語</option><option value="ko">한국어</option><option value="id">Indonesia</option>
+            <option value="bn">বাংলা</option><option value="fa">فارسی</option><option value="sw">Swahili</option>
+            <option value="vi">Tiếng Việt</option><option value="th">ไทย</option><option value="nl">Nederlands</option>
+            <option value="pl">Polski</option>
+          </select>
+        </div>
+        <hr class="divider">
+        <div class="sectionHead" style="margin-top:0"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg>تشغيل النموذج</div>
+        <button class="startButton" id="start" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg><span>تحميل وتشغيل مجاني</span></button>
+        <button class="stopButton" id="stop" type="button" disabled>إيقاف النموذج</button>
+        <div class="progressWrap">
+          <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
+          <p id="state" role="status">Not started · لم يبدأ التحميل</p>
+        </div>
+        <p class="note" id="statusNote">أول مرة تحتاج اتصال إنترنت لتحميل النموذج (مئات الميجابايت). استخدم Wi-Fi لو بياناتك محدودة. معالجة المحادثة بعدها محلية.</p>
+        <div class="privacyCard"><strong><svg class="icon" style="width:16px" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>بدون اشتراك أو بطاقة</strong><p>لا تُرسل الأسئلة لـAI Gateway. سجل المحادثات بيتحفظ في متصفحك فقط، وتقدر تمسحه في أي وقت.</p></div>
+        <button class="textButton" id="clear" type="button"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M4 7h16M8 7V5h8v2M7 7l1 13h8l1-13M10 10v6M14 10v6"/></svg>مسح سجل المحادثة</button>
+      </aside>
+    </div>
+  </div>
 </div>
+<div class="screenOverlay" id="screenOverlay" aria-hidden="true"></div>
 <script src="./local-math.js"></script>
 <script>
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60;
-const CONTEXT_DESCRIPTIONS={short:'لغاية 8 رسائل',balanced:'لغاية 14 رسالة',extended:'لغاية 18 رسالة'};
-let worker=null,ready=false,loading=false,generating=false,pending=null,loadedProfile=null;
+const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
+let worker=null,ready=false,loading=false,generating=false,pending=null;
 let history=[];
 try{
- const data=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');
- if(Array.isArray(data))history=data.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string').slice(-HISTORY_LIMIT);
+ const v=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');
+ if(Array.isArray(v))history=v.filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').slice(-HISTORY_LIMIT);
 }catch(e){}
+const welcome=$('welcome');
 function display(){
- $('chat').replaceChildren();
- if(!history.length){
-  const tip=document.createElement('p');
-  tip.textContent='حمّل النموذج وبعدها اكتب سؤالك. / Load the model first, then start chatting.';
-  $('chat').append(tip);
+ const feed=$('chat');feed.replaceChildren();
+ if(!history.length){feed.appendChild(welcome);welcome.hidden=false;return;}
+ for(const entry of history){
+  const row=document.createElement('div');row.className='message '+(entry.role==='user'?'user':'ai');
+  const avatar=document.createElement('span');avatar.className='messageAvatar';avatar.textContent=entry.role==='user'?'●':'✦';avatar.setAttribute('aria-hidden','true');
+  const bubble=document.createElement('div');bubble.className='bubble '+(entry.role==='user'?'user':'ai');
+  const title=document.createElement('b');title.textContent=entry.role==='user'?'You':'NOVA Local';
+  const body=document.createElement('div');body.textContent=entry.content;body.dir='auto';
+  bubble.append(title,body);row.append(avatar,bubble);feed.append(row);
  }
- for(const m of history){
-  const card=document.createElement('div');
-  card.className='bubble '+(m.role==='user'?'user':'ai');
-  const label=document.createElement('b');
-  label.textContent=m.role==='user'?'You':'NOVA Local';
-  const text=document.createElement('div');text.textContent=m.content;
-  card.append(label,text);$('chat').append(card);
- }
- $('chat').scrollTop=$('chat').scrollHeight;
+ feed.scrollTop=feed.scrollHeight;
 }
 function save(){
  try{localStorage.setItem('nova_omni_local_history',JSON.stringify(history.slice(-HISTORY_LIMIT)));}
- catch(e){$('statusNote').textContent='The browser could not save chat history. This does not affect the current conversation.';}
+ catch(e){$('statusNote').textContent='تعذّر حفظ سجل المحادثات في المتصفح. تقدر تكمّل المحادثة الحالية.';}
 }
-function state(text){$('state').textContent=text;}
 function updateMemoryInfo(){
- const depth=$('memory').value in CONTEXT_DESCRIPTIONS?$('memory').value:'balanced';
- $('memoryInfo').textContent='ذاكرة المحادثة: '+CONTEXT_DESCRIPTIONS[depth]+' عند السؤال · محفوظ محليًا حتى آخر '+HISTORY_LIMIT+' رسالة.';
+ const depth=MEMORY_LABELS[$('memory').value]||'14';
+ $('memoryInfo').textContent='ذاكرة المحادثة: لغاية '+depth+' رسالة للسياق · محفوظ محليًا حتى '+HISTORY_LIMIT+' رسالة.';
 }
-function stop(reason){
+function state(value,mode){
+ $('state').textContent=String(value||'');
+ const status=$('statusPill');status.classList.toggle('live',mode==='ready');
+ $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='loading'?'بيتحمّل':mode==='working'?'بيفكّر':mode==='error'?'مشكلة تشغيل':'غير مُشغّل';
+}
+function notice(value){
+ $('notice').textContent=String(value||'');$('notice').hidden=!value;
+}
+function closePanels(){
+ $('sidebar').classList.remove('open');$('settingsPanel').classList.remove('open');
+ $('screenOverlay').classList.remove('open');
+ $('toggleSidebar').setAttribute('aria-expanded','false');$('toggleSettings').setAttribute('aria-expanded','false');
+}
+function openPanel(which){
+ closePanels();
+ $(which).classList.add('open');
+ $('screenOverlay').classList.add('open');
+ $(which==='sidebar'?'toggleSidebar':'toggleSettings').setAttribute('aria-expanded','true');
+}
+$('toggleSidebar').addEventListener('click',()=>openPanel('sidebar'));
+$('toggleSettings').addEventListener('click',()=>openPanel('settingsPanel'));
+$('closeSettings').addEventListener('click',closePanels);
+$('screenOverlay').addEventListener('click',closePanels);
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closePanels();});
+document.querySelectorAll('[data-prompt]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  $('prompt').value=button.dataset.prompt||'';
+  $('prompt').focus();closePanels();
+ });
+});
+function clear(){
+ if(generating){notice('أوقف التوليد الأول قبل مسح المحادثة.');return;}
+ history=[];save();display();notice('تم مسح المحادثة المحلية.');
+ closePanels();
+}
+$('clear').addEventListener('click',clear);
+$('newChat').addEventListener('click',clear);
+function stop(message){
  if(worker)worker.terminate();
- worker=null;ready=false;loading=false;generating=false;pending=null;loadedProfile=null;
+ worker=null;ready=false;loading=false;generating=false;pending=null;
  $('start').disabled=false;$('stop').disabled=true;$('send').disabled=true;
- $('profile').disabled=false;$('prompt').disabled=false;$('clear').disabled=false;
+ $('profile').disabled=false;$('prompt').disabled=false;
+ $('clear').disabled=false;$('newChat').disabled=false;
  $('progress').style.display='none';
- state(reason||'Local model stopped. You can restart.');
+ state(message||'تم إيقاف النموذج. تقدر تشغّله تاني.',message&&message.includes('error')?'error':null);
 }
 $('start').addEventListener('click',()=>{
  if(loading||ready)return;
- const model=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
- if(!confirm('You are about to download '+model+' from Hugging Face. This can use hundreds of megabytes of internet data; carrier charges may apply. Load only one model at a time. Continue?'))return;
+ const label=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
+ if(!confirm('هل توافق على تحميل '+label+' مجانًا من Hugging Face؟ النموذج ممكن يحتاج مئات الميجابايت من الإنترنت وذاكرة تشغيل كبيرة. قد تنطبق رسوم بيانات موبايل من شركتك.'))return;
  loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
- state('Starting '+model+'…');
+ notice('');state('جاري إعداد '+label+'…','loading');
+ closePanels();
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
-   if(data.type==='status')state(String(data.text||'Loading…'));
+   if(data.type==='status')state(data.text||'جاري التحميل…',generating?'working':'loading');
    else if(data.type==='progress'){
-    $('progress').style.display='block';$('progress').value=Number(data.progress)||0;
-    state('Downloading '+String(data.file||'model file')+' · '+Math.round(Number(data.progress)||0)+'% of this file');
+    const p=Math.max(0,Math.min(100,Number(data.progress)||0));
+    $('progress').style.display='block';$('progress').value=p;
+    state('تحميل '+String(data.file||'ملف النموذج')+' · '+Math.round(p)+'% من الملف','loading');
    }else if(data.type==='ready'){
-    ready=true;loading=false;loadedProfile=data.profile||$('profile').value;
+    ready=true;loading=false;
     $('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';
-    state('✓ AI local ready: '+(data.device||'device')+'. No AI Gateway used.');
+    state('✓ AI local ready · '+String(data.device||'browser')+' · لا يحتاج AI Gateway','ready');
+    notice('النموذج جاهز. اكتب سؤالك وابدأ المحادثة.');
    }else if(data.type==='answer'){
     if(!pending)return;
     history.push({role:'user',content:pending},{role:'assistant',content:String(data.answer||'')});
     history=history.slice(-HISTORY_LIMIT);
     pending=null;generating=false;
-    $('prompt').value='';$('prompt').disabled=false;
-    $('send').disabled=false;$('clear').disabled=false;
+    $('prompt').value='';$('prompt').disabled=false;$('send').disabled=false;
+    $('clear').disabled=false;$('newChat').disabled=false;
     save();display();updateMemoryInfo();
-    state('✓ Local reply generated. Context used: '+Number(data.contextMessages||0)+' messages.');
+    state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');notice('');
    }else if(data.type==='error'){
-    const detail='Local AI error: '+String(data.message||'Unavailable').slice(0,280);
-    if(data.stage==='load'){
-     stop(detail+'. You can try the Lite model.');
-    }else{
+    const error='Local AI error: '+String(data.message||'غير متاح').slice(0,270);
+    if(data.stage==='load'){stop(error+' · جرّب وضع Lite.');}
+    else{
      generating=false;pending=null;
-     $('send').disabled=!ready;$('prompt').disabled=false;$('clear').disabled=false;
-     state(detail+'. Your draft is still here.');
+     $('send').disabled=!ready;$('prompt').disabled=false;
+     $('clear').disabled=false;$('newChat').disabled=false;
+     state(error,'error');notice('Your draft is still here · رسالتك محفوظة، تقدر تحاول تاني.');
     }
    }
   };
-  worker.onerror=event=>{
-   stop('The local model failed to load. Try the Lite profile or a browser with WebGPU support.');
+  worker.onerror=()=>{
+   stop('Local AI error: النموذج ما اشتغلش. جرّب Lite أو متصفح أحدث.');
+   notice('حصلت مشكلة في تحميل النموذج. جرّب الاتصال بالإنترنت أو الوضع الأخف.');
   };
   worker.postMessage({type:'init',profile:$('profile').value});
- }catch(error){stop('Unable to start the model: '+String(error.message||error));}
+ }catch(error){stop('Local AI error: '+String(error.message||error));}
 });
-$('stop').addEventListener('click',()=>stop('Model stopped. Your chat and draft are preserved.'));
-$('clear').addEventListener('click',()=>{
- if(generating){state('Cancel the current response before clearing the conversation.');return;}
- history=[];save();display();updateMemoryInfo();
-});
-$('send').addEventListener('click',()=>{
- if(!worker||!ready){state('First download and start the model.');return;}
+$('stop').addEventListener('click',()=>stop('تم إيقاف النموذج. المحادثة والرسالة محفوظين.'));
+function send(){
+ if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول.');return;}
  if(generating)return;
- const message=$('prompt').value.trim();if(!message)return;
- // For simple arithmetic, use the deterministic local parser. This avoids
- // known basic-math mistakes by small language models; it never uses eval.
- const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
+ const value=$('prompt').value.trim();if(!value)return;
+ const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(value);
  if(arithmetic){
-  const language=$('language').value;
-  const text=language.startsWith('ar')||(/[؀-ۿ]/.test(message))?'الناتج: '+arithmetic.value:'Verified calculation: '+arithmetic.value;
-  history.push({role:'user',content:message},{role:'assistant',content:text});
+  const isArabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(value);
+  const answer=(isArabic?'الناتج: ':'Verified calculation: ')+arithmetic.value;
+  history.push({role:'user',content:value},{role:'assistant',content:answer});
   history=history.slice(-HISTORY_LIMIT);
-  $('prompt').value='';save();display();
-  state('✓ Verified offline arithmetic; no AI model or cloud request needed.');
+  $('prompt').value='';save();display();notice('');
+  state('✓ حساب دقيق على الجهاز · من غير استدعاء AI','ready');
   return;
  }
- generating=true;pending=message;
- $('send').disabled=true;$('clear').disabled=true;$('prompt').disabled=true;
- state('Generating locally with '+CONTEXT_DESCRIPTIONS[$('memory').value]+' of context…');
+ generating=true;pending=value;
+ $('send').disabled=true;$('prompt').disabled=true;
+ $('clear').disabled=true;$('newChat').disabled=true;
+ notice('');state('بيجهّز رد باستخدام '+(MEMORY_LABELS[$('memory').value]||'14')+' رسالة كحد أقصى…','working');
  worker.postMessage({
   type:'generate',
-  history:[...history.slice(-24),{role:'user',content:message}],
-  language:$('language').value,
-  memory:$('memory').value
+  history:[...history.slice(-24),{role:'user',content:value}],
+  language:$('language').value,memory:$('memory').value
  });
-});
-$('prompt').addEventListener('keydown',e=>{
- if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('send').click();}
+}
+$('send').addEventListener('click',send);
+$('prompt').addEventListener('keydown',event=>{
+ if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}
 });
 try{
- const savedLang=localStorage.getItem('nova_language')||'auto';
- if([...$('language').options].some(x=>x.value===savedLang))$('language').value=savedLang;
- const savedProfile=localStorage.getItem('nova_local_profile')||'balanced';
- if([...$('profile').options].some(x=>x.value===savedProfile))$('profile').value=savedProfile;
- const savedMemory=localStorage.getItem('nova_local_memory')||'balanced';
- if([...$('memory').options].some(x=>x.value===savedMemory))$('memory').value=savedMemory;
+ for(const [id,key,fallback] of [['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced']]){
+  const value=localStorage.getItem(key)||fallback;
+  if([...$(id).options].some(option=>option.value===value))$(id).value=value;
+ }
 }catch(e){}
-$('language').addEventListener('change',()=>{try{localStorage.setItem('nova_language',$('language').value);}catch(e){}});
-$('profile').addEventListener('change',()=>{try{localStorage.setItem('nova_local_profile',$('profile').value);}catch(e){}});
-$('memory').addEventListener('change',()=>{try{localStorage.setItem('nova_local_memory',$('memory').value);}catch(e){}updateMemoryInfo();});
+for(const [id,key] of [['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory']]){
+ $(id).addEventListener('change',()=>{
+  try{localStorage.setItem(key,$(id).value);}catch(e){}
+  if(id==='memory')updateMemoryInfo();
+ });
+}
 updateMemoryInfo();display();
 })();
 </script>
-</body></html>
+</body>
+</html>
