@@ -54,3 +54,15 @@ The server defaults to `NOVA_FREE_ONLY=true`, restricting all chat, diagnostics,
 
 ## v1.6 No-card local AI fallback
 If AI Gateway returns HTTP 403 `customer_verification_required`, a Vercel account needs payment-method verification even to unlock free Gateway credits. The server handles this accurately; it never silently switches to paid models. NOVA OMNI Local, linked directly on the main chat page at `/local.html`, runs the small multilingual `onnx-community/Qwen3-0.6B-ONNX` model inside the visitor's browser. It uses Hugging Face Transformers.js and a dedicated Web Worker, not a cloud AI API or payment method. Visitors explicitly approve the **large initial model download** (hundreds of megabytes, may incur mobile-data charges); GPU/WASM performance and browser device memory can limit support. The first download requires connectivity, and subsequent use may benefit from browser caching. Local AI has significantly lower reasoning performance than hosted frontier models and is not a Grok benchmark.
+
+## Local AI v1.3: Balanced device and context memory
+
+Balanced (default): Qwen3 0.6B with Q4 ONNX quantization, not a hard RAM limit. Actual peak memory depends on browser, WebGPU availability, CPU/GPU and device RAM. An optional 135M Lite model is lighter but is less suitable for Egyptian Arabic.
+
+The chat keeps up to 60 user/assistant messages in this browser's localStorage. Only up to 14 recent messages and at most 9000 characters go into a balanced reply; Short is up to 8/4800, Extended up to 18/12000. Stored conversations are not automatically uploaded. Users must approve model downloads explicitly; the model is kept in device memory only while its worker is running.
+
+Qwen3 short-reply sampling: /no_think, temperature 0.7, top_p 0.8, top_k 20 and repetition_penalty 1.12; repetitive generations can be retried once. Qwen recommends sampling rather than greedy decoding. The model remains relatively weak; actual testing showed that it can answer basic arithmetic incorrectly. Therefore the browser also contains a safe deterministic arithmetic parser (local-math.js) that answers simple expression requests rather than asking the model to guess.
+
+Node unit tests cover context memory and secure arithmetic. Browser tests cover profile selection, local conversation history, explicit download consent and local arithmetic using simulated model workers. A separate real ONNX inference workflow checks that Qwen3 loads and generates language in a real CPU runtime, but cannot prove operation on every mobile browser.
+
+Local AI: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/local.html

@@ -3,6 +3,10 @@ on:
   push:
     paths:
       - 'nova-omni/index.html'
+      - 'nova-omni/local.html'
+      - 'nova-omni/local-ai-worker.js'
+      - 'nova-omni/local-math.js'
+      - 'nova-omni/tests/local-memory.test.js'
       - 'nova-omni/tests/browser.spec.js'
       - '.github/workflows/nova-omni-browser.yml'
   workflow_dispatch:
@@ -23,18 +27,22 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts @playwright/test@1.56.1
       - name: Install Chromium
         run: npx playwright install chromium --with-deps
-      - name: Verify updated live site version
+      - name: Wait for updated main and Local AI pages
         env:
           NOVA_SITE_URL: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/
         run: |
+          set -eu
           for i in $(seq 1 24); do
-            if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?v=$GITHUB_SHA-$i" | grep -Fq 'name="nova-version" content="1.6.0"'; then
-              echo "Updated site v1.6 is deployed"
+            if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?check=$GITHUB_SHA-$i" -o /tmp/nova-main.html &&
+               curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${NOVA_SITE_URL}local.html?check=$GITHUB_SHA-$i" -o /tmp/nova-local.html &&
+               grep -Fq 'name="nova-version" content="1.6.0"' /tmp/nova-main.html &&
+               grep -Fq 'name="nova-local-version" content="1.3.0"' /tmp/nova-local.html; then
+              echo 'Both main workspace and Local AI pages are published'
               exit 0
             fi
             sleep 5
           done
-          echo "The published site did not report version 1.6"
+          echo 'Updated Local AI page could not be verified'
           exit 1
       - name: Run against public GitHub Pages website
         env:

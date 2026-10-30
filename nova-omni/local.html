@@ -61,7 +61,7 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
  <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
  <div id="state" role="status" aria-live="polite">Not started · لم يبدأ التحميل</div>
  <div id="statusNote" class="disclaimer">No prompts are sent to AI Gateway. The model stays in memory only while running.</div>
-<div class="memoryInfo" id="memoryInfo" aria-live="polite">Balanced memory: آخر 14 رسالة للسياق · المحادثات الأقدم محفوظة محليًا</div>
+<div class="memoryInfo" id="memoryInfo" aria-live="polite">Balanced memory: لغاية 14 رسالة للسياق · المحادثات الأقدم محفوظة محليًا</div>
 </section>
 <section class="panel" style="display:flex;flex:1;min-height:320px;flex-direction:column">
  <div class="top" style="justify-content:space-between;margin-top:0;margin-bottom:8px">
@@ -82,7 +82,7 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
 'use strict';
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60;
-const CONTEXT_DESCRIPTIONS={short:'آخر 8 رسائل',balanced:'آخر 14 رسالة',extended:'آخر 18 رسالة'};
+const CONTEXT_DESCRIPTIONS={short:'لغاية 8 رسائل',balanced:'لغاية 14 رسالة',extended:'لغاية 18 رسالة'};
 let worker=null,ready=false,loading=false,generating=false,pending=null,loadedProfile=null;
 let history=[];
 try{
