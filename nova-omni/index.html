@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>NOVA OMNI — AI Workspace</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>NOVA OMNI — AI Workspace</title><meta name="nova-version" content="1.2.0">
 <style>
 :root{color-scheme:dark;--bg:#090d18;--panel:#121a2c;--line:#2a3652;--text:#eef2ff;--muted:#a1afd0;--purple:#a394ff;--blue:#71d4ef;--green:#60e1b8}
 *{box-sizing:border-box}body{margin:0;color:var(--text);background:var(--bg);font:14px/1.55 ui-sans-serif,system-ui,Arial}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
@@ -13,7 +13,7 @@
 <div class="app"><aside class="side"><div class="brand"><div class="logo">✦</div><div class="brandWords"><strong>NOVA OMNI</strong><small>INTELLIGENCE SYSTEM</small></div></div><button id="new" class="new">＋ <span class="word">New conversation</span></button><div class="nav"><p class="caption">Workspace</p><button data-page="chatPage" class="selected"><b>◈</b><span class="word">AI Chat</span></button><button data-page="toolsPage"><b>⌘</b><span class="word">Tools & integrations</span></button><button data-page="testPage"><b>▤</b><span class="word">Test laboratory</span></button><button data-page="settingsPage"><b>⚙</b><span class="word">Settings</span></button></div><div class="history"><p class="caption">Recent conversations</p><div id="chats"></div></div><div class="foot"><span id="dot" class="dot"></span><span class="txt" id="status">Checking server…</span></div></aside>
 <div class="main"><header class="header"><div><div class="eyebrow">MULTI-MODEL INTELLIGENCE</div><h1>NOVA <span class="gradient">OMNI</span></h1></div><div class="badge">◈ &nbsp;Reason · Build · Verify</div></header>
 <section id="chatPage" class="page active"><div class="chat"><div class="feed" id="feed"><div class="hero" id="hero"><div class="heroIcon">✦</div><h2>One workspace.<br><span class="gradient">More ways to think.</span></h2><p>A real AI workspace with specialist modes, independent second-model review, a deterministic calculator and practical integrations.</p><div class="quick"><button data-example="Build a responsive landing page and explain the code."><strong>⌘ &nbsp; Build an app</strong><small>Architecture and coding</small></button><button data-example="Solve x^2 - 5x + 6 = 0 carefully, step by step."><strong>∑ &nbsp; Solve maths</strong><small>Work through each step</small></button><button data-example="Make a careful research plan distinguishing sources and assumptions."><strong>◇ &nbsp; Research</strong><small>Evidence and analysis</small></button><button data-example="Draft a compelling professional product announcement."><strong>✎ &nbsp; Write</strong><small>Clear and creative writing</small></button></div></div></div>
-<div class="composerSpace"><div role="status" id="connectionNotice" class="connectionNotice" hidden></div><div class="modes"><button class="mode selected" data-mode="general">✦ General</button><button class="mode" data-mode="coding">⌘ Code</button><button class="mode" data-mode="maths">∑ Maths</button><button class="mode" data-mode="research">◇ Research</button><button class="mode" data-mode="writing">✎ Writing</button><label class="review"><input type="checkbox" id="deep" checked> Second-model review</label></div><div class="composer"><textarea id="prompt" placeholder="Ask NOVA OMNI anything…" rows="2"></textarea><div class="sendRow"><div><button class="minor" id="attach">＋ Text file</button><span class="attach" id="fileStatus"></span><input class="hide" id="file" type="file" accept=".txt,.md,.js,.ts,.tsx,.py,.json,.html,.css,.csv"></div><button class="send" id="send">Send ↗</button></div></div><div class="small">Double review is an optional workflow, not a guaranteed accuracy improvement or verified benchmark score.</div></div></div></section>
+<div class="composerSpace"><div role="status" id="connectionNotice" class="connectionNotice" hidden></div><div class="modes"><button class="mode selected" data-mode="general">✦ General</button><button class="mode" data-mode="coding">⌘ Code</button><button class="mode" data-mode="maths">∑ Maths</button><button class="mode" data-mode="research">◇ Research</button><button class="mode" data-mode="writing">✎ Writing</button><label class="review"><input type="checkbox" id="deep" checked> Second-model review</label></div><div class="composer"><textarea id="prompt" placeholder="Ask NOVA OMNI anything…" rows="2"></textarea><div class="sendRow"><div><button class="minor" id="attach">＋ Text file</button><span class="attach" id="fileStatus"></span><input class="hide" id="file" type="file" accept=".txt,.md,.js,.ts,.tsx,.py,.json,.html,.css,.csv"></div><button class="send" id="send">Send ↗</button></div></div><div class="small">Double review is optional. NOVA OMNI v1.2 · AI backend setup required.</div></div></div></section>
 <section id="toolsPage" class="page"><div class="panel"><h2>Tools that <span class="gradient">do real work.</span></h2><p>Inspect GitHub projects, create issues, read Slack channels, send messages, and calculate expressions. Write actions require your explicit confirmation.</p><div class="grid">
 <div class="card"><h3>⌘ GitHub</h3><p>Public repository inspection works without a token. Issue creation requires a server-side token.</p><label class="field">Repository (owner/repo)</label><input id="repo" class="input" value="nova-ai-web-2026/novaai-site"><button class="btn muted" id="inspect">Inspect repository</button><div class="out" id="githubOut">No repo inspected.</div><label class="field">New issue title</label><input class="input" id="issueTitle" placeholder="New feature request"><label class="field">Issue description</label><textarea class="input" id="issueDesc" rows="2"></textarea><button id="issue" class="btn">Create issue</button></div>
 <div class="card"><h3>☷ Slack</h3><p>List channels and send a confirmed message after configuring a bot token.</p><button id="channels" class="btn muted">Load channels</button><label class="field">Channel</label><select class="input" id="channel"><option value="">Select a channel</option></select><label class="field">Or channel ID</label><input class="input" id="manualChannel" placeholder="C0123456789"><label class="field">Message</label><textarea id="slackMessage" class="input" rows="3"></textarea><button class="btn" id="post">Send message</button><div class="out" id="slackOut">Nothing sent.</div></div>
@@ -58,7 +58,9 @@ try{backendUrl=normalizeBackend(localStorage.getItem('nova_backend_url'));}catch
 function showConnectionNotice(msg){$('connectionNotice').textContent=msg;$('connectionNotice').hidden=false;}
 var heroElement=document.getElementById('hero');
 function key(){return sessionStorage.getItem('nova_key')||'';}function message(x){return x&&x.message||String(x);}
-function read(){try{chats=JSON.parse(localStorage.getItem('nova_chats')||'[]');if(!Array.isArray(chats))chats=[];}catch(e){chats=[];}}
+function read(){try{chats=JSON.parse(localStorage.getItem('nova_chats')||'[]');if(!Array.isArray(chats))chats=[];
+ chats.forEach(function(c){if(Array.isArray(c.messages))c.messages=c.messages.filter(function(m){return !(m.role==='assistant'&&m.meta==='system'&&/^Request failed:/.test(String(m.content||'')));});});
+ }catch(e){chats=[];}}
 function persist(){try{localStorage.setItem('nova_chats',JSON.stringify(chats.slice(0,20)));}catch(e){}}
 function current(){return chats.find(function(c){return c.id===id;});}
 function switchPage(page){document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id===page);});document.querySelectorAll('[data-page]').forEach(function(e){e.classList.toggle('selected',e.dataset.page===page);});}
@@ -66,11 +68,55 @@ function history(){var el=$('chats');el.textContent='';chats.slice(0,15).forEach
 function add(role,content,meta){var outer=document.createElement('div');outer.className='msg'+(role==='assistant'?' ai':'');var avatar=document.createElement('div');avatar.className='avatar';avatar.textContent=role==='assistant'?'✦':'U';outer.appendChild(avatar);var inner=document.createElement('div');inner.className='msgBody';var head=document.createElement('div');head.className='msgHead';head.textContent=role==='assistant'?'NOVA OMNI':'You';if(meta){var sub=document.createElement('span');sub.textContent=meta;head.appendChild(sub);}inner.appendChild(head);var t=document.createElement('div');t.className='msgText';t.textContent=content;inner.appendChild(t);if(role==='assistant'){var c=document.createElement('button');c.className='copy';c.textContent='Copy';c.onclick=function(){navigator.clipboard.writeText(content).then(function(){c.textContent='Copied';}).catch(function(){c.textContent='Unavailable';});};inner.appendChild(c);}outer.appendChild(inner);$('feed').appendChild(outer);$('feed').scrollTop=$('feed').scrollHeight;}
 function paint(){$('feed').textContent='';var c=current();if(!c||!c.messages.length){$('feed').appendChild(heroElement);heroElement.style.display='block';}else{c.messages.forEach(function(m){add(m.role,m.content,m.meta||'');});}history();}
 function fresh(){id=null;$('feed').textContent='';$('feed').appendChild(heroElement);heroElement.style.display='block';$('prompt').value='';switchPage('chatPage');history();}
-async function request(action,method,data,params){var url=backendUrl+'?action='+encodeURIComponent(action)+(params||'');var options={method:method||'GET',headers:{'x-nova-key':key()}};if(method==='POST'){options.headers['Content-Type']='application/json';options.body=JSON.stringify(data||{});}var res=await fetch(url,options),j=await res.json().catch(function(){return {error:'Invalid response'};});if(!res.ok||!j.ok)throw Error(j.error||'HTTP '+res.status);return j;}
-async function send(){if(loading)return;var value=$('prompt').value.trim();if(!value)return;
-if(!aiReady){showConnectionNotice('AI chat is not connected yet. This static preview cannot run models until you connect a backend in Settings. Your message has not been sent.');return;}
-if(!key()){showConnectionNotice('Enter your site access key under Settings before sending to your AI server. Your message has not been sent.');return;}
-loading=true;$('send').disabled=true;$('send').textContent='Thinking…';if(!id){id='n'+Date.now()+Math.floor(Math.random()*999);chats.unshift({id:id,title:value.slice(0,42),messages:[]});}var c=current();c.messages.push({role:'user',content:value});heroElement.style.display='none';add('user',value);$('prompt').value='';var messages=c.messages.slice(-20).map(function(m){return {role:m.role,content:m.content};});if(file)messages[messages.length-1].content+='\n\nText attachment '+file.name+':\n'+file.content;file=null;$('file').value='';$('fileStatus').textContent='';try{var r=await request('chat','POST',{messages:messages,mode:mode,deep:$('deep').checked});var meta=r.model+(r.reviewed?' · reviewed':'');c.messages.push({role:'assistant',content:r.answer,meta:meta});add('assistant',r.answer,meta);}catch(e){var err='Request failed: '+message(e)+'. Check your key and Gateway in Settings.';c.messages.push({role:'assistant',content:err,meta:'system'});add('assistant',err,'system');}finally{loading=false;$('send').disabled=false;$('send').textContent='Send ↗';persist();history();}}
+function isStaticPreview(){return location.hostname.endsWith('.github.io')&&backendUrl==='/api/omni';}
+async function request(action,method,data,params){
+ var url=backendUrl+'?action='+encodeURIComponent(action)+(params||'');
+ if(isStaticPreview())throw Error('AI backend is not deployed. GitHub Pages hosts only the website interface. Connect a real HTTPS API under Settings.');
+ var options={method:method||'GET',headers:{'x-nova-key':key()}};
+ if(method==='POST'){options.headers['Content-Type']='application/json';options.body=JSON.stringify(data||{});}
+ var res;
+ try{res=await fetch(url,options);}
+ catch(e){throw Error('Could not reach the API server (network or CORS). Check the HTTPS URL in Settings.');}
+ var type=(res.headers.get('content-type')||'').toLowerCase(),bodyText='';
+ try{bodyText=await res.text();}catch(e){throw Error('Could not read the API response (HTTP '+res.status+').');}
+ if(!type.includes('json')&&!/^\s*[\{\[]/.test(bodyText)){
+  throw Error(res.status===404?'AI endpoint not found (HTTP 404). Check the deployed API URL.':'API returned HTML/text instead of JSON (HTTP '+res.status+'). Check the backend deployment.');
+ }
+ var result;
+ try{result=JSON.parse(bodyText);}catch(e){throw Error('AI backend returned malformed JSON (HTTP '+res.status+'). Check server logs.');}
+ if(!result||typeof result!=='object')throw Error('AI backend returned an unexpected response.');
+ if(!res.ok||result.ok!==true){
+  if(res.status===401||res.status===403)throw Error('API access key rejected (HTTP '+res.status+'). Check Settings.');
+  if(res.status===402)throw Error('AI Gateway needs billing credits (HTTP 402).');
+  if(res.status===429)throw Error('Rate limit reached (HTTP 429).');
+  throw Error(typeof result.error==='string'&&result.error.trim()?result.error:'API request failed (HTTP '+res.status+').');
+ }
+ return result;
+}
+async function send(){
+ if(loading)return;
+ var draft=$('prompt').value.trim();if(!draft)return;
+ if(!aiReady){showConnectionNotice('Message not sent. AI chat is offline because no working backend is connected. Open Settings to connect the server.');return;}
+ if(!key()){showConnectionNotice('Message not sent. Enter the site access key for your AI server in Settings.');return;}
+ var previous=current(),messages=(previous&&Array.isArray(previous.messages)?previous.messages:[]).slice(-19).map(function(m){return {role:m.role,content:m.content};});
+ var full=draft;if(file)full+='\n\nAttached text file ('+file.name+'):\n'+file.content;
+ messages.push({role:'user',content:full});
+ loading=true;$('send').disabled=true;$('send').textContent='Thinking…';$('prompt').disabled=true;
+ heroElement.style.display='none';add('user',draft,'sending');
+ try{
+  var r=await request('chat','POST',{messages:messages,mode:mode,deep:$('deep').checked});
+  if(typeof r.answer!=='string'||!r.answer.trim()||typeof r.model!=='string')throw Error('AI backend returned no valid answer.');
+  if(!id){id='n'+Date.now()+Math.floor(Math.random()*999);chats.unshift({id:id,title:draft.slice(0,42),messages:[]});}
+  var c=current(),meta=r.model+(r.reviewed?' · reviewed':'');
+  c.messages.push({role:'user',content:draft},{role:'assistant',content:r.answer,meta:meta});
+  $('prompt').value='';file=null;$('file').value='';$('fileStatus').textContent='';
+  paint();persist();$('connectionNotice').hidden=true;
+ }catch(e){
+  paint();showConnectionNotice('Message not sent. '+message(e)+' Your draft has been preserved.');
+ }finally{
+  loading=false;$('send').disabled=false;$('send').textContent='Send ↗';$('prompt').disabled=false;$('prompt').focus();
+ }
+}
 async function inspect(){$('githubOut').textContent='Loading…';try{var r=await request('repo','GET',null,'&repo='+encodeURIComponent($('repo').value.trim())),d=r.repository;$('githubOut').textContent=d.name+'\n'+(d.description||'')+'\n★ '+d.stars+' stars · '+d.issues+' open issues\n'+d.url;}catch(e){try{var repo=$('repo').value.trim();if(!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))throw Error('Use owner/repo');var response=await fetch('https://api.github.com/repos/'+repo,{headers:{Accept:'application/vnd.github+json'}});if(!response.ok)throw Error('GitHub HTTP '+response.status);var publicData=await response.json();$('githubOut').textContent=publicData.full_name+'\n'+(publicData.description||'')+'\n★ '+publicData.stargazers_count+' stars · '+publicData.open_issues_count+' open issues\n'+publicData.html_url+'\n(public GitHub API)';}catch(inner){$('githubOut').textContent=message(inner);}}}
 async function issue(){if(!backendReady||!service.github){$('githubOut').textContent='GitHub issue creation requires a connected API server and GITHUB_TOKEN. Public repository inspection still works.';return;}if(!confirm('Create this GitHub issue?'))return;try{var r=await request('issue','POST',{repo:$('repo').value.trim(),title:$('issueTitle').value,description:$('issueDesc').value});$('githubOut').textContent='Issue #'+r.number+' created:\n'+r.url;}catch(e){$('githubOut').textContent=message(e);}}
 async function channels(){if(!backendReady||!service.slack){$('slackOut').textContent='Slack channels require a connected API server and SLACK_BOT_TOKEN.';return;}try{var r=await request('channels');$('channel').textContent='';r.channels.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent='#'+c.name;$('channel').appendChild(o);});$('slackOut').textContent='Loaded '+r.channels.length+' channels.';}catch(e){$('slackOut').textContent=message(e);}}
@@ -79,9 +125,20 @@ async function calc(){try{var r=await request('calc','GET',null,'&expression='+e
 async function tests(){$('testOut').textContent='Running checks…';try{var d=await request('checks');$('testOut').textContent=d.passed+'/'+d.total+' passing\n\n'+d.tests.map(function(t){return (t.passed?'✓ PASS ':'✗ FAIL ')+t.name;}).join('\n')+'\n\n'+d.note;}catch(e){var cases=[['Precedence','2+3*4',14],['Grouping','(2+3)*4',20],['Powers','2^3^2',512],['Square root','sqrt(144)+5',17],['Trig','sin(pi/2)',1],['Unary minus','-3^2',-9],['Floating point','0.1+0.2',0.3],['Constants','pi-pi',0]];var passed=0;var lines=cases.map(function(t){var ok=Math.abs(calculate(t[1])-t[2])<1e-9;if(ok)passed++;return (ok?'✓ PASS ':'✗ FAIL ')+t[0];});$('testOut').textContent=passed+'/'+cases.length+' local browser checks passing\n\n'+lines.join('\n')+'\n\nStatic preview test only. Backend not connected. No Grok comparison performed.';}}
 async function health(){
  $('backendUrl').value=backendUrl==='/api/omni'?'':backendUrl;
- $('backendOut').textContent=backendUrl==='/api/omni'?'Using same-origin /api/omni. GitHub Pages has no backend.':'Configured endpoint: '+backendUrl;
+ $('backendOut').textContent=backendUrl==='/api/omni'?'No backend configured. GitHub Pages cannot host an AI API. Deploy your server and enter its HTTPS /api/omni URL.':'Configured endpoint: '+backendUrl;
+ if(isStaticPreview()){
+  backendReady=false;aiReady=false;service={};
+  $('dot').classList.remove('ok');
+  $('status').textContent='AI offline · static preview';
+  $('health').textContent='GitHub Pages only hosts the website interface. The AI backend is not deployed.\nTo enable chat, deploy the server and enter its HTTPS /api/omni URL above. Set NOVA_ACCESS_KEY and AI Gateway credentials on that server.';
+  $('caps').textContent='Calculator: available\nLocal tests: available\nPublic GitHub reads: available\nAI chat: offline (no API deployed)\nSlack: offline (no API deployed)\nGitHub issue creation: offline (no API deployed)';
+  showConnectionNotice('AI chat is offline. This is only a static preview. Connect an AI backend in Settings to send messages.');
+  return;
+ }
  try{
   var d=await request('health');
+  if(d.app!=='NOVA OMNI'||typeof d.ai!=='boolean'||typeof d.secured!=='boolean')throw Error('The endpoint is not a valid NOVA OMNI backend.');
+
   backendReady=true;aiReady=!!(d.ai&&d.secured);service=d;
   $('dot').classList.add('ok');
   $('status').textContent=aiReady?'AI Gateway detected':'Backend connected · setup needed';
@@ -95,7 +152,7 @@ async function health(){
   $('status').textContent='Static preview · AI offline';
   $('health').textContent='Frontend online. API server is not connected.\nCurrent endpoint: '+backendUrl+'\nThis static GitHub Pages preview has no serverless backend.';
   $('caps').textContent='Static preview: working calculator, local checks, browser history, and public GitHub reads.\nAI chat: not connected\nSlack and GitHub writes: need an API server and credentials.';
-  showConnectionNotice('Preview mode: AI chat is unavailable until you connect a backend. Calculator, tests and public GitHub browsing still work.');
+  showConnectionNotice('AI chat is unavailable: the configured backend could not be verified. Check Settings. Calculator and public GitHub browsing still work.');
  }
 }
 document.querySelectorAll('[data-page]').forEach(function(e){e.onclick=function(){switchPage(e.dataset.page);};});
