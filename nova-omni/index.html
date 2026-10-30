@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>NOVA OMNI — AI Workspace</title><meta name="nova-version" content="1.6.0">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>NOVA OMNI — Modern AI Workspace</title><meta name="nova-version" content="1.6.0">
 <script>
 if(location.hostname.endsWith('.github.io')&&!new URLSearchParams(location.search).has('preview')){
  location.replace('https://nova-omni-ai-2026.vercel.app/'+location.search+location.hash);
@@ -14,10 +14,62 @@ if(location.hostname.endsWith('.github.io')&&!new URLSearchParams(location.searc
 .panel{width:min(1020px,100%);margin:0 auto;padding:34px}.panel h2{font-size:29px;letter-spacing:-.045em;margin:0 0 8px}.panel>p{color:var(--muted);margin:0 0 26px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card{background:#131b2e;border:1px solid #303d58;border-radius:15px;padding:20px;min-width:0}.card h3{font-size:16px;margin:0 0 8px}.card p{font-size:12px;color:var(--muted)}.field{font-size:12px;font-weight:730;color:#c4d1e8;display:block;margin:13px 0 5px}.input{width:100%;display:block;border:1px solid #394663;border-radius:9px;background:#0b1222;color:white;padding:10px 12px}.btn{margin-top:13px}.btn.muted{background:#354464;color:#ecf1ff}.out{border:1px solid #2b3650;background:#0a1120;border-radius:9px;padding:12px;color:#c2cee8;white-space:pre-wrap;overflow-wrap:anywhere;min-height:50px;font-size:12px;margin-top:14px}.warning{padding:16px;border-left:3px solid #9e8bff;background:#191d36;border-radius:8px;margin-top:17px;color:#cbd7f2}.notice{font-size:12px;color:#94a4c8}.inline{display:flex;gap:10px}.inline .input{flex:1;min-width:0}.pass{color:var(--green)}code{color:#c3b8ff}.connectionNotice{border:1px solid #765a86;color:#eed8ff;background:#281e38;border-radius:11px;padding:11px 13px;margin-bottom:12px;font-size:12px}.connectionNotice[hidden]{display:none}.localLink{display:block;text-decoration:none;color:#d6fff1;background:#16362f;border:1px solid #3a8e70;border-radius:11px;padding:9px 12px;font-size:12px;margin-bottom:10px}.localLink:hover{background:#215044}
 @media(max-width:800px){.app{grid-template-columns:68px minmax(0,1fr)}.side{padding:17px 9px;align-items:center}.brand{padding:0}.brandWords,.nav .word,.caption,.history,.new .word,.foot span.txt{display:none}.new{padding:10px;width:45px;text-align:center}.nav button{width:45px;text-align:center}.nav b{min-width:0}.header{padding:18px}.chat{padding:0 17px}.grid{grid-template-columns:1fr}}
 @media(max-width:520px){.header h1{font-size:16px}.badge{font-size:9px}.chat{min-height:calc(100dvh - 75px)}.feed{max-height:calc(100dvh - 300px);padding-top:15px}.quick{grid-template-columns:1fr;gap:7px}.quick button{padding:10px}.hero h2{font-size:27px}.hero p{font-size:12px}.review{width:100%;margin:5px 0}.panel{padding:23px 15px}.modes{gap:4px}.mode{font-size:11px;padding:7px 9px}}
+
+/* Main workspace: unified with NOVA Local premium styling */
+:root{--bg:#0c0f15;--panel:#141923;--line:#303849;--text:#eff2fa;--muted:#99a6b9;--purple:#aca1ff;--blue:#8bd9d5;--green:#83dfc4}
+html,body{background:#0c0f15}body{font-family:Inter,"Segoe UI",Tahoma,Arial,system-ui,sans-serif;line-height:1.6}
+.app{grid-template-columns:232px minmax(0,1fr)}
+.side{background:#11151d;border-color:#272e39;padding:24px 15px 16px;gap:23px}
+.logo{background:linear-gradient(135deg,#393464,#20283c);border:1px solid #635ca0;border-radius:13px;box-shadow:0 6px 22px #0004}
+.new{background:#242238;border:1px solid #585071;border-radius:11px;padding:12px;min-height:44px}
+.new:hover{background:#322d49}
+.nav button,.localRailLink{min-height:43px;display:flex;align-items:center;gap:7px;border-radius:10px}
+.localRailLink{padding:10px;background:#172925;color:#adebdc;border:1px solid #345b4d;font-size:12px;font-weight:700}
+.localRailLink:hover{background:#204337;color:#defcf5}
+.localRailLink b{min-width:26px;font-size:18px}
+.nav button.selected{background:#26213c;color:#e4dcff}
+.nav button:hover{background:#202735}
+.foot{border-color:#29303d}
+.main{background:radial-gradient(ellipse 50% 34% at 55% 0%,#25213a70 0%,transparent 100%),#0c0f15}
+.header{padding:19px 35px;min-height:74px;border-color:#272f3c;background:#10141bdc}
+.header h1{font-size:21px}.badge{background:#1c2330;border:1px solid #374056;color:#b4bfd3}
+.gradient{background:linear-gradient(110deg,#c8beff,#95e6d9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chat{width:min(970px,100%);padding:0 31px}.feed{max-height:calc(100dvh - 340px);padding-top:26px}
+.heroIcon{width:68px;height:68px;background:linear-gradient(135deg,#39335c,#1d2b3b);border:1px solid #5e578e;border-radius:21px;box-shadow:0 0 65px #927dff15}
+.heroTag{font-size:11px;font-weight:750;color:#aea5dc;letter-spacing:.08em;margin:20px 0 0}
+.hero h2{font-size:clamp(31px,4vw,48px);line-height:1.35;margin:7px 0 12px}
+.hero p{max-width:620px;color:#a7b0c2;line-height:1.8}
+.heroLocalCta{display:flex;align-items:center;gap:12px;max-width:480px;border:1px solid #45675e;border-radius:14px;background:linear-gradient(112deg,#1a302b,#202538);color:#e3f9f0;text-decoration:none;padding:14px;margin-top:20px}
+.heroLocalCta:hover{background:linear-gradient(105deg,#244137,#292941)}
+.ctaMark{display:grid;place-items:center;border-radius:10px;background:#2d4b3f;color:#9fe8cd;width:36px;height:36px;flex:none}
+.heroLocalCta strong,.heroLocalCta small{display:block}
+.heroLocalCta strong{font-size:13px}.heroLocalCta small{font-size:11px;color:#a7c2b8;margin-top:3px}
+.ctaArrow{font-size:21px;margin-left:auto;color:#b0dccc}
+.quick{gap:10px;margin:19px 0}
+.quick button{background:#171e29;border-color:#333b4b;border-radius:13px;padding:13px 15px}
+.quick button:hover{background:#232838;border-color:#615a86}
+.msg.ai .avatar{background:linear-gradient(140deg,#8071d5,#5ba9ad)}
+.msgText{color:#dfe6f1;line-height:1.85}
+.composerSpace{background:linear-gradient(transparent,#0c0f15 13%);padding-bottom:20px}
+.composer{background:#1b2230;border-color:#485167;border-radius:15px;box-shadow:0 12px 37px #0003}
+.composer:focus-within{border-color:#9185bc}
+.mode{background:#1c2330;border-color:#353e50;color:#acb8c8}
+.mode.selected{background:#2c2847;border-color:#6f6296;color:#ebdfff}
+.langChoice select{background:#1c2431;border-color:#414c60}
+.send,.btn{background:linear-gradient(120deg,#c1b5ff,#9e93e7);color:#151725;border-radius:10px}
+.btn.muted{background:#2e374a;color:#edf0fa}
+.minor{background:#293243;border-color:#465267}
+.localLink{border-color:#3f6a5c;background:#172b27;color:#c2f3e1;border-radius:11px;padding:11px 14px;font-weight:700}
+.localLink:hover{background:#214137}
+.card{background:#171e29;border-color:#354051;border-radius:15px}
+.input,.out{background:#101620;border-color:#3b4758}
+@media(max-width:800px){.app{grid-template-columns:68px minmax(0,1fr)}.side{padding:17px 9px}.nav button,.localRailLink{justify-content:center;padding:9px;width:45px}.localRailLink b{min-width:0}.chat{padding:0 19px}.header{padding:17px}}
+@media(max-width:520px){.hero h2{font-size:31px}.hero p{font-size:12px}.heroTag{font-size:10px}.quick{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.quick button{padding:10px}.quick small{font-size:10px}.heroLocalCta{padding:11px}.heroLocalCta small{font-size:10px}.modes{gap:5px}.mode{font-size:10px;padding:6px 8px}}
+@media(max-width:370px){.quick{grid-template-columns:1fr}.hero h2{font-size:27px}}
 </style></head><body>
-<div class="app"><aside class="side"><div class="brand"><div class="logo">✦</div><div class="brandWords"><strong>NOVA OMNI</strong><small>INTELLIGENCE SYSTEM</small></div></div><button id="new" class="new">＋ <span class="word">New conversation</span></button><div class="nav"><p class="caption">Workspace</p><button data-page="chatPage" class="selected"><b>◈</b><span class="word">AI Chat</span></button><button data-page="toolsPage"><b>⌘</b><span class="word">Tools & integrations</span></button><button data-page="testPage"><b>▤</b><span class="word">Test laboratory</span></button><button data-page="settingsPage"><b>⚙</b><span class="word">Settings</span></button></div><div class="history"><p class="caption">Recent conversations</p><div id="chats"></div></div><div class="foot"><span id="dot" class="dot"></span><span class="txt" id="status">Checking server…</span></div></aside>
+<div class="app"><aside class="side"><div class="brand"><div class="logo">✦</div><div class="brandWords"><strong>NOVA OMNI</strong><small>INTELLIGENCE SYSTEM</small></div></div><button id="new" class="new">＋ <span class="word">New conversation</span></button><div class="nav"><p class="caption">Workspace</p><a href="./local.html" class="localRailLink" title="الشات المحلي المجاني"><b>✦</b><span class="word">Free Local AI</span></a><button data-page="chatPage" class="selected"><b>◈</b><span class="word">AI Chat</span></button><button data-page="toolsPage"><b>⌘</b><span class="word">Tools & integrations</span></button><button data-page="testPage"><b>▤</b><span class="word">Test laboratory</span></button><button data-page="settingsPage"><b>⚙</b><span class="word">Settings</span></button></div><div class="history"><p class="caption">Recent conversations</p><div id="chats"></div></div><div class="foot"><span id="dot" class="dot"></span><span class="txt" id="status">Checking server…</span></div></aside>
 <div class="main"><header class="header"><div><div class="eyebrow">MULTI-MODEL INTELLIGENCE</div><h1>NOVA <span class="gradient">OMNI</span></h1></div><div class="badge">◈ &nbsp;Reason · Build · Verify</div></header>
-<section id="chatPage" class="page active"><div class="chat"><div class="feed" id="feed"><div class="hero" id="hero"><div class="heroIcon">✦</div><h2>One workspace.<br><span class="gradient">More ways to think.</span></h2><p>A real AI workspace with specialist modes, independent second-model review, a deterministic calculator and practical integrations.</p><div class="quick"><button data-example="Build a responsive landing page and explain the code."><strong>⌘ &nbsp; Build an app</strong><small>Architecture and coding</small></button><button data-example="Solve x^2 - 5x + 6 = 0 carefully, step by step."><strong>∑ &nbsp; Solve maths</strong><small>Work through each step</small></button><button data-example="Make a careful research plan distinguishing sources and assumptions."><strong>◇ &nbsp; Research</strong><small>Evidence and analysis</small></button><button data-example="Draft a compelling professional product announcement."><strong>✎ &nbsp; Write</strong><small>Clear and creative writing</small></button></div></div></div>
+<section id="chatPage" class="page active"><div class="chat"><div class="feed" id="feed"><div class="hero" id="hero"><div class="heroIcon">✦</div><div class="heroTag">✧ &nbsp; NOVA OMNI · PRIVATE AI WORKSPACE</div><h2>كل أفكارك،<br><span class="gradient">في مكان واحد.</span></h2><p>مكان واحد للمحادثة والبرمجة والرياضيات. ونسخة مجانية محلية من غير مفتاح أو بطاقة.</p><a class="heroLocalCta" href="./local.html"><span class="ctaMark">✦</span><span><strong>ابدأ NOVA Local مجانًا</strong><small>ذكاء اصطناعي على جهازك · ذاكرة متوسطة · بدون Gateway</small></span><span class="ctaArrow">↗</span></a><div class="quick"><button data-example="Build a responsive landing page and explain the code."><strong>⌘ &nbsp; Build an app</strong><small>Architecture and coding</small></button><button data-example="Solve x^2 - 5x + 6 = 0 carefully, step by step."><strong>∑ &nbsp; Solve maths</strong><small>Work through each step</small></button><button data-example="Make a careful research plan distinguishing sources and assumptions."><strong>◇ &nbsp; Research</strong><small>Evidence and analysis</small></button><button data-example="Draft a compelling professional product announcement."><strong>✎ &nbsp; Write</strong><small>Clear and creative writing</small></button></div></div></div>
 <div class="composerSpace"><a href="./local.html" class="localLink">🧠 Free Local AI · بدون مفتاح أو بطاقة · تشغيل نموذج على جهازك (تحميل اختياري)</a><div role="status" id="connectionNotice" class="connectionNotice" hidden></div><div class="modes"><button class="mode selected" data-mode="general">✦ General</button><button class="mode" data-mode="coding">⌘ Code</button><button class="mode" data-mode="maths">∑ Maths</button><button class="mode" data-mode="research">◇ Research</button><button class="mode" data-mode="writing">✎ Writing</button><label class="langChoice" for="language">🌐 Language <select id="language" aria-label="Response language">
 <option value="auto">Auto · تلقائي</option>
 <option value="ar-eg">العربية المصرية</option><option value="ar">العربية</option><option value="en">English</option>
