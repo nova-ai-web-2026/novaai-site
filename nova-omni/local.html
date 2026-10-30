@@ -360,11 +360,17 @@ function persist(updateCurrent=true){
  renderSessions();
  syncActions();
 }
+function refreshSend(){
+ const candidate=$('prompt').value.trim();
+ const arithmetic=Boolean(globalThis.NovaLocalMath?.tryArithmetic?.(candidate));
+ $('send').disabled=generating||!candidate||(!ready&&!arithmetic);
+}
 function syncActions(){
  const exists=Boolean(current())&&history.length>0;
  $('exportChat').disabled=!exists||generating;
  $('clear').disabled=!exists||generating;
  $('newChat').disabled=generating;
+ refreshSend();
 }
 function renderSessions(){
  const list=$('conversations');list.replaceChildren();
@@ -514,7 +520,7 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 function stop(text){
  if(worker)worker.terminate();
  worker=null;ready=false;loading=false;generating=false;pending=null;
- $('start').disabled=false;$('stop').disabled=true;$('send').disabled=true;
+ $('start').disabled=false;$('stop').disabled=true;
  $('profile').disabled=false;$('prompt').disabled=false;
  $('progress').style.display='none';
  syncActions();
@@ -537,14 +543,14 @@ $('start').addEventListener('click',()=>{
     state('تحميل '+String(data.file||'النموذج')+' · '+Math.round(progress)+'% من الملف','loading');
    }else if(data.type==='ready'){
     ready=true;loading=false;
-    $('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';
+    refreshSend();$('stop').disabled=false;$('progress').style.display='none';
     state('✓ AI local ready · '+String(data.device||'browser')+' · بدون Gateway','ready');
     notice('النموذج جاهز. اكتب سؤالك وابدأ المحادثة.');
    }else if(data.type==='answer'){
     if(!pending)return;
     addAnswer(pending,String(data.answer||''));
     pending=null;generating=false;
-    $('prompt').value='';$('prompt').disabled=false;$('send').disabled=false;
+    $('prompt').value='';$('prompt').disabled=false;refreshSend();
     syncActions();updateMemoryInfo();
     state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');
     notice('');
@@ -553,7 +559,7 @@ $('start').addEventListener('click',()=>{
     if(data.stage==='load'){stop(error+' · جرّب Lite.');}
     else{
      generating=false;pending=null;
-     $('send').disabled=!ready;$('prompt').disabled=false;
+     $('prompt').disabled=false;refreshSend();
      display();syncActions();
      state(error+' · Your draft is still here','error');
      notice('رسالتك محفوظة في مربع الكتابة؛ تقدر تحاول تاني.');
@@ -572,17 +578,17 @@ $('stop').addEventListener('click',()=>{
  stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
 });
 function send(){
- if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول.');return;}
  if(generating)return;
  const message=$('prompt').value.trim();if(!message)return;
  const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
  if(arithmetic){
   const arabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(message);
   addAnswer(message,(arabic?'الناتج: ':'Verified calculation: ')+arithmetic.value);
-  $('prompt').value='';notice('');
-  state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.','ready');
+  $('prompt').value='';notice('');refreshSend();
+  state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.',ready?'ready':null);
   return;
  }
+ if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
  generating=true;pending=message;
  $('send').disabled=true;$('prompt').disabled=true;
  syncActions();notice('');
@@ -595,6 +601,7 @@ function send(){
  });
 }
 $('send').addEventListener('click',send);
+$('prompt').addEventListener('input',refreshSend);
 $('prompt').addEventListener('keydown',e=>{
  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
 });
