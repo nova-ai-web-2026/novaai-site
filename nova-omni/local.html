@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090d18">
-<meta name="nova-local-version" content="1.2.0">
+<meta name="nova-local-version" content="1.3.0">
 <title>NOVA OMNI Local — Free AI on Your Device</title>
 <style>
 :root{color-scheme:dark;--bg:#090d18;--panel:#111a2c;--edge:#33415e;--text:#edf2ff;--muted:#a3b2d2;--accent:#a898ff;--good:#6ee3ba;--warn:#ffcb88}
@@ -73,9 +73,10 @@ button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px sol
   <textarea id="prompt" placeholder="اكتب سؤالك هنا… / Type your question" maxlength="3000" aria-label="Message"></textarea>
   <button class="btn primary" id="send" disabled>Send · إرسال</button>
  </div>
- <p class="disclaimer">أول تشغيل يحتاج إنترنت. النموذج المحلي مجاني من ناحية رسوم AI، لكن التحميل يستهلك بيانات. ذاكرة المحادثة متوسطة افتراضيًا (14 رسالة تُمرّر للنموذج)، مع حفظ آخر 60 رسالة على الجهاز فقط؛ لا تُرفع المحادثات للسحابة، لكنها محفوظة في بيانات المتصفح ويمكن مسحها من هنا. تقدر تغير طول السياق من القائمة.</p>
+ <p class="disclaimer">أول تشغيل يحتاج إنترنت. النموذج المحلي مجاني من ناحية رسوم AI، لكن التحميل يستهلك بيانات. ذاكرة المحادثة متوسطة افتراضيًا (14 رسالة تُمرّر للنموذج)، مع حفظ آخر 60 رسالة على الجهاز فقط؛ لا تُرفع المحادثات للسحابة، لكنها محفوظة في بيانات المتصفح ويمكن مسحها من هنا. الحسابات البسيطة بنحلّها بحاسبة محلية دقيقة بدل تخمين النموذج. تقدر تغير طول السياق من القائمة.</p>
 </section>
 </div>
+<script src="./local-math.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -175,6 +176,18 @@ $('send').addEventListener('click',()=>{
  if(!worker||!ready){state('First download and start the model.');return;}
  if(generating)return;
  const message=$('prompt').value.trim();if(!message)return;
+ // For simple arithmetic, use the deterministic local parser. This avoids
+ // known basic-math mistakes by small language models; it never uses eval.
+ const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
+ if(arithmetic){
+  const language=$('language').value;
+  const text=language.startsWith('ar')||(/[؀-ۿ]/.test(message))?'الناتج: '+arithmetic.value:'Verified calculation: '+arithmetic.value;
+  history.push({role:'user',content:message},{role:'assistant',content:text});
+  history=history.slice(-HISTORY_LIMIT);
+  $('prompt').value='';save();display();
+  state('✓ Verified offline arithmetic; no AI model or cloud request needed.');
+  return;
+ }
  generating=true;pending=message;
  $('send').disabled=true;$('clear').disabled=true;$('prompt').disabled=true;
  state('Generating locally with '+CONTEXT_DESCRIPTIONS[$('memory').value]+' of context…');
