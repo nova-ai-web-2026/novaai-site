@@ -435,6 +435,7 @@ function display(){
 function showPending(draft){
  display();
  const feed=$('chat');
+ if(!history.length)feed.replaceChildren();
  feed.append(buildMessage({role:'user',content:draft}));
  const indicator=buildMessage({role:'assistant',content:''},true);
  indicator.id='typingIndicator';feed.append(indicator);
@@ -515,7 +516,7 @@ $('exportChat').addEventListener('click',exportCurrent);
 $('newChat').addEventListener('click',newChat);
 $('clear').addEventListener('click',()=>{if(currentId)deleteSession(currentId);else newChat();});
 document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListener('click',()=>{
- $('prompt').value=button.dataset.prompt||'';$('prompt').focus();closePanels();
+ $('prompt').value=button.dataset.prompt||'';refreshSend();$('prompt').focus();closePanels();
 }));
 function stop(text){
  if(worker)worker.terminate();
