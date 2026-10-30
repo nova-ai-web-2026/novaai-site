@@ -1,0 +1,25 @@
+name: NOVA OMNI real local AI generation
+on:
+  push:
+    paths:
+      - '.github/workflows/nova-omni-real-model.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-qwen-inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: nova-omni
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install Transformers.js
+        run: npm install --no-save --no-package-lock @huggingface/transformers@4.0.1
+      - name: Run real Qwen3 ONNX CPU generation
+        env:
+          HF_HOME: /tmp/nova-omni-hf
+        run: node --max-old-space-size=6000 tests/local-real-inference.mjs
