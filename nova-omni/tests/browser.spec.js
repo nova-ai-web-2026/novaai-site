@@ -286,8 +286,9 @@ test('local AI mock worker responds in Egyptian Arabic without any backend reque
  const outgoing=posted.find(x=>x.type==='generate');
  expect(outgoing.language).toBe('ar-eg');
  expect(outgoing.history.at(-1).content).toBe('إزيك؟');
- const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]'));
- expect(saved.length).toBe(2);
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_sessions_v1')||'{}'));
+ expect(saved.sessions.length).toBe(1);
+ expect(saved.sessions[0].messages.length).toBe(2);
  await page.locator('#clear').click();
  await expect(page.locator('.bubble')).toHaveCount(0);
 });
@@ -469,6 +470,118 @@ test('premium Local AI chat retains layout and conversation after mocked model r
  await page.locator('#newChat').click();
  await expect(page.locator('.bubble')).toHaveCount(0);
  await expect(page.locator('#welcome')).toBeVisible();
+});
+
+
+test('new conversation preserves previous sessions and opens them from the sidebar',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   postMessage(data){
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+    if(data.type==='generate'){
+     const answer='إجابة للسؤال: '+data.history.at(-1).content;
+     queueMicrotask(()=>this.onmessage({data:{type:'answer',answer,contextMessages:data.history.length}}));
+    }
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#prompt').fill('أول محادثة محفوظة');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('أول محادثة محفوظة');
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(1);
+ await page.locator('#newChat').click();
+ await expect(page.locator('#welcome')).toBeVisible();
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(1);
+ await page.locator('#prompt').fill('ثاني محادثة محفوظة');
+ await page.locator('#send').click();
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(2);
+ await page.locator('#searchConversations').fill('أول');
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(1);
+ await page.locator('#conversations .sessionPick').click();
+ await expect(page.locator('.bubble.user')).toContainText('أول محادثة محفوظة');
+ await expect(page.locator('.bubble.ai')).toContainText('إجابة للسؤال');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('.bubble.user')).toContainText('أول محادثة محفوظة');
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(2);
+ const local=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_sessions_v1')||'{}'));
+ expect(local.sessions.length).toBe(2);
+ expect(local.sessions.every(s=>s.messages.length===2)).toBe(true);
+});
+test('deleting one conversation does not delete the other, and confirmation can be cancelled',async({page})=>{
+ await page.addInitScript(()=>{
+  localStorage.setItem('nova_omni_local_sessions_v1',JSON.stringify({
+   currentId:'first',
+   sessions:[
+    {id:'first',title:'جلسة أولى',updatedAt:123,messages:[{role:'user',content:'مرحبا الأول'},{role:'assistant',content:'رد أول'}]},
+    {id:'second',title:'جلسة ثانية',updatedAt:122,messages:[{role:'user',content:'مرحبا التاني'},{role:'assistant',content:'رد تاني'}]}
+   ]
+  }));
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(2);
+ page.once('dialog',dialog=>dialog.dismiss());
+ await page.locator('#clear').click();
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(2);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#clear').click();
+ await expect(page.locator('#conversations .sessionRow')).toHaveCount(1);
+ await expect(page.locator('#welcome')).toBeVisible();
+ await page.locator('#conversations .sessionPick').click();
+ await expect(page.locator('.bubble.user')).toContainText('مرحبا التاني');
+ await expect(page.locator('.bubble.ai')).toContainText('رد تاني');
+});
+test('export conversation downloads plaintext while copy reply remains safe',async({page})=>{
+ await page.addInitScript(()=>{
+  localStorage.setItem('nova_omni_local_sessions_v1',JSON.stringify({
+   currentId:'export1',
+   sessions:[{
+    id:'export1',title:'محفوظة للتصدير',updatedAt:100,
+    messages:[{role:'user',content:'ما هو الرقم 7؟'},{role:'assistant',content:'الرقم 7 هو سبعة.'}]
+   }]
+  }));
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#exportChat')).toBeEnabled();
+ const downloadPromise=page.waitForEvent('download');
+ await page.locator('#exportChat').click();
+ const download=await downloadPromise;
+ expect(download.suggestedFilename()).toMatch(/^nova-local-conversation-\d{4}-\d{2}-\d{2}\.txt$/);
+ const file=await download.createReadStream();
+ let content='';
+ for await (const chunk of file)content+=chunk.toString('utf8');
+ expect(content).toContain('ما هو الرقم 7؟');
+ expect(content).toContain('الرقم 7 هو سبعة.');
+ await expect(page.locator('.copyMessage')).toHaveCount(1);
+});
+test('during generation saved conversations cannot change and typing indicator is visible',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   postMessage(data){
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'webgpu'}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#prompt').fill('احكيلي معلومة جديدة عن الفضاء');
+ await page.locator('#send').click();
+ await expect(page.locator('#typingIndicator')).toContainText('جاري تجهيز الرد');
+ await expect(page.locator('#newChat')).toBeDisabled();
+ await expect(page.locator('#prompt')).toBeDisabled();
+ await page.locator('#stop').click();
+ await expect(page.locator('#typingIndicator')).toHaveCount(0);
+ await expect(page.locator('#prompt')).toHaveValue('احكيلي معلومة جديدة عن الفضاء');
+ await expect(page.locator('#newChat')).toBeEnabled();
 });
 
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
