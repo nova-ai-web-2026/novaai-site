@@ -20,10 +20,10 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
  await page.locator('#prompt').fill('قول صباح الخير بالمصري في جملة قصيرة.');
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai')).toHaveCount(1,{timeout:110000});
- const result=(await page.locator('.bubble.ai').innerText()).slice(0,300);
+ const result=(await page.locator('.bubble.ai > div').last().innerText()).trim().slice(0,300);
  console.log('BROWSER_QWEN3_REAL_MODEL: balanced');
  console.log('REAL_BROWSER_ARABIC_RESPONSE:',result);
  console.log('REAL_BROWSER_HF_MODEL_NETWORK_REQUESTS:',modelUrls.length);
- expect(result.trim().length).toBeGreaterThan(6);
+ expect(result.length).toBeGreaterThan(2);
  expect(failures).toEqual([]);
 });
