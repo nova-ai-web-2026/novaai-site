@@ -276,7 +276,7 @@ test('local AI mock worker responds in Egyptian Arabic without any backend reque
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#state')).toContainText('Local AI ready');
+ await expect(page.locator('#state')).toContainText('AI local ready');
  await page.locator('#language').selectOption('ar-eg');
  await page.locator('#prompt').fill('إزيك؟');
  await page.locator('#send').click();
