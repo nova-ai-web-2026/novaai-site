@@ -66,3 +66,13 @@ Qwen3 short-reply sampling: /no_think, temperature 0.7, top_p 0.8, top_k 20 and 
 Node unit tests cover context memory and secure arithmetic. Browser tests cover profile selection, local conversation history, explicit download consent and local arithmetic using simulated model workers. A separate real ONNX inference workflow checks that Qwen3 loads and generates language in a real CPU runtime, but cannot prove operation on every mobile browser.
 
 Local AI: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/local.html
+
+## NOVA Local v2.1: separate saved conversations
+
+**Conversation sidebar:** New conversation opens an empty chat without deleting previous sessions. Existing sessions remain in browser localStorage under `nova_omni_local_sessions_v1`, searchable by their first user prompt. You can return to previous conversations and delete one session with confirmation. The old single-session storage key is migrated to the new format when the app starts. The app retains up to 24 separate conversations with up to 60 message entries each. This is browser-local storage, not a server-side or cross-device memory service.
+
+**Export and copy:** Export the current conversation as a plain UTF-8 `.txt` file or copy individual assistant responses with clipboard permission. Failed model generations preserve the draft and never become saved history. Switching conversations while generating is blocked to prevent replies being added to the wrong chat. A visible typing indicator distinguishes in-progress answers.
+
+**Privacy and limitations:** Browser localStorage may be cleared by browsing data removal, private-mode expiry or quota limits; exported files give you an extra copy. No server or account synchronization was added. The neural model continues to use Balanced context (up to 14 messages / 9000 characters) even when many sessions are stored; deleting a session only removes its locally stored history.
+
+Visual changes: searching conversations in sidebar, compact chat list, user-facing progress, reply-copy affordances and cleaner mobile drawer navigation. Regression tests run against the deployed GitHub Pages page.
