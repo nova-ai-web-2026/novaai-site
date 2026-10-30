@@ -397,6 +397,80 @@ test('balanced context keeps long history locally without showing old messages t
  await expect(page.locator('#memoryInfo')).toContainText('14');
 });
 
+
+test('premium Local AI desktop layout shows navigation, welcome and settings without overflow',async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ const response=await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ expect(response.status()).toBe(200);
+ await expect(page.locator('.sidebar')).toBeVisible();
+ await expect(page.locator('#settingsPanel')).toBeVisible();
+ await expect(page.locator('.welcome h1')).toContainText('مساحتك للأفكار');
+ await expect(page.locator('#memory')).toHaveValue('balanced');
+ await expect(page.locator('#profile')).toHaveValue('balanced');
+ const dimensions=await page.evaluate(()=>({
+  viewport:window.innerWidth,document:document.documentElement.scrollWidth,
+  chat:document.querySelector('#chat').getBoundingClientRect().width,
+  composer:document.querySelector('.composerBox').getBoundingClientRect().width
+ }));
+ expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport+2);
+ expect(dimensions.chat).toBeGreaterThan(350);
+ expect(dimensions.composer).toBeGreaterThan(350);
+});
+test('new premium Local AI mobile UI has accessible working model settings drawer',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#settingsPanel')).not.toBeInViewport();
+ await page.locator('#toggleSettings').click();
+ await expect(page.locator('#settingsPanel')).toHaveClass(/open/);
+ await expect(page.locator('#settingsPanel')).toBeInViewport();
+ await page.locator('#memory').selectOption('extended');
+ await expect(page.locator('#memoryInfo')).toContainText('18');
+ await page.locator('#closeSettings').click();
+ await expect(page.locator('#settingsPanel')).not.toBeInViewport();
+ await page.locator('#toggleSidebar').click();
+ await expect(page.locator('#sidebar')).toHaveClass(/open/);
+ await page.locator('#screenOverlay').click({position:{x:330,y:300}});
+ await expect(page.locator('#sidebar')).not.toHaveClass(/open/);
+ const dimensions=await page.evaluate(()=>({viewport:innerWidth,body:document.documentElement.scrollWidth}));
+ expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport+2);
+});
+test('premium Local AI example cards populate the real composer without loading a model',async({page})=>{
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#send')).toBeDisabled();
+ await page.locator('[data-prompt]').first().click();
+ await expect(page.locator('#prompt')).toHaveValue('اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال.');
+ await expect(page.locator('#send')).toBeDisabled();
+});
+test('premium Local AI chat retains layout and conversation after mocked model response',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker {
+   postMessage(data){
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+    if(data.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'answer',answer:'أهلاً بيك! دي إجابة محلية تجريبية.',contextMessages:1}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.setViewportSize({width:390,height:844});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#toggleSettings').click();
+ await page.locator('#start').click();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ await page.locator('#prompt').fill('أهلًا!');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.user')).toContainText('أهلًا!');
+ await expect(page.locator('.bubble.ai')).toContainText('إجابة محلية');
+ await expect(page.locator('.welcome')).toHaveCount(0);
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('.bubble')).toHaveCount(2);
+ await page.locator('#toggleSidebar').click();
+ await page.locator('#newChat').click();
+ await expect(page.locator('.bubble')).toHaveCount(0);
+ await expect(page.locator('#welcome')).toBeVisible();
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
