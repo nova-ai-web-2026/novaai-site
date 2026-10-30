@@ -241,6 +241,86 @@ test('diagnostic button correctly reports successful Arabic model response',asyn
  await expect(page.locator('#testAIOut')).toContainText('Live model request succeeded');
  await expect(page.locator('#testAIOut')).toContainText('مرحباً');
 });
+
+test('local no-key AI page loads without starting a model download',async({page})=>{
+ let modelRequests=0;
+ page.on('request',r=>{if(/huggingface|jsdelivr/.test(r.url()))modelRequests++;});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page).toHaveTitle(/NOVA OMNI Local/);
+ await expect(page.locator('#start')).toBeEnabled();
+ await expect(page.locator('#send')).toBeDisabled();
+ await expect(page.locator('#state')).toContainText('Not started');
+ expect(modelRequests).toBe(0);
+});
+test('local AI requires consent before any worker is loaded',async({page})=>{
+ page.on('dialog',dialog=>dialog.dismiss());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#state')).toContainText('Not started');
+ await expect(page.locator('#send')).toBeDisabled();
+});
+test('local AI mock worker responds in Egyptian Arabic without any backend requests',async({page})=>{
+ let posts=[];
+ await page.addInitScript(()=>{
+  class MockWorker{
+   constructor(){this.onmessage=null;this.onerror=null;}
+   postMessage(data){
+    window.__localMessages??=[];window.__localMessages.push(data);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',model:'onnx-community/Qwen3-0.6B-ONNX',device:'webgpu'}}));
+    if(data.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'answer',answer:'أهلاً بيك! أنا مساعد محلي مجاني.'}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#state')).toContainText('Local AI ready');
+ await page.locator('#language').selectOption('ar-eg');
+ await page.locator('#prompt').fill('إزيك؟');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai').last()).toContainText('أهلاً بيك');
+ await expect(page.locator('#prompt')).toHaveValue('');
+ const posted=await page.evaluate(()=>window.__localMessages);
+ const outgoing=posted.find(x=>x.type==='generate');
+ expect(outgoing.language).toBe('ar-eg');
+ expect(outgoing.history.at(-1).content).toBe('إزيك؟');
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]'));
+ expect(saved.length).toBe(2);
+ await page.locator('#clear').click();
+ await expect(page.locator('.bubble')).toHaveCount(0);
+});
+test('local AI worker error preserves unsent draft',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   postMessage(d){
+    if(d.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',model:'mock',device:'wasm'}}));
+    if(d.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'error',stage:'chat',message:'Model memory limit'}}));
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#prompt').fill('Please preserve this text');
+ await page.locator('#send').click();
+ await expect(page.locator('#state')).toContainText('Your draft is still here');
+ await expect(page.locator('#prompt')).toHaveValue('Please preserve this text');
+ await expect(page.locator('.bubble')).toHaveCount(0);
+});
+test('local AI page is mobile responsive and worker endpoint is served',async({page,request})=>{
+ const script=await request.get(BASE+'local-ai-worker.js');
+ expect(script.ok()).toBe(true);
+ expect(await script.text()).toContain('onnx-community/Qwen3-0.6B-ONNX');
+ await page.setViewportSize({width:360,height:780});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ const result=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
+ expect(result.scroll).toBeLessThanOrEqual(result.viewport+2);
+});
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
