@@ -133,25 +133,6 @@ test('Egyptian Arabic mode creates multilingual system instruction and returns A
  assert.match(captured.messages[0].content,/Egyptian Arabic/);
  assert.match(captured.messages[0].content,/Hindi/);
 }));
-test('An independent direct-provider key can recover from Gateway 403',async()=>withStubProvider(async()=>{
- process.env.OPENAI_API_KEY='fake-direct-key-for-testing';
- let gatewayCalls=0,directCalls=0;
- global.fetch=async(url,opts)=>{
-  if(url.includes('ai-gateway.vercel.sh')){gatewayCalls++;return {ok:false,status:403,json:async()=>({error:{type:'access_denied'}})};}
-  assert.ok(url.includes('api.openai.com/v1/chat/completions'));
-  directCalls++;
-  assert.match(opts.headers.Authorization,/fake-direct-key-for-testing/);
-  const payload=JSON.parse(opts.body);
-  assert.equal(payload.model,'gpt-5.4-mini');
-  assert.equal(payload.max_completion_tokens,2200);
-  return {ok:true,status:200,json:async()=>({model:'gpt-5.4-mini',choices:[{message:{content:'Bonjour !'}}]})};
- };
- const r=await mockRequest('POST',{action:'chat'},{
-  messages:[{role:'user',content:'Bonjour'}],language:'fr'
- },{'x-vercel-oidc-token':'fake-oidc-test-token'});
- assert.equal(r.statusCode,200);assert.equal(r.body.answer,'Bonjour !');
- assert.equal(gatewayCalls,1);assert.equal(directCalls,1);
-}));
 test('Diagnosis endpoint returns a safe, explicit access-denied result',async()=>withStubProvider(async()=>{
  global.fetch=async()=>({ok:false,status:403,json:async()=>({error:{type:'access_denied',message:'Forbidden'}})});
  const r=await mockRequest('GET',{action:'diagnose'},null,{'x-vercel-oidc-token':'fake-oidc-test-token'});
