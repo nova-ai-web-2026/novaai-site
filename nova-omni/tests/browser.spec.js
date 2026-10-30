@@ -188,6 +188,59 @@ test('chat failure in an existing conversation leaves prior messages unchanged',
  await expect(page.locator('.msg.ai .msgText')).toHaveText('First response');
 });
 
+
+test('language selector sends Egyptian Arabic to the AI backend and persists',async({page})=>{
+ let languageSent='';
+ await page.route('https://lang.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,app:'NOVA OMNI',version:'1.4.0',ai:true,secured:true,authMode:'vercel-sso',github:false,slack:false})});
+  if(action==='chat'){
+   languageSent=route.request().postDataJSON().language;
+   return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,model:'mock-multilingual',answer:'أهلاً بيك يا فندم!',reviewed:false})});
+  }
+  return route.fulfill({status:404});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://lang.example.com/api/omni');await page.locator('#saveBackend').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await page.locator('#language').selectOption('ar-eg');
+ await page.locator('#prompt').fill('ازيك النهارده؟');
+ await page.locator('#send').click();
+ await expect(page.locator('.msg.ai .msgText')).toHaveText('أهلاً بيك يا فندم!');
+ expect(languageSent).toBe('ar-eg');
+ expect(await page.evaluate(()=>localStorage.getItem('nova_language'))).toBe('ar-eg');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('#language')).toHaveValue('ar-eg');
+});
+test('gateway connection button shows the real 403 access problem',async({page})=>{
+ await page.route('https://denied.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,app:'NOVA OMNI',version:'1.4.0',ai:true,secured:true,authMode:'vercel-sso',github:false,slack:false})});
+  if(action==='diagnose')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,available:false,code:'gateway_access_denied',reason:'Vercel AI Gateway refused access (403). Check account permissions.'})});
+  return route.fulfill({status:404});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://denied.example.com/api/omni');await page.locator('#saveBackend').click();
+ await page.locator('#testAI').click();
+ await expect(page.locator('#testAIOut')).toContainText('gateway_access_denied');
+ await expect(page.locator('#testAIOut')).toContainText('403');
+ await page.locator('[data-page="chatPage"]').click();
+ await expect(page.locator('#connectionNotice')).toContainText('403');
+});
+test('diagnostic button correctly reports successful Arabic model response',async({page})=>{
+ await page.route('https://healthy.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  const info=action==='health'
+    ?{ok:true,app:'NOVA OMNI',version:'1.4.0',ai:true,secured:true,authMode:'vercel-sso'}
+    :{ok:true,available:true,model:'mock-ai',language:'ar',sample:'مرحباً!'};
+  return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(info)});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://healthy.example.com/api/omni');await page.locator('#saveBackend').click();
+ await page.locator('#testAI').click();
+ await expect(page.locator('#testAIOut')).toContainText('Live model request succeeded');
+ await expect(page.locator('#testAIOut')).toContainText('مرحباً');
+});
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
