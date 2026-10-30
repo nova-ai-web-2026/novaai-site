@@ -1,0 +1,36 @@
+name: NOVA OMNI live browser
+on:
+  push:
+    paths:
+      - 'nova-omni/index.html'
+      - 'nova-omni/tests/browser.spec.js'
+      - '.github/workflows/nova-omni-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: nova-omni
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install browser test runner
+        run: npm install --no-save --no-package-lock --ignore-scripts @playwright/test@1.56.1
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Run against public GitHub Pages website
+        env:
+          NOVA_SITE_URL: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/
+        run: npx playwright test tests/browser.spec.js --reporter=line --workers=1 --timeout=25000
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nova-omni-playwright-report
+          path: nova-omni/test-results/
+          retention-days: 7
