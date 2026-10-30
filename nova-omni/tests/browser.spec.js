@@ -35,10 +35,10 @@ test('live test laboratory runs local checks',async({page})=>{
 });
 test('chat does not send a message when no AI backend is connected',async({page})=>{
  await start(page);
- await expect(page.locator('#connectionNotice')).toContainText('AI chat is unavailable');
+ await expect(page.locator('#connectionNotice')).toContainText('AI chat is offline');
  await page.locator('#prompt').fill('Hello from browser smoke test');
  await page.locator('#prompt').press('Enter');
- await expect(page.locator('#connectionNotice')).toContainText('Your message has not been sent');
+ await expect(page.locator('#connectionNotice')).toContainText('Message not sent');
  await expect(page.locator('.msg')).toHaveCount(0);
  await expect(page.locator('#prompt')).toHaveValue('Hello from browser smoke test');
 });
@@ -58,7 +58,7 @@ test('connected backend can receive authenticated model requests (simulated tran
  let chatCalls=0;
  await page.route('https://trusted.example.com/api/omni**',async route=>{
   const url=new URL(route.request().url()),action=url.searchParams.get('action');
-  if(action==='health')return route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},contentType:'application/json',body:JSON.stringify({ok:true,version:'1.0.0',ai:true,secured:true,github:false,slack:false})});
+  if(action==='health')return route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},contentType:'application/json',body:JSON.stringify({ok:true,app:'NOVA OMNI',version:'1.2.0',ai:true,secured:true,github:false,slack:false})});
   if(action==='chat'){
    chatCalls++;
    expect(route.request().headers()['x-nova-key']).toBe('secret-test');
@@ -97,6 +97,75 @@ test('settings key controls are interactive and session-only',async({page})=>{
  await page.locator('#clearKey').click();
  expect(await page.evaluate(()=>sessionStorage.getItem('nova_key'))).toBeNull();
 });
+
+test('API returns HTML instead of JSON: draft is preserved and no fake AI answer',async({page})=>{
+ await page.route('https://failing.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,app:'NOVA OMNI',ai:true,secured:true})});
+  return route.fulfill({status:200,contentType:'text/html',headers:{'access-control-allow-origin':'*'},body:'<!doctype html><title>Not an API</title>'});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://failing.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await page.locator('#key').fill('test-key');await page.locator('#saveKey').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await expect(page.locator('#connectionNotice')).toBeHidden();
+ await page.locator('#prompt').fill('Preserve this draft');await page.locator('#send').click();
+ await expect(page.locator('#connectionNotice')).toContainText('HTML/text instead of JSON');
+ await expect(page.locator('#prompt')).toHaveValue('Preserve this draft');
+ await expect(page.locator('.msg')).toHaveCount(0);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_chats')||'[]').length)).toBe(0);
+});
+test('invalid access key: clear 401 and no fake conversation',async({page})=>{
+ await page.route('https://unauthorized.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,app:'NOVA OMNI',ai:true,secured:true})});
+  return route.fulfill({status:401,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:false,error:'Access denied'})});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://unauthorized.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await page.locator('#key').fill('wrong');await page.locator('#saveKey').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await page.locator('#prompt').fill('Key test');await page.locator('#send').click();
+ await expect(page.locator('#connectionNotice')).toContainText('access key rejected');
+ await expect(page.locator('#prompt')).toHaveValue('Key test');
+ await expect(page.locator('.msg')).toHaveCount(0);
+});
+test('unknown service health cannot enable AI chat',async({page})=>{
+ await page.route('https://pretend.example.com/api/omni**',async route=>{
+  return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,ai:true,secured:true})});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://pretend.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await expect(page.locator('#connectionNotice')).toContainText('AI chat is unavailable');
+ await page.locator('#prompt').fill('still offline');await page.locator('#send').click();
+ await expect(page.locator('.msg')).toHaveCount(0);
+});
+test('chat failure in an existing conversation leaves prior messages unchanged',async({page})=>{
+ let calls=0;
+ await page.route('https://sometimes.example.com/api/omni**',async route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,app:'NOVA OMNI',ai:true,secured:true})});
+  calls++;
+  if(calls===1)return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,answer:'First response',model:'test-model'})});
+  return route.fulfill({status:503,contentType:'text/html',headers:{'access-control-allow-origin':'*'},body:'Temporarily unavailable'});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://sometimes.example.com/api/omni');await page.locator('#saveBackend').click();
+ await page.locator('#key').fill('secret');await page.locator('#saveKey').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await page.locator('#prompt').fill('Initial question');await page.locator('#send').click();
+ await expect(page.locator('.msg.ai .msgText')).toHaveText('First response');
+ await page.locator('#prompt').fill('Second question');await page.locator('#send').click();
+ await expect(page.locator('#connectionNotice')).toContainText('Message not sent');
+ await expect(page.locator('#prompt')).toHaveValue('Second question');
+ await expect(page.locator('.msg')).toHaveCount(2);
+ await expect(page.locator('.msg.ai .msgText')).toHaveText('First response');
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
