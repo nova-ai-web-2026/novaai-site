@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.0.0">
+<meta name="nova-local-version" content="2.1.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <style>
@@ -129,6 +129,41 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 @media(max-width:375px){.suggestions{grid-template-columns:1fr 1fr}.welcome h1{font-size:26px}.statusPill{font-size:9px}.bubble{max-width:95%}}
 @media(max-height:650px){.welcome{margin:18px 0}.welcomeMark{margin-bottom:12px}.welcomeDesc{margin-bottom:12px}.feed{padding-block:15px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* v2.1 saved conversations, cleaner reading and loading indicators */
+.sessionsBlock{min-height:0;display:flex;flex-direction:column;gap:9px;max-height:min(43vh,380px);margin-top:-5px}
+.sessionsHeader{display:flex;align-items:center;justify-content:space-between;padding:0 11px;gap:10px}
+.sessionCount{font-size:10px;background:#222737;border:1px solid #394153;color:#bec8da;padding:1px 8px;border-radius:99px}
+.sessionSearchWrap{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;border:1px solid #323b4c;background:#171d28}
+.sessionSearchWrap .icon{width:15px;height:15px;color:#8f9db1}
+.sessionSearchWrap:focus-within{border-color:#9086c8}
+.sessionSearchWrap input{background:none;border:0;min-width:0;width:100%;color:#edf1fa;outline:none;font:inherit;font-size:11px}
+.sessionSearchWrap input::placeholder{color:#78859b}
+.sessionsList{min-height:0;overflow:auto;scrollbar-color:#4b5367 transparent;display:flex;flex-direction:column;gap:3px;padding-inline:2px}
+.sessionRow{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:3px;align-items:center;border:1px solid transparent;border-radius:10px}
+.sessionRow:hover{background:#1c2330}
+.sessionRow.active{background:#29263f;border-color:#464063}
+.sessionPick{min-width:0;display:flex;align-items:center;gap:9px;background:transparent;border:0;text-align:start;color:#b9c2d4;padding:10px 9px;font-size:11px;font-weight:650;line-height:1.5}
+.sessionPick .icon{color:#8e9bb0;width:15px;height:15px}
+.sessionPick span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:100%}
+.sessionRow.active .sessionPick{color:#e4dfff}
+.sessionDelete{display:grid;place-items:center;background:none;border:0;color:#7b879b;width:28px;height:31px;border-radius:8px}
+.sessionDelete:hover{background:#4d2933;color:#ffb8bb}
+.sessionDelete .icon{width:15px;height:15px}
+.sessionEmpty{color:#8592a6;font-size:11px;padding:10px 13px;line-height:1.7}
+.bubble{position:relative}
+.messageActions{display:flex;gap:6px;justify-content:flex-start;margin-top:9px}
+.copyMessage{display:inline-flex;align-items:center;gap:5px;border:1px solid #3b4758;background:#252d3b;color:#becde3;border-radius:8px;padding:4px 8px;font-size:10px}
+.copyMessage:hover{background:#364154}
+.copyMessage .icon{width:13px;height:13px}
+.message.typing .bubble{background:#171d29;border:1px dashed #41495c}
+.typingDots{display:flex;gap:5px;align-items:center;padding:4px 2px 1px}
+.typingDots span{width:6px;height:6px;border-radius:100%;background:#b0a5f7;animation:pulseTyping 1s ease-in-out infinite}
+.typingDots span:nth-child(2){animation-delay:.16s}
+.typingDots span:nth-child(3){animation-delay:.32s}
+@keyframes pulseTyping{0%,60%,100%{opacity:.4;transform:scale(.8)}30%{opacity:1;transform:scale(1.13)}}
+@media(max-height:730px){.sessionsBlock{max-height:30vh}}
+@media(max-width:920px){.sessionsBlock{max-height:42vh}}
 </style>
 </head>
 <body>
@@ -149,12 +184,21 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
       <a class="railItem selected" href="./local.html" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 20l1.2-4.4A8.5 8.5 0 1 1 20 11.5Z"/></svg>المحادثة المحلية</a>
       <a class="railItem" href="./index.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>مساحة NOVA الرئيسية</a>
     </nav>
+    
+    <section class="sessionsBlock" aria-label="المحادثات المحفوظة">
+      <div class="sessionsHeader"><span class="railSectionLabel" style="margin:0;padding:0">محادثاتك السابقة</span><span id="sessionCount" class="sessionCount">0</span></div>
+      <label class="sessionSearchWrap" for="searchConversations">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+        <input id="searchConversations" type="search" autocomplete="off" placeholder="دور على محادثة…" aria-label="البحث في المحادثات">
+      </label>
+      <div id="conversations" class="sessionsList" aria-label="المحادثات المحفوظة"></div>
+    </section>
     <div class="railSpacer"></div>
     <div class="privacyMini">
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
-      <p>الردود بتتولد على جهازك. من غير حساب AI مدفوع أو إرسال رسائلك لـAI Gateway.</p>
+      <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.0 · FREE</div>
+    <div class="railFoot">NOVA LOCAL v2.1 · PRIVATE & FREE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -249,7 +293,11 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         </div>
         <p class="note" id="statusNote">أول مرة تحتاج اتصال إنترنت لتحميل النموذج (مئات الميجابايت). استخدم Wi-Fi لو بياناتك محدودة. معالجة المحادثة بعدها محلية.</p>
         <div class="privacyCard"><strong><svg class="icon" style="width:16px" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>بدون اشتراك أو بطاقة</strong><p>لا تُرسل الأسئلة لـAI Gateway. سجل المحادثات بيتحفظ في متصفحك فقط، وتقدر تمسحه في أي وقت.</p></div>
-        <button class="textButton" id="clear" type="button"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M4 7h16M8 7V5h8v2M7 7l1 13h8l1-13M10 10v6M14 10v6"/></svg>مسح سجل المحادثة</button>
+        <button class="textButton" id="exportChat" type="button" disabled>
+          <svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
+          تصدير المحادثة الحالية
+        </button>
+        <button class="textButton" id="clear" type="button"><svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M4 7h16M8 7V5h8v2M7 7l1 13h8l1-13M10 10v6M14 10v6"/></svg>حذف المحادثة الحالية</button>
       </aside>
     </div>
   </div>
@@ -260,172 +308,313 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
-const HISTORY_LIMIT=60;
+const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
 let worker=null,ready=false,loading=false,generating=false,pending=null;
-let history=[];
-try{
- const v=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');
- if(Array.isArray(v))history=v.filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').slice(-HISTORY_LIMIT);
-}catch(e){}
+let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
+function messageOK(m){
+ return m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim().length>0;
+}
+function cleanMessages(input){
+ return Array.isArray(input)?input.filter(messageOK).slice(-HISTORY_LIMIT).map(m=>({role:m.role,content:m.content.slice(0,3000)})):[];
+}
+function freshId(){
+ return 'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
+}
+function loadSaved(){
+ try{
+  const content=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+  if(content&&Array.isArray(content.sessions)){
+   sessions=content.sessions.filter(x=>x&&typeof x.id==='string'&&Array.isArray(x.messages))
+    .slice(0,SESSION_LIMIT).map(x=>({
+      id:x.id.slice(0,90),title:String(x.title||'محادثة محلية').slice(0,72),
+      updatedAt:Number(x.updatedAt)||Date.now(),messages:cleanMessages(x.messages)
+    }));
+   currentId=sessions.some(x=>x.id===content.currentId)?content.currentId:null;
+  }else{
+   const previous=cleanMessages(JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]'));
+   if(previous.length){
+    const title=previous.find(m=>m.role==='user')?.content.slice(0,52)||'المحادثة السابقة';
+    currentId=freshId();sessions=[{id:currentId,title,updatedAt:Date.now(),messages:previous}];
+    persist(false);
+   }
+  }
+ }catch(e){sessions=[];currentId=null;}
+ history=current()?.messages.slice()||[];
+}
+function current(){return sessions.find(item=>item.id===currentId)||null;}
+function persist(updateCurrent=true){
+ if(updateCurrent&&current()){
+  current().messages=cleanMessages(history);
+  current().updatedAt=Date.now();
+ }
+ sessions.sort((a,b)=>b.updatedAt-a.updatedAt);
+ sessions=sessions.slice(0,SESSION_LIMIT);
+ try{
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({currentId,sessions}));
+  localStorage.removeItem('nova_omni_local_history');
+ }catch(e){
+  $('statusNote').textContent='مساحة المتصفح ممتلئة. المحادثة الحالية موجودة لكن حفظها قد لا ينجح؛ جرّب تصديرها.';
+ }
+ renderSessions();
+ syncActions();
+}
+function syncActions(){
+ const exists=Boolean(current())&&history.length>0;
+ $('exportChat').disabled=!exists||generating;
+ $('clear').disabled=!exists||generating;
+ $('newChat').disabled=generating;
+}
+function renderSessions(){
+ const list=$('conversations');list.replaceChildren();
+ const query=$('searchConversations').value.trim().toLocaleLowerCase();
+ const matches=sessions.filter(s=>!query||s.title.toLocaleLowerCase().includes(query));
+ $('sessionCount').textContent=String(sessions.length);
+ if(!matches.length){
+  const empty=document.createElement('div');
+  empty.className='sessionEmpty';empty.textContent=sessions.length?'مفيش محادثات مطابقة للبحث.':'محادثاتك هتظهر هنا لما تبدأ أول شات.';
+  list.append(empty);return;
+ }
+ for(const session of matches){
+  const row=document.createElement('div');
+  row.className='sessionRow'+(session.id===currentId?' active':'');
+  const button=document.createElement('button');
+  button.type='button';button.className='sessionPick';button.disabled=generating;
+  button.setAttribute('aria-label','فتح المحادثة: '+session.title);
+  if(session.id===currentId)button.setAttribute('aria-current','true');
+  const icon=document.createElement('span');icon.textContent='◈';icon.setAttribute('aria-hidden','true');
+  const title=document.createElement('span');title.textContent=session.title;title.dir='auto';
+  button.append(icon,title);
+  button.addEventListener('click',()=>selectSession(session.id));
+  const del=document.createElement('button');
+  del.type='button';del.className='sessionDelete';del.disabled=generating;
+  del.setAttribute('aria-label','حذف المحادثة: '+session.title);
+  del.innerHTML='<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M8 7V5h8v2M7 7l1 13h8l1-13M10 10v6M14 10v6"/></svg>';
+  del.addEventListener('click',()=>deleteSession(session.id));
+  row.append(button,del);list.append(row);
+ }
+}
+function buildMessage(entry,typing=false){
+ const row=document.createElement('div');
+ row.className='message '+(entry.role==='user'?'user':'ai')+(typing?' typing':'');
+ const avatar=document.createElement('span');
+ avatar.className='messageAvatar';avatar.textContent=entry.role==='user'?'●':'✦';
+ avatar.setAttribute('aria-hidden','true');
+ const bubble=document.createElement('div');bubble.className='bubble '+(entry.role==='user'?'user':'ai');
+ const title=document.createElement('b');title.textContent=entry.role==='user'?'You':'NOVA Local';
+ const body=document.createElement('div');body.textContent=typing?'جاري تجهيز الرد…':entry.content;body.dir='auto';
+ bubble.append(title,body);
+ if(!typing&&entry.role==='assistant'){
+  const actions=document.createElement('div');actions.className='messageActions';
+  const copy=document.createElement('button');copy.className='copyMessage';
+  copy.type='button';copy.setAttribute('aria-label','نسخ الرد');
+  copy.textContent='⧉ نسخ الرد';
+  copy.addEventListener('click',async()=>{
+   try{
+    await navigator.clipboard.writeText(entry.content);
+    copy.textContent='✓ تم النسخ';
+   }catch(e){notice('المتصفح منع النسخ التلقائي. تقدر تحدد الكلام وتنسخه يدويًا.');}
+  });
+  actions.append(copy);bubble.append(actions);
+ }
+ row.append(avatar,bubble);return row;
+}
 function display(){
  const feed=$('chat');feed.replaceChildren();
- if(!history.length){feed.appendChild(welcome);welcome.hidden=false;return;}
- for(const entry of history){
-  const row=document.createElement('div');row.className='message '+(entry.role==='user'?'user':'ai');
-  const avatar=document.createElement('span');avatar.className='messageAvatar';avatar.textContent=entry.role==='user'?'●':'✦';avatar.setAttribute('aria-hidden','true');
-  const bubble=document.createElement('div');bubble.className='bubble '+(entry.role==='user'?'user':'ai');
-  const title=document.createElement('b');title.textContent=entry.role==='user'?'You':'NOVA Local';
-  const body=document.createElement('div');body.textContent=entry.content;body.dir='auto';
-  bubble.append(title,body);row.append(avatar,bubble);feed.append(row);
- }
+ if(!history.length){feed.append(welcome);welcome.hidden=false;return;}
+ for(const entry of history)feed.append(buildMessage(entry));
  feed.scrollTop=feed.scrollHeight;
 }
-function save(){
- try{localStorage.setItem('nova_omni_local_history',JSON.stringify(history.slice(-HISTORY_LIMIT)));}
- catch(e){$('statusNote').textContent='تعذّر حفظ سجل المحادثات في المتصفح. تقدر تكمّل المحادثة الحالية.';}
+function showPending(draft){
+ display();
+ const feed=$('chat');
+ feed.append(buildMessage({role:'user',content:draft}));
+ const indicator=buildMessage({role:'assistant',content:''},true);
+ indicator.id='typingIndicator';feed.append(indicator);
+ feed.scrollTop=feed.scrollHeight;
+}
+function addAnswer(question,answer){
+ if(!currentId){
+  currentId=freshId();
+  sessions.unshift({id:currentId,title:question.replace(/\s+/g,' ').slice(0,51)||'محادثة جديدة',updatedAt:Date.now(),messages:[]});
+ }
+ history.push({role:'user',content:question},{role:'assistant',content:answer});
+ history=cleanMessages(history);
+ persist();display();
 }
 function updateMemoryInfo(){
  const depth=MEMORY_LABELS[$('memory').value]||'14';
- $('memoryInfo').textContent='ذاكرة المحادثة: لغاية '+depth+' رسالة للسياق · محفوظ محليًا حتى '+HISTORY_LIMIT+' رسالة.';
+ $('memoryInfo').textContent='ذاكرة المحادثة: لغاية '+depth+' رسالة للسياق · محفوظ محليًا حتى 60 رسالة لكل محادثة.';
 }
-function state(value,mode){
- $('state').textContent=String(value||'');
- const status=$('statusPill');status.classList.toggle('live',mode==='ready');
+function state(text,mode){
+ $('state').textContent=String(text||'');
+ $('statusPill').classList.toggle('live',mode==='ready');
  $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='loading'?'بيتحمّل':mode==='working'?'بيفكّر':mode==='error'?'مشكلة تشغيل':'غير مُشغّل';
 }
-function notice(value){
- $('notice').textContent=String(value||'');$('notice').hidden=!value;
-}
+function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
  $('sidebar').classList.remove('open');$('settingsPanel').classList.remove('open');
  $('screenOverlay').classList.remove('open');
- $('toggleSidebar').setAttribute('aria-expanded','false');$('toggleSettings').setAttribute('aria-expanded','false');
+ $('toggleSidebar').setAttribute('aria-expanded','false');
+ $('toggleSettings').setAttribute('aria-expanded','false');
 }
 function openPanel(which){
- closePanels();
- $(which).classList.add('open');
+ closePanels();$(which).classList.add('open');
  $('screenOverlay').classList.add('open');
  $(which==='sidebar'?'toggleSidebar':'toggleSettings').setAttribute('aria-expanded','true');
+}
+function selectSession(id){
+ if(generating){notice('خلص الرد الأول قبل ما تغيّر المحادثة.');return;}
+ const existing=sessions.find(item=>item.id===id);if(!existing)return;
+ currentId=existing.id;history=existing.messages.slice();
+ $('prompt').value='';persist(false);display();notice('');closePanels();
+}
+function newChat(){
+ if(generating){notice('خلص الرد الأول قبل بدء محادثة تانية.');return;}
+ currentId=null;history=[];$('prompt').value='';
+ persist(false);display();notice('محادثة جديدة جاهزة، والمحادثات القديمة محفوظة في القائمة.');
+ closePanels();
+}
+function deleteSession(id){
+ if(generating){notice('خلص الرد الأول قبل الحذف.');return;}
+ const target=sessions.find(s=>s.id===id);if(!target)return;
+ if(!confirm('تحب تحذف المحادثة "'+target.title+'" من المتصفح؟ مش هتقدر تسترجعها.'))return;
+ sessions=sessions.filter(s=>s.id!==id);
+ if(currentId===id){currentId=null;history=[];$('prompt').value='';}
+ persist(false);display();notice('تم حذف المحادثة المطلوبة فقط.');closePanels();
+}
+function exportCurrent(){
+ const item=current();if(!item||!item.messages.length)return;
+ const text=[
+  'NOVA OMNI LOCAL — '+item.title,
+  'Exported: '+new Date().toLocaleString(),
+  '',
+  ...item.messages.map(m=>(m.role==='user'?'You':'NOVA Local')+':\n'+m.content+'\n')
+ ].join('\n');
+ const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');link.href=url;
+ link.download='nova-local-conversation-'+new Date().toISOString().slice(0,10)+'.txt';
+ document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+ notice('تم تجهيز ملف نصّي للمحادثة الحالية.');closePanels();
 }
 $('toggleSidebar').addEventListener('click',()=>openPanel('sidebar'));
 $('toggleSettings').addEventListener('click',()=>openPanel('settingsPanel'));
 $('closeSettings').addEventListener('click',closePanels);
 $('screenOverlay').addEventListener('click',closePanels);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closePanels();});
-document.querySelectorAll('[data-prompt]').forEach(button=>{
- button.addEventListener('click',()=>{
-  $('prompt').value=button.dataset.prompt||'';
-  $('prompt').focus();closePanels();
- });
-});
-function clear(){
- if(generating){notice('أوقف التوليد الأول قبل مسح المحادثة.');return;}
- history=[];save();display();notice('تم مسح المحادثة المحلية.');
- closePanels();
-}
-$('clear').addEventListener('click',clear);
-$('newChat').addEventListener('click',clear);
-function stop(message){
+$('searchConversations').addEventListener('input',renderSessions);
+$('exportChat').addEventListener('click',exportCurrent);
+$('newChat').addEventListener('click',newChat);
+$('clear').addEventListener('click',()=>{if(currentId)deleteSession(currentId);else newChat();});
+document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListener('click',()=>{
+ $('prompt').value=button.dataset.prompt||'';$('prompt').focus();closePanels();
+}));
+function stop(text){
  if(worker)worker.terminate();
  worker=null;ready=false;loading=false;generating=false;pending=null;
  $('start').disabled=false;$('stop').disabled=true;$('send').disabled=true;
  $('profile').disabled=false;$('prompt').disabled=false;
- $('clear').disabled=false;$('newChat').disabled=false;
  $('progress').style.display='none';
- state(message||'تم إيقاف النموذج. تقدر تشغّله تاني.',message&&message.includes('error')?'error':null);
+ syncActions();
+ state(text||'النموذج متوقف. تقدر تشغّله تاني.',text?.includes('error')?'error':null);
 }
 $('start').addEventListener('click',()=>{
  if(loading||ready)return;
  const label=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
- if(!confirm('هل توافق على تحميل '+label+' مجانًا من Hugging Face؟ النموذج ممكن يحتاج مئات الميجابايت من الإنترنت وذاكرة تشغيل كبيرة. قد تنطبق رسوم بيانات موبايل من شركتك.'))return;
+ if(!confirm('موافق تحمّل '+label+' مجانًا من Hugging Face؟ النموذج ممكن يستهلك مئات الميجابايت من بيانات الإنترنت وذاكرة الجهاز.'))return;
  loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
- notice('');state('جاري إعداد '+label+'…','loading');
- closePanels();
+ notice('');state('جاري إعداد '+label+'…','loading');closePanels();
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
    if(data.type==='status')state(data.text||'جاري التحميل…',generating?'working':'loading');
    else if(data.type==='progress'){
-    const p=Math.max(0,Math.min(100,Number(data.progress)||0));
-    $('progress').style.display='block';$('progress').value=p;
-    state('تحميل '+String(data.file||'ملف النموذج')+' · '+Math.round(p)+'% من الملف','loading');
+    const progress=Math.max(0,Math.min(100,Number(data.progress)||0));
+    $('progress').style.display='block';$('progress').value=progress;
+    state('تحميل '+String(data.file||'النموذج')+' · '+Math.round(progress)+'% من الملف','loading');
    }else if(data.type==='ready'){
     ready=true;loading=false;
     $('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';
-    state('✓ AI local ready · '+String(data.device||'browser')+' · لا يحتاج AI Gateway','ready');
+    state('✓ AI local ready · '+String(data.device||'browser')+' · بدون Gateway','ready');
     notice('النموذج جاهز. اكتب سؤالك وابدأ المحادثة.');
    }else if(data.type==='answer'){
     if(!pending)return;
-    history.push({role:'user',content:pending},{role:'assistant',content:String(data.answer||'')});
-    history=history.slice(-HISTORY_LIMIT);
+    addAnswer(pending,String(data.answer||''));
     pending=null;generating=false;
     $('prompt').value='';$('prompt').disabled=false;$('send').disabled=false;
-    $('clear').disabled=false;$('newChat').disabled=false;
-    save();display();updateMemoryInfo();
-    state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');notice('');
+    syncActions();updateMemoryInfo();
+    state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');
+    notice('');
    }else if(data.type==='error'){
-    const error='Local AI error: '+String(data.message||'غير متاح').slice(0,270);
-    if(data.stage==='load'){stop(error+' · جرّب وضع Lite.');}
+    const error='Local AI error: '+String(data.message||'غير متاح').slice(0,280);
+    if(data.stage==='load'){stop(error+' · جرّب Lite.');}
     else{
      generating=false;pending=null;
      $('send').disabled=!ready;$('prompt').disabled=false;
-     $('clear').disabled=false;$('newChat').disabled=false;
-     state(error+' · Your draft is still here','error');notice('رسالتك محفوظة، تقدر تحاول تاني.');
+     display();syncActions();
+     state(error+' · Your draft is still here','error');
+     notice('رسالتك محفوظة في مربع الكتابة؛ تقدر تحاول تاني.');
     }
    }
   };
   worker.onerror=()=>{
    stop('Local AI error: النموذج ما اشتغلش. جرّب Lite أو متصفح أحدث.');
-   notice('حصلت مشكلة في تحميل النموذج. جرّب الاتصال بالإنترنت أو الوضع الأخف.');
+   notice('حصلت مشكلة أثناء تشغيل النموذج. راجع الإنترنت أو جرّب الوضع الأخف.');
   };
   worker.postMessage({type:'init',profile:$('profile').value});
- }catch(error){stop('Local AI error: '+String(error.message||error));}
+ }catch(e){stop('Local AI error: '+String(e.message||e));}
 });
-$('stop').addEventListener('click',()=>stop('تم إيقاف النموذج. المحادثة والرسالة محفوظين.'));
+$('stop').addEventListener('click',()=>{
+ if(generating)display();
+ stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
+});
 function send(){
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول.');return;}
  if(generating)return;
- const value=$('prompt').value.trim();if(!value)return;
- const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(value);
+ const message=$('prompt').value.trim();if(!message)return;
+ const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
  if(arithmetic){
-  const isArabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(value);
-  const answer=(isArabic?'الناتج: ':'Verified calculation: ')+arithmetic.value;
-  history.push({role:'user',content:value},{role:'assistant',content:answer});
-  history=history.slice(-HISTORY_LIMIT);
-  $('prompt').value='';save();display();notice('');
-  state('✓ حساب دقيق على الجهاز · من غير استدعاء AI','ready');
+  const arabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(message);
+  addAnswer(message,(arabic?'الناتج: ':'Verified calculation: ')+arithmetic.value);
+  $('prompt').value='';notice('');
+  state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.','ready');
   return;
  }
- generating=true;pending=value;
+ generating=true;pending=message;
  $('send').disabled=true;$('prompt').disabled=true;
- $('clear').disabled=true;$('newChat').disabled=true;
- notice('');state('بيجهّز رد باستخدام '+(MEMORY_LABELS[$('memory').value]||'14')+' رسالة كحد أقصى…','working');
+ syncActions();notice('');
+ state('بجهّز رد بالذاكرة '+(MEMORY_LABELS[$('memory').value]||'14')+' رسالة…','working');
+ showPending(message);
  worker.postMessage({
   type:'generate',
-  history:[...history.slice(-24),{role:'user',content:value}],
+  history:[...history.slice(-24),{role:'user',content:message}],
   language:$('language').value,memory:$('memory').value
  });
 }
 $('send').addEventListener('click',send);
-$('prompt').addEventListener('keydown',event=>{
- if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}
+$('prompt').addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
 });
 try{
- for(const [id,key,fallback] of [['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced']]){
+ for(const [id,key,fallback] of [
+  ['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced']
+ ]){
   const value=localStorage.getItem(key)||fallback;
-  if([...$(id).options].some(option=>option.value===value))$(id).value=value;
+  if([...$(id).options].some(opt=>opt.value===value))$(id).value=value;
  }
 }catch(e){}
-for(const [id,key] of [['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory']]){
+for(const [id,key] of [
+ ['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory']
+]){
  $(id).addEventListener('change',()=>{
   try{localStorage.setItem(key,$(id).value);}catch(e){}
   if(id==='memory')updateMemoryInfo();
  });
 }
-updateMemoryInfo();display();
+loadSaved();updateMemoryInfo();display();renderSessions();syncActions();
 })();
 </script>
 </body>
