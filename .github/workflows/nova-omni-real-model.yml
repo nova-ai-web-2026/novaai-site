@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/nova-omni-real-model.yml'
+      - 'nova-omni/tests/local-real-inference.mjs'
   workflow_dispatch:
 permissions:
   contents: read
