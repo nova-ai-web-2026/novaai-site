@@ -1,4 +1,4 @@
-name: NOVA OMNI backend smoke
+name: NOVA OMNI production protection
 on:
   push:
     paths:
@@ -7,29 +7,22 @@ on:
 permissions:
   contents: read
 jobs:
-  live-backend:
+  security-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
     steps:
-      - name: Check Vercel health endpoint
+      - name: Verify anonymous access is restricted
         shell: bash
-        env:
-          ROOT: https://nova-omni-ai-2026.vercel.app
         run: |
           set -euo pipefail
-          for i in $(seq 1 8); do
-            echo "Health check attempt $i"
-            http=$(curl -L -sS --max-time 12 -o /tmp/nova-health -w '%{http_code}' "$ROOT/api/omni?action=health" || true)
-            echo "HTTP status: $http"
-            if [ "$http" = "200" ]; then
-              if python3 -c "import json;d=json.load(open('/tmp/nova-health'));print('app:',d.get('app'),'AI credentials:',d.get('ai'),'access:',d.get('secured'));assert d.get('app')=='NOVA OMNI' and d.get('ok')==True"; then
-                echo "Backend health OK"
-                exit 0
-              fi
-            fi
-            head -c 150 /tmp/nova-health 2>/dev/null | tr '\n' ' ' || true
-            echo ""
-            sleep 3
-          done
-          echo "Backend unhealthy or deployment protection is blocking access"
-          exit 1
+          url='https://nova-omni-ai-2026.vercel.app/api/omni?action=health'
+          code=$(curl --silent --show-error --max-time 15 -o /tmp/nova-response -w '%{http_code}' "$url")
+          echo "Anonymous HTTP: $code"
+          case "$code" in
+            301|302|303|307|308|401|403)
+              echo "Production authentication is enforced"
+              exit 0;;
+            *)
+              echo "Unexpected public response or backend failure"
+              exit 1;;
+          esac

@@ -2,11 +2,33 @@ const {test,expect}=require('@playwright/test');
 const BASE=process.env.NOVA_SITE_URL||'https://nova-ai-web-2026.github.io/novaai-site/nova-omni/';
 test.use({browserName:'chromium',trace:'retain-on-failure',screenshot:'only-on-failure'});
 const start=async page=>{
- const r=await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:40000});
+ const r=await page.goto(BASE+'?preview=1',{waitUntil:'domcontentloaded',timeout:40000});
  expect(r,'Site should return HTTP 200').toBeTruthy();
  expect(r.status(),'Site should be reachable').toBe(200);
  await expect(page).toHaveTitle(/NOVA OMNI/);
 };
+test('Public Pages link opens the secured Vercel site',async({page})=>{
+ await page.route('https://nova-omni-ai-2026.vercel.app/**',route=>route.fulfill({status:200,contentType:'text/html',body:'<!DOCTYPE html><title>Vercel AI Site</title>'}));
+ await page.goto(BASE,{waitUntil:'load'});
+ await expect(page).toHaveURL('https://nova-omni-ai-2026.vercel.app/');
+});
+test('SSO-authenticated chat does not require a second website password',async({page})=>{
+ let calls=0;
+ await page.route('https://sso.example.com/api/omni**',route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');
+  const data=action==='health'?{ok:true,app:'NOVA OMNI',ai:true,secured:true,authMode:'vercel-sso',version:'1.3.0'}:{ok:true,answer:'Authenticated test reply',model:'test-provider',reviewed:false};
+  if(action==='chat')calls++;
+  return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://sso.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await expect(page.locator('#connectionNotice')).toBeHidden();
+ await page.locator('#prompt').fill('SSO login test');await page.locator('#send').click();
+ await expect(page.locator('.msg.ai .msgText')).toHaveText('Authenticated test reply');
+ expect(calls).toBe(1);
+});
 test('live page loads and all navigation tabs work',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page);

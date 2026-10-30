@@ -64,3 +64,21 @@ test('CORS protects API response',async()=>{
  assert.equal(r.statusCode,200);
  assert.equal(r.headers['Access-Control-Allow-Origin'],'https://nova-ai-web-2026.github.io');
 });
+
+test('Vercel SSO trusted platform auth is reported correctly',async()=>{
+ const previous={vercel:process.env.VERCEL,flag:process.env.NOVA_TRUST_VERCEL_AUTH};
+ try{
+  process.env.VERCEL='1';process.env.NOVA_TRUST_VERCEL_AUTH='true';
+  const r=await mockRequest('GET',{action:'health'});
+  assert.equal(r.body.secured,true);
+  assert.equal(r.body.authMode,'vercel-sso');
+ }finally{
+  if(previous.vercel===undefined)delete process.env.VERCEL;else process.env.VERCEL=previous.vercel;
+  if(previous.flag===undefined)delete process.env.NOVA_TRUST_VERCEL_AUTH;else process.env.NOVA_TRUST_VERCEL_AUTH=previous.flag;
+ }
+});
+test('Injected Vercel OIDC token is recognized without disclosure',async()=>{
+ const r=await mockRequest('GET',{action:'health'},null,{'x-vercel-oidc-token':'fake-oidc-test-secret'});
+ assert.equal(r.body.ai,true);
+ assert.equal(JSON.stringify(r.body).includes('fake-oidc-test-secret'),false);
+});
