@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0c0f15">
 <meta name="nova-local-version" content="2.0.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
-<title>NOVA Local — Your private AI space</title>
+<title>NOVA OMNI Local — Your private AI space</title>
 <style>
 :root{color-scheme:dark;--bg:#0c0f15;--rail:#11151d;--surface:#141923;--raised:#1a202c;--edge:#272e3b;--edge-strong:#364052;--text:#f0f3fb;--muted:#98a3b5;--muted2:#738095;--violet:#aca1ff;--violet-dark:#282440;--mint:#87dfcf;--warn:#f4c18b;--shadow:0 24px 80px rgba(0,0,0,.24)}
 *{box-sizing:border-box}
@@ -373,7 +373,7 @@ $('start').addEventListener('click',()=>{
      generating=false;pending=null;
      $('send').disabled=!ready;$('prompt').disabled=false;
      $('clear').disabled=false;$('newChat').disabled=false;
-     state(error,'error');notice('Your draft is still here · رسالتك محفوظة، تقدر تحاول تاني.');
+     state(error+' · Your draft is still here','error');notice('رسالتك محفوظة، تقدر تحاول تاني.');
     }
    }
   };
