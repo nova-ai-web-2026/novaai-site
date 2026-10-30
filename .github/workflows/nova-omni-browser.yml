@@ -28,13 +28,13 @@ jobs:
           NOVA_SITE_URL: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/
         run: |
           for i in $(seq 1 24); do
-            if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?v=$GITHUB_SHA-$i" | grep -Fq 'name="nova-version" content="1.3.0"'; then
-              echo "Updated site v1.3 is deployed"
+            if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?v=$GITHUB_SHA-$i" | grep -Fq 'name="nova-version" content="1.4.0"'; then
+              echo "Updated site v1.4 is deployed"
               exit 0
             fi
             sleep 5
           done
-          echo "The published site did not report version 1.3"
+          echo "The published site did not report version 1.4"
           exit 1
       - name: Run against public GitHub Pages website
         env:
