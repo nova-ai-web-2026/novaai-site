@@ -1,0 +1,46 @@
+name: NOVA OMNI backend smoke
+on:
+  push:
+    paths:
+      - '.github/workflows/nova-omni-backend-smoke.yml'
+      - 'nova-omni/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check Vercel production backend health
+        shell: bash
+        env:
+          ROOT: https://nova-omni-ai-2026.vercel.app
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            echo "Checking Vercel API health attempt $i"
+            http=$(curl --location --silent --show-error --max-time 12 --output /tmp/nova-health --write-out '%{http_code}' "$ROOT/api/omni?action=health" || true)
+            echo "HTTP status: $http"
+            if [ "$http" = "200" ]; then
+              if python3 - <<'PY'
+import json
+try:
+    d = json.load(open('/tmp/nova-health'))
+    print('app:', d.get('app'), 'version:', d.get('version'), 'accessConfigured:', d.get('secured'), 'aiCredentialsDetected:', d.get('ai'))
+    assert d.get('ok') is True and d.get('app') == 'NOVA OMNI'
+except Exception as e:
+    print('API not JSON or not healthy:',str(e)[:300])
+    raise SystemExit(1)
+PY
+              then
+                echo "Backend health succeeded!"
+                exit 0
+              fi
+            fi
+            head -c 160 /tmp/nova-health | tr '\n' ' ' || true
+            echo ""
+            sleep 4
+          done
+          echo "Backend health unavailable"
+          exit 1
