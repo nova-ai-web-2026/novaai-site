@@ -82,3 +82,85 @@ test('Injected Vercel OIDC token is recognized without disclosure',async()=>{
  assert.equal(r.body.ai,true);
  assert.equal(JSON.stringify(r.body).includes('fake-oidc-test-secret'),false);
 });
+
+
+async function withStubProvider(run){
+ const original={
+  vercel:process.env.VERCEL,trust:process.env.NOVA_TRUST_VERCEL_AUTH,
+  direct:process.env.OPENAI_API_KEY,provider:process.env.NOVA_AI_PROVIDER,
+  gateway:process.env.AI_GATEWAY_API_KEY,oidc:process.env.VERCEL_OIDC_TOKEN
+ };
+ const oldFetch=global.fetch;
+ try{
+  process.env.VERCEL='1';process.env.NOVA_TRUST_VERCEL_AUTH='true';
+  delete process.env.OPENAI_API_KEY;delete process.env.AI_GATEWAY_API_KEY;
+  delete process.env.VERCEL_OIDC_TOKEN;delete process.env.NOVA_AI_PROVIDER;
+  return await run();
+ }finally{
+  global.fetch=oldFetch;
+  for(const [key,value] of Object.entries({VERCEL:original.vercel,NOVA_TRUST_VERCEL_AUTH:original.trust,OPENAI_API_KEY:original.direct,NOVA_AI_PROVIDER:original.provider,AI_GATEWAY_API_KEY:original.gateway,VERCEL_OIDC_TOKEN:original.oidc})){
+   if(value===undefined)delete process.env[key];else process.env[key]=value;
+  }
+ }
+}
+test('AI Gateway 403 is explained and not retried against the same forbidden gateway',async()=>withStubProvider(async()=>{
+ let calls=0;
+ global.fetch=async()=>{
+  calls++;
+  return {ok:false,status:403,json:async()=>({error:{type:'access_denied',message:'Forbidden.'}})};
+ };
+ const r=await mockRequest('POST',{action:'chat'},{
+  messages:[{role:'user',content:'أهلا'}],mode:'general',language:'ar-eg'
+ },{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,503);
+ assert.equal(r.body.code,'gateway_access_denied');
+ assert.match(r.body.error,/403/);
+ assert.match(r.body.error,/Vercel AI Gateway/);
+ assert.equal(calls,1);
+ assert.equal(JSON.stringify(r.body).includes('fake-oidc-test-token'),false);
+}));
+test('Egyptian Arabic mode creates multilingual system instruction and returns Arabic',async()=>withStubProvider(async()=>{
+ let captured;
+ global.fetch=async(url,opts)=>{
+  captured=JSON.parse(opts.body);
+  return {ok:true,status:200,json:async()=>({model:'test-multilingual-model',choices:[{message:{content:'أهلاً بيك!'}}]})};
+ };
+ const r=await mockRequest('POST',{action:'chat'},{
+  messages:[{role:'user',content:'ازيك؟'}],mode:'general',language:'ar-eg'
+ },{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,200);assert.equal(r.body.ok,true);
+ assert.equal(r.body.answer,'أهلاً بيك!');
+ assert.match(captured.messages[0].content,/Egyptian Arabic/);
+ assert.match(captured.messages[0].content,/Hindi/);
+}));
+test('An independent direct-provider key can recover from Gateway 403',async()=>withStubProvider(async()=>{
+ process.env.OPENAI_API_KEY='fake-direct-key-for-testing';
+ let gatewayCalls=0,directCalls=0;
+ global.fetch=async(url,opts)=>{
+  if(url.includes('ai-gateway.vercel.sh')){gatewayCalls++;return {ok:false,status:403,json:async()=>({error:{type:'access_denied'}})};}
+  assert.ok(url.includes('api.openai.com/v1/chat/completions'));
+  directCalls++;
+  assert.match(opts.headers.Authorization,/fake-direct-key-for-testing/);
+  const payload=JSON.parse(opts.body);
+  assert.equal(payload.model,'gpt-5.4-mini');
+  assert.equal(payload.max_completion_tokens,2200);
+  return {ok:true,status:200,json:async()=>({model:'gpt-5.4-mini',choices:[{message:{content:'Bonjour !'}}]})};
+ };
+ const r=await mockRequest('POST',{action:'chat'},{
+  messages:[{role:'user',content:'Bonjour'}],language:'fr'
+ },{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,200);assert.equal(r.body.answer,'Bonjour !');
+ assert.equal(gatewayCalls,1);assert.equal(directCalls,1);
+}));
+test('Diagnosis endpoint returns a safe, explicit access-denied result',async()=>withStubProvider(async()=>{
+ global.fetch=async()=>({ok:false,status:403,json:async()=>({error:{type:'access_denied',message:'Forbidden'}})});
+ const r=await mockRequest('GET',{action:'diagnose'},null,{'x-vercel-oidc-token':'fake-oidc-test-token'});
+ assert.equal(r.statusCode,200);assert.equal(r.body.available,false);
+ assert.equal(r.body.code,'gateway_access_denied');
+ assert.match(r.body.reason,/403/);
+ assert.ok(!JSON.stringify(r.body).includes('fake-oidc-test-token'));
+}));
+test('Diagnostics require authentication when outside Vercel SSO',async()=>{
+ const r=await mockRequest('GET',{action:'diagnose'});
+ assert.equal(r.statusCode,401);
+});
