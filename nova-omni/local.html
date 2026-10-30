@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ar" dir="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090d18">
+<meta name="nova-local-version" content="1.0.0">
+<title>NOVA OMNI Local — Free AI on Your Device</title>
+<style>
+:root{color-scheme:dark;--bg:#090d18;--panel:#111a2c;--edge:#33415e;--text:#edf2ff;--muted:#a3b2d2;--accent:#a898ff;--good:#6ee3ba;--warn:#ffcb88}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 55% -8%,#302c59,transparent 52%),var(--bg);color:var(--text);font:14px/1.6 system-ui,Arial,sans-serif}
+button,textarea,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
+.wrap{max-width:920px;margin:auto;padding:18px 20px 24px;min-height:100vh;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}a{color:#b9b1ff}h1{font-size:22px;line-height:1.15;margin:0}h1 span{color:#ad9dff}p{margin:6px 0 0;color:var(--muted)}
+.panel{background:#111a2c;border:1px solid var(--edge);border-radius:16px;padding:16px;box-shadow:0 10px 34px #0003}
+.label{color:var(--muted);font-size:12px}.top{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:12px}
+.btn{border:1px solid #59658c;color:#fff;background:#273654;border-radius:10px;padding:9px 15px;min-height:40px}
+.primary{background:linear-gradient(120deg,#a28aff,#70cbd8);color:#111627;border:0;font-weight:800}.danger{background:#27243b}
+select{background:#1a2540;border:1px solid #59658c;color:white;border-radius:10px;padding:9px;min-height:40px}
+#progress{width:100%;height:6px;accent-color:var(--accent);display:none;margin-top:12px}
+#chat{flex:1;min-height:280px;max-height:54vh;overflow:auto;display:flex;flex-direction:column;gap:11px;padding:4px 0}
+.bubble{max-width:85%;padding:12px 14px;border:1px solid #3c4867;background:#1a253b;border-radius:15px;white-space:pre-wrap;overflow-wrap:anywhere;align-self:flex-start}
+.bubble.user{background:#2c2a4e;border-color:#625999;align-self:flex-end}
+.bubble b{font-size:11px;color:#b0bbed;display:block;margin-bottom:4px}
+.composer{display:grid;grid-template-columns:1fr auto;gap:11px;align-items:stretch}
+textarea{background:#0d1424;border:1px solid #465472;border-radius:12px;color:#fff;resize:vertical;min-height:75px;padding:13px;width:100%}
+button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #a18fff;outline-offset:2px}
+#state{color:var(--warn);font-size:13px}#statusNote{font-size:12px}
+.disclaimer{font-size:12px;color:#acb9d4;line-height:1.6}
+@media(max-width:600px){.wrap{padding:12px 12px 20px}h1{font-size:19px}.panel{padding:12px}.composer{grid-template-columns:1fr}#chat{max-height:50vh;min-height:200px}.bubble{max-width:96%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><h1>✦ NOVA <span>OMNI Local</span></h1><p>Free on-device AI · مجاني من غير مفتاح أو رصيد</p></div>
+ <a href="./index.html" title="Main NOVA OMNI workspace">← Workspace</a>
+</header>
+<section class="panel">
+ <strong>ابدأ الذكاء الاصطناعي المحلي | Start free local AI</strong>
+ <p class="disclaimer">يعمل على جهازك من غير AI Gateway أو بطاقة دفع. أول مرة لازم تحمل نموذج <b>Qwen3 0.6B</b> (مئات الميجابايت)، فاستخدم Wi-Fi لو بيانات الموبايل محدودة. الأداء أضعف من النماذج السحابية الكبيرة، وممكن ما يشتغلش على الأجهزة قليلة الذاكرة. النموذج بيتحمل من Hugging Face، وبعد التحميل معالجة الأسئلة محلية.</p>
+ <div class="top">
+  <button class="btn primary" id="start">Download & start · تحميل وتشغيل</button>
+  <button class="btn danger" id="stop" disabled>Stop loading · إيقاف</button>
+  <label class="label" for="language">Response language</label>
+  <select id="language">
+   <option value="auto">Auto · تلقائي</option><option value="ar-eg">العربية المصرية</option><option value="ar">العربية</option><option value="en">English</option>
+   <option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option>
+   <option value="ru">Русский</option><option value="tr">Türkçe</option><option value="hi">हिन्दी</option><option value="ur">اردو</option><option value="zh">中文</option>
+   <option value="ja">日本語</option><option value="ko">한국어</option><option value="id">Indonesia</option><option value="bn">বাংলা</option><option value="fa">فارسی</option>
+   <option value="sw">Swahili</option><option value="vi">Tiếng Việt</option><option value="th">ไทย</option><option value="nl">Nederlands</option><option value="pl">Polski</option>
+  </select>
+ </div>
+ <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
+ <div id="state" role="status" aria-live="polite">Not started · لم يبدأ التحميل</div>
+ <div id="statusNote" class="disclaimer">No prompts are sent to AI Gateway in local mode.</div>
+</section>
+<section class="panel" style="display:flex;flex:1;min-height:320px;flex-direction:column">
+ <div class="top" style="justify-content:space-between;margin-top:0;margin-bottom:8px">
+  <strong>💬 Local chat · محادثة محلية</strong>
+  <button class="btn danger" id="clear">Clear chat · مسح</button>
+ </div>
+ <div id="chat" aria-label="Conversation" aria-live="polite"></div>
+ <div class="composer">
+  <textarea id="prompt" placeholder="اكتب سؤالك هنا… / Type your question" maxlength="3000" aria-label="Message"></textarea>
+  <button class="btn primary" id="send" disabled>Send · إرسال</button>
+ </div>
+ <p class="disclaimer">أول تشغيل يحتاج إنترنت لتحميل النموذج. بعد كده الملفات ممكن تفضل محفوظة في كاش المتصفح. الجودة وسرعة التشغيل بيعتمدوا على جهازك. المحادثة بتتحفظ محليًا في نفس المتصفح؛ امسحها بزر Clear chat.</p>
+</section>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const MODEL='onnx-community/Qwen3-0.6B-ONNX';
+let worker=null,ready=false,loading=false,generating=false;
+let history=[];
+try{const v=JSON.parse(localStorage.getItem('nova_omni_local_history')||'[]');if(Array.isArray(v))history=v.filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').slice(-20);}catch(e){}
+function display(){
+ $('chat').replaceChildren();
+ if(!history.length){const intro=document.createElement('p');intro.textContent='ابدأ بتحميل النموذج، وبعدها اكتب سؤالك. / Load the model first, then start chatting.';$('chat').append(intro);}
+ for(const m of history){const node=document.createElement('div');node.className='bubble '+(m.role==='user'?'user':'ai');const name=document.createElement('b');name.textContent=m.role==='user'?'You':'NOVA Local';const t=document.createElement('div');t.textContent=m.content;node.append(name,t);$('chat').append(node);}
+ $('chat').scrollTop=$('chat').scrollHeight;
+}
+function save(){try{localStorage.setItem('nova_omni_local_history',JSON.stringify(history.slice(-20)));}catch(e){}}
+function state(message){$('state').textContent=message;}
+function stop(){if(worker)worker.terminate();worker=null;loading=false;ready=false;generating=false;$('send').disabled=true;$('start').disabled=false;$('stop').disabled=true;$('progress').style.display='none';state('Stopped. You can restart the local model.');}
+$('start').addEventListener('click',()=>{
+ if(loading||ready)return;
+ if(!confirm('This will download a large free AI model (hundreds of MB) from Hugging Face. Mobile data charges from your provider may apply. Continue?'))return;
+ loading=true;$('start').disabled=true;$('stop').disabled=false;state('Starting download…');
+ try{
+  worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
+  worker.onmessage=ev=>{
+   const data=ev.data||{};
+   if(data.type==='status')state(data.text||'Loading model…');
+   else if(data.type==='progress'){$('progress').style.display='block';$('progress').value=data.progress;state('Downloading model: '+Math.round(data.progress)+'%');}
+   else if(data.type==='ready'){ready=true;loading=false;$('send').disabled=false;$('stop').disabled=false;$('progress').style.display='none';state('✓ Local AI ready ('+data.device+'). No cloud API required.');}
+   else if(data.type==='answer'){
+    generating=false;history.push({role:'user',content:$('prompt').dataset.pending||''},{role:'assistant',content:String(data.answer||'')});
+    $('prompt').value='';delete $('prompt').dataset.pending;save();display();$('send').disabled=false;state('✓ Response generated on your device.');}
+   else if(data.type==='error'){
+    generating=false;const message='Local AI: '+String(data.message||'Unable to load').slice(0,270);
+    state(message+'. Your draft is still here.');
+    $('send').disabled=!ready;
+    if(data.stage==='load')stop();
+   }
+  };
+  worker.onerror=e=>{stop();state('Local AI failed to load. Check browser WebGPU support, device memory and model download connectivity.');};
+  worker.postMessage({type:'init'});
+ }catch(e){stop();state('Could not start local AI: '+String(e.message||e));}
+});
+$('stop').addEventListener('click',stop);
+$('clear').addEventListener('click',()=>{history=[];save();display();});
+$('send').addEventListener('click',()=>{
+ if(!worker||!ready||generating){state('Load the local model first.');return;}
+ const text=$('prompt').value.trim();if(!text)return;
+ generating=true;$('send').disabled=true;$('prompt').dataset.pending=text;
+ state('Generating locally…');
+ const messages=[...history.slice(-8),{role:'user',content:text}];
+ worker.postMessage({type:'generate',history:messages,language:$('language').value});
+});
+$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('send').click();}});
+try{$('language').value=localStorage.getItem('nova_language')||'auto';}catch(e){}
+$('language').addEventListener('change',()=>{try{localStorage.setItem('nova_language',$('language').value);}catch(e){}});
+display();
+})();
+</script>
+</body></html>
