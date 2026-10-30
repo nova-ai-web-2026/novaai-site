@@ -306,8 +306,9 @@ test('local AI worker error preserves unsent draft',async({page})=>{
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#send')).toBeEnabled();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
  await page.locator('#prompt').fill('Please preserve this text');
+ await expect(page.locator('#send')).toBeEnabled();
  await page.locator('#send').click();
  await expect(page.locator('#state')).toContainText('Your draft is still here');
  await expect(page.locator('#prompt')).toHaveValue('Please preserve this text');
@@ -377,8 +378,9 @@ test('simple calculations use a verified local math parser, not AI model guessin
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#send')).toBeEnabled();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
  await page.locator('#prompt').fill('What is 3 + 4? Reply with the number.');
+ await expect(page.locator('#send')).toBeEnabled();
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai').last()).toContainText('7');
  const messages=await page.evaluate(()=>window.__modelMessageTypes);
@@ -490,8 +492,9 @@ test('new conversation preserves previous sessions and opens them from the sideb
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#send')).toBeEnabled();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
  await page.locator('#prompt').fill('أول محادثة محفوظة');
+ await expect(page.locator('#send')).toBeEnabled();
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai')).toContainText('أول محادثة محفوظة');
  await expect(page.locator('#conversations .sessionRow')).toHaveCount(1);
@@ -572,8 +575,9 @@ test('during generation saved conversations cannot change and typing indicator i
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#send')).toBeEnabled();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
  await page.locator('#prompt').fill('احكيلي معلومة جديدة عن الفضاء');
+ await expect(page.locator('#send')).toBeEnabled();
  await page.locator('#send').click();
  await expect(page.locator('#typingIndicator')).toContainText('جاري تجهيز الرد');
  await expect(page.locator('#newChat')).toBeDisabled();
