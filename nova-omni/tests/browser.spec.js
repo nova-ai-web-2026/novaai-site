@@ -429,7 +429,7 @@ test('new premium Local AI mobile UI has accessible working model settings drawe
  await expect(page.locator('#settingsPanel')).not.toBeInViewport();
  await page.locator('#toggleSidebar').click();
  await expect(page.locator('#sidebar')).toHaveClass(/open/);
- await page.locator('#screenOverlay').click({position:{x:330,y:300}});
+ await page.locator('#screenOverlay').click({position:{x:30,y:300}});
  await expect(page.locator('#sidebar')).not.toHaveClass(/open/);
  const dimensions=await page.evaluate(()=>({viewport:innerWidth,body:document.documentElement.scrollWidth}));
  expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport+2);
