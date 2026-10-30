@@ -6,6 +6,7 @@ const rate=new Map();
 const LANGUAGES=Object.freeze({
  auto:'Match the user language automatically',
  ar:'Arabic (adapt to regional dialect, including Egyptian Arabic)',
+ 'ar-eg':'Egyptian Arabic (المصرية) with natural Egyptian dialect expressions',
  en:'English',fr:'French',es:'Spanish',de:'German',pt:'Portuguese',
  it:'Italian',ru:'Russian',tr:'Turkish',hi:'Hindi',ur:'Urdu',
  zh:'Chinese',ja:'Japanese',ko:'Korean',id:'Indonesian',
@@ -82,7 +83,7 @@ async function apiModelRequest(url,secret,model,messages,timeout,direct){
   if(!r.ok){
    const prefix=direct?'Direct AI provider':'Vercel AI Gateway';
    const details=relevantErrorResponse(body);
-   if(r.status===403)throw aiError(direct?'direct_forbidden':'gateway_access_denied',prefix+' rejected this project (403). Check account access, model permissions and AI Gateway activation/credits in your Vercel dashboard.',403);
+   if(r.status===403)throw aiError(direct?'direct_forbidden':'gateway_access_denied',direct?'OpenAI rejected this API key or model (403). Verify the independent OpenAI API project permissions and billing.':'Vercel AI Gateway refused access (403). The Vercel team might lack AI Gateway authorization or usable credits. Check AI Gateway access in Vercel, or configure OPENAI_API_KEY as a server-side alternative.',403);
    if(r.status===401)throw aiError(direct?'direct_key_invalid':'gateway_authentication_failed',prefix+' rejected the credential (401). Check the server-side API key or Vercel OIDC authorization.',401);
    if(r.status===402)throw aiError(direct?'direct_insufficient_credits':'gateway_insufficient_credits',prefix+' needs available usage credits or a valid billing configuration (402).',402);
    if(r.status===429)throw aiError('ai_rate_limited','The AI provider is rate limiting requests (429).',429,true);
