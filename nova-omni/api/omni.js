@@ -97,7 +97,12 @@ async function apiModelRequest(url,secret,model,messages,timeout,direct){
   if(!r.ok){
    const prefix=direct?'Direct AI provider':'Vercel AI Gateway';
    const details=relevantErrorResponse(body);
-   if(r.status===403)throw aiError(direct?'direct_forbidden':'gateway_access_denied',direct?'OpenAI rejected this API key or model (403). Verify the independent OpenAI API project permissions and billing.':'Vercel AI Gateway refused access (403). The Vercel team might lack AI Gateway authorization or usable credits. Check AI Gateway access in Vercel, or configure OPENAI_API_KEY as a server-side alternative.',403);
+   if(r.status===403){
+    if(!direct&&details.code==='customer_verification_required'){
+     throw aiError('gateway_customer_verification_required','Vercel requires account payment-method verification to unlock free AI Gateway credits. No payments were enabled. Use NOVA Local for AI without a payment method.',403);
+    }
+    throw aiError(direct?'direct_forbidden':'gateway_access_denied',direct?'OpenAI rejected this API key or model (403). Verify the independent API project permissions.':'Vercel AI Gateway denied access (403). Check team permissions; NOVA Local can run without Gateway or billing.',403);
+   }
    if(r.status===401)throw aiError(direct?'direct_key_invalid':'gateway_authentication_failed',prefix+' rejected the credential (401). Check the server-side API key or Vercel OIDC authorization.',401);
    if(r.status===402)throw aiError(direct?'direct_insufficient_credits':'gateway_insufficient_credits',prefix+' needs available usage credits or a valid billing configuration (402).',402);
    if(r.status===429)throw aiError('ai_rate_limited','The AI provider is rate limiting requests (429).',429,true);
@@ -162,7 +167,7 @@ module.exports=async function handler(req,res){
  if(req.method==='OPTIONS')return res.status(204).end();
  const b=body(req),action=String(req.query?.action||b.action||'health');
  if(req.method==='GET'){
-  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.5.0',freeOnly:FREE_ONLY,freeModels:FREE_ONLY?FREE_MODELS:null,ai:!!(gatewayToken(req)||(!FREE_ONLY&&process.env.OPENAI_API_KEY)),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',provider:FREE_ONLY?(gatewayToken(req)?'vercel-ai-gateway-free':'not-configured'):process.env.NOVA_AI_PROVIDER==='openai'&&!!process.env.OPENAI_API_KEY?'direct-openai':gatewayToken(req)?'vercel-ai-gateway':process.env.OPENAI_API_KEY?'direct-openai':'not-configured',languages:Object.keys(LANGUAGES),github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
+  if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.6.0',freeOnly:FREE_ONLY,freeModels:FREE_ONLY?FREE_MODELS:null,ai:!!(gatewayToken(req)||(!FREE_ONLY&&process.env.OPENAI_API_KEY)),secured:vercelAuth()||!!process.env.NOVA_ACCESS_KEY,authMode:vercelAuth()?'vercel-sso':process.env.NOVA_ACCESS_KEY?'access-key':'none',provider:FREE_ONLY?(gatewayToken(req)?'vercel-ai-gateway-free':'not-configured'):process.env.NOVA_AI_PROVIDER==='openai'&&!!process.env.OPENAI_API_KEY?'direct-openai':gatewayToken(req)?'vercel-ai-gateway':process.env.OPENAI_API_KEY?'direct-openai':'not-configured',languages:Object.keys(LANGUAGES),github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});
   if(action==='calc'){try{return reply(res,200,{ok:true,value:calculate(String(req.query.expression||''))});}catch(e){return reply(res,400,{ok:false,error:e.message});}}
   if(action==='checks'){
    const tests=[['Precedence','2+3*4',14],['Parentheses','(2+3)*4',20],['Powers','2^3^2',512],['Square root','sqrt(144)+5',17],['Trigonometry','sin(pi/2)',1],['Unary minus','-3^2',-9],['Floating point','0.1+0.2',0.3],['Constants','pi-pi',0]];

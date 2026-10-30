@@ -193,3 +193,17 @@ test('Free-only gateway: connection diagnostic uses free model',async()=>withStu
  assert.equal(r.body.freeOnly,true);
  assert.equal(used,'nvidia/nemotron-3.5-lightning-free');
 }));
+
+test('Free cloud credit verification denial has clear safe non-payment alternative',async()=>withStubProvider(async()=>{
+ let called=0;
+ global.fetch=async()=>{
+  called++;
+  return {ok:false,status:403,json:async()=>({error:{code:'customer_verification_required',message:'Valid credit card required'}})};
+ };
+ const r=await mockRequest('GET',{action:'diagnose'},null,{'x-vercel-oidc-token':'fake-key-not-real'});
+ assert.equal(r.statusCode,200);
+ assert.equal(r.body.available,false);
+ assert.equal(r.body.code,'gateway_customer_verification_required');
+ assert.match(r.body.reason,/NOVA Local/);
+ assert.equal(called,1);
+}));
