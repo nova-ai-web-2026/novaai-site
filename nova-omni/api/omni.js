@@ -3,6 +3,16 @@ const {calculate}=require('../lib/math');
 const crypto=require('node:crypto');
 const modes={general:'openai/gpt-5.4',coding:'anthropic/claude-opus-4.6',maths:'openai/gpt-5.4',research:'openai/gpt-5.4',writing:'anthropic/claude-opus-4.6'};
 const rate=new Map();
+function applyCors(req,res){
+ const origin=req.headers.origin,allowed=process.env.NOVA_ALLOWED_ORIGIN||'https://nova-ai-web-2026.github.io';
+ if(typeof origin==='string'&&origin===allowed){
+  res.setHeader('Access-Control-Allow-Origin',origin);
+  res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers','Content-Type,X-Nova-Key');
+  res.setHeader('Vary','Origin');
+ }
+}
+
 function reply(res,status,data){res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');return res.status(status).json(data);}
 function access(req){
  const secret=process.env.NOVA_ACCESS_KEY,provided=req.headers['x-nova-key'];
@@ -59,6 +69,8 @@ function limit(req){
  item.n++;if(rate.size>2000)rate.clear();return item.n>15;
 }
 module.exports=async function handler(req,res){
+ applyCors(req,res);
+ if(req.method==='OPTIONS')return res.status(204).end();
  const b=body(req),action=String(req.query?.action||b.action||'health');
  if(req.method==='GET'){
   if(action==='health')return reply(res,200,{ok:true,app:'NOVA OMNI',version:'1.0.0',ai:!!(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN),secured:!!process.env.NOVA_ACCESS_KEY,github:!!process.env.GITHUB_TOKEN,slack:!!process.env.SLACK_BOT_TOKEN,modes:Object.keys(modes)});

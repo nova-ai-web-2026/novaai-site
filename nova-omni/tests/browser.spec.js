@@ -33,16 +33,49 @@ test('live test laboratory runs local checks',async({page})=>{
  await expect(page.locator('#testOut')).toContainText('8/8');
  await expect(page.locator('#testOut')).toContainText('No Grok comparison performed');
 });
-test('chat sends via Enter and errors safely instead of returning fake model text',async({page})=>{
+test('chat does not send a message when no AI backend is connected',async({page})=>{
  await start(page);
+ await expect(page.locator('#connectionNotice')).toContainText('AI chat is unavailable');
  await page.locator('#prompt').fill('Hello from browser smoke test');
  await page.locator('#prompt').press('Enter');
- await expect(page.locator('.msg')).toHaveCount(2,{timeout:15000});
- await expect(page.locator('.msg.ai .msgText')).toContainText(/request failed|backend|not configured|offline/i);
- await page.reload();
- await expect(page.locator('#chats button').first()).toContainText('Hello from browser');
- await page.locator('#chats button').first().click();
- await expect(page.locator('.msg').first()).toContainText('Hello from browser');
+ await expect(page.locator('#connectionNotice')).toContainText('Your message has not been sent');
+ await expect(page.locator('.msg')).toHaveCount(0);
+ await expect(page.locator('#prompt')).toHaveValue('Hello from browser smoke test');
+});
+test('saving and clearing the API endpoint shows honest connection state',async({page})=>{
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://api-demo.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await expect(page.locator('#backendOut')).toContainText('api-demo.example.com/api/omni');
+ expect(await page.evaluate(()=>localStorage.getItem('nova_backend_url'))).toBe('https://api-demo.example.com/api/omni');
+ await page.locator('#backendUrl').fill('http://untrusted.example/api/omni');
+ await page.locator('#saveBackend').click();
+ await expect(page.locator('#backendOut')).toContainText('Use HTTPS');
+ await page.locator('#resetBackend').click();
+ expect(await page.evaluate(()=>localStorage.getItem('nova_backend_url'))).toBeNull();
+});
+test('connected backend can receive authenticated model requests (simulated transport only)',async({page})=>{
+ let chatCalls=0;
+ await page.route('https://trusted.example.com/api/omni**',async route=>{
+  const url=new URL(route.request().url()),action=url.searchParams.get('action');
+  if(action==='health')return route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},contentType:'application/json',body:JSON.stringify({ok:true,version:'1.0.0',ai:true,secured:true,github:false,slack:false})});
+  if(action==='chat'){
+   chatCalls++;
+   expect(route.request().headers()['x-nova-key']).toBe('secret-test');
+   expect(route.request().postDataJSON().messages.at(-1).content).toBe('Hello from connected mode');
+   return route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},contentType:'application/json',body:JSON.stringify({ok:true,answer:'This is a simulated model response',model:'test-double',reviewed:false})});
+  }
+  return route.fulfill({status:404,body:'not found'});
+ });
+ await start(page);await page.locator('[data-page="settingsPage"]').click();
+ await page.locator('#backendUrl').fill('https://trusted.example.com/api/omni');
+ await page.locator('#saveBackend').click();
+ await page.locator('#key').fill('secret-test');await page.locator('#saveKey').click();
+ await page.locator('[data-page="chatPage"]').click();
+ await expect(page.locator('#connectionNotice')).toBeHidden();
+ await page.locator('#prompt').fill('Hello from connected mode');await page.locator('#send').click();
+ await expect(page.locator('.msg.ai .msgText')).toHaveText('This is a simulated model response');
+ expect(chatCalls).toBe(1);
 });
 test('GitHub public read falls back to real external API transport',async({page})=>{
  await page.route('https://api.github.com/repos/octocat/Hello-World',async route=>{

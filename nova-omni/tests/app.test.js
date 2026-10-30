@@ -13,7 +13,7 @@ test('unsafe input rejected',()=>assert.throws(()=>calculate('constructor(123)')
 test('non-finite input rejected',()=>assert.throws(()=>calculate('2/0')));
 function mockRequest(method,query,body,headers){
  const req={method,query,body:body||{},headers:headers||{},socket:{remoteAddress:'127.0.0.1'}};
- const res={statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(c){this.statusCode=c;return this;},json(obj){this.body=obj;return this;}};
+ const res={statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v;},status(c){this.statusCode=c;return this;},json(obj){this.body=obj;return this;},end(){this.ended=true;return this;}};
  return handler(req,res).then(()=>res);
 }
 test('live API health route',async()=>{
@@ -47,4 +47,20 @@ test('API unknown route returns 404',async()=>{
 test('API disallowed method returns 405',async()=>{
  const r=await mockRequest('DELETE',{action:'health'});
  assert.equal(r.statusCode,405);
+});
+test('CORS allows only trusted GitHub Pages origin',async()=>{
+ const r=await mockRequest('OPTIONS',{action:'chat'},null,{origin:'https://nova-ai-web-2026.github.io'});
+ assert.equal(r.statusCode,204);
+ assert.equal(r.headers['Access-Control-Allow-Origin'],'https://nova-ai-web-2026.github.io');
+ assert.ok(r.headers['Access-Control-Allow-Headers'].includes('X-Nova-Key'));
+});
+test('CORS rejects untrusted origins',async()=>{
+ const r=await mockRequest('OPTIONS',{action:'chat'},null,{origin:'https://attacker.example'});
+ assert.equal(r.statusCode,204);
+ assert.equal(r.headers['Access-Control-Allow-Origin'],undefined);
+});
+test('CORS protects API response',async()=>{
+ const r=await mockRequest('GET',{action:'health'},null,{origin:'https://nova-ai-web-2026.github.io'});
+ assert.equal(r.statusCode,200);
+ assert.equal(r.headers['Access-Control-Allow-Origin'],'https://nova-ai-web-2026.github.io');
 });
