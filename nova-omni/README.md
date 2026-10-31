@@ -157,3 +157,13 @@ Three optional no-download workflows can be selected in the task menu or from st
 General AI generation for writing, coding and other tasks still requires a fully loaded local model. The small local model's intrinsic quality and the initial hundred-megabyte download have **not** been magically eliminated. Users can still choose Fast/Smart/Lite after explicit download permission. The download occurs only while the page is open, using the device's browser caching where supported. No third-party inference key or paid provider has been automatically added.
 
 Security and QA: source URLs are constructed only for `wikipedia.org` and `doi.org`, network calls have timeouts, results are plain-text escaped, and source searches remain separate from private browser-local conversations. New unit and browser checks validate no-download entry, correct optional model consent, real-source URL generation, template limitations and no executable markup from external snippets.
+
+## NOVA Local v2.9.1 — CPU answer latency recovery
+
+The real Chromium Fast Qwen2.5 CPU check revealed a significant unresolved issue: the model loaded, but a small Arabic generation did not finish within its 110-second observation window. This is a genuine inference-performance limitation and not a hidden download or fake readiness state.
+
+The local assistant now defaults to **Quick response length**. Its worker caps CPU/WASM token budgets significantly for everyday requests (Fast/CPU Quick generally <=52 tokens, coding/study/writing <=88). Normal and Detailed output lengths remain user-selectable from settings for requests where completeness matters more than latency. These are upper token limits, not guarantees of response time, quality or exact word counts. On-device Fast and Smart are still small AI models and may be inaccurate.
+
+If a model-generated answer takes over 25 seconds, the chat shows a nonblocking explanation with cancellation and instant-tool options. If a generation remains unanswered for 115 seconds, the browser terminates its worker, preserves the unsent prompt, and offers clear recovery instead of leaving an endless typing indicator. This timeout is for **answer generation**, not for an actively progressing model download. It does not interrupt instant source research, offline arithmetic or the writing/code template tools.
+
+Unit checks verify device-aware generation caps; browser checks simulate stalled model inference and preserve draft safety, and verify answer-length persistence and worker messages. Real model responsiveness still requires separate, explicit real-device verification and is not inferred from mocked workers.
