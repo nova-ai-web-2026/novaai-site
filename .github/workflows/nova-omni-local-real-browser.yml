@@ -6,6 +6,7 @@ on:
       - '.github/workflows/nova-omni-local-real-browser.yml'
       - 'nova-omni/tests/local-browser-real.spec.js'
       - 'nova-omni/local-ai-worker.js'
+      - 'nova-omni/local.html'
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,7 +29,7 @@ jobs:
         run: |
           for i in $(seq 1 24); do
             if curl -fsSL "https://nova-ai-web-2026.github.io/novaai-site/nova-omni/local.html?version=$i" -o /tmp/nova-local-real.html &&
-               grep -Fq 'name="nova-local-version" content="2.8.1"' /tmp/nova-local-real.html; then
+               grep -Fq 'name="nova-local-version" content="2.9.0"' /tmp/nova-local-real.html; then
               exit 0
             fi
             sleep 5

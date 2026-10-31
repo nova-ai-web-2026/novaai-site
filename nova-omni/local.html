@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.8.1">
+<meta name="nova-local-version" content="2.9.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -230,6 +230,14 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 .bubble.streaming{border-color:#686098}
 .bubble.streaming .messageActions{display:none}
 @media(max-width:450px){.taskLine{gap:6px}.taskLine select{max-width:120px}.taskLine label,.attachTask{font-size:10px}.composerHint{font-size:9px}}
+
+/* NOVA Instant — accessible tools before any heavy local AI download */
+.instantBanner{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:10px 12px;background:#172b2a;border:1px solid #3c6962;border-radius:12px;color:#b7e8db;font-size:11px;line-height:1.6}
+.instantBanner span{flex:1}
+.instantBanner button{background:#273c48;color:#eef5ff;border:1px solid #547882;border-radius:9px;padding:8px 10px;font-size:11px;white-space:nowrap}
+.instantBanner button:not(:disabled):hover{background:#385566}
+.instantLink{color:#aebfff;text-decoration:underline;text-decoration-color:#666f99;overflow-wrap:anywhere}
+@media(max-width:520px){.instantBanner{align-items:flex-start;flex-direction:column}.instantBanner button{align-self:flex-start}.composerDock{padding:10px 11px 14px}}
 </style>
 </head>
 <body>
@@ -238,12 +246,13 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
   <div class="introLogo" aria-hidden="true">✦</div>
   <div class="introEyebrow">NOVA OMNI · PRIVATE BY DESIGN</div>
   <h2 id="introTitle">أهلاً بيك في <span>NOVA</span></h2>
-  <p class="introLead">مساعدك الذكي للمحادثة والكتابة والتعلّم. مساحة هادية لأفكارك، ومحادثاتك بتفضل على جهازك.</p>
+  <p class="introLead">ابدأ فورًا ببحث فعلي من مصادر خارجية وقوالب كتابة وكود. نموذج الذكاء الاصطناعي المحلي اختياري وبيحتاج تحميل.</p>
   <div class="introFeatures"><span>✧ خصوصية محلية</span><span>◉ لغات متعددة</span><span>◇ ذاكرة متوسطة</span></div>
-  <button id="introEnter" class="introEnter" type="button">مرحبًا، ابدأ NOVA <span aria-hidden="true">↗</span></button>
+  <button id="introInstant" class="introEnter" type="button">⚡ ابدأ فورًا بدون تحميل · بحث وكتابة وبرمجة</button>
+   <button id="introEnter" class="introQuick" type="button">شغّل نموذج AI (تنزيل كبير) · ابدأ NOVA <span aria-hidden="true">↗</span></button>
   <button id="introQuick" class="introQuick" type="button">⚡ تجربة أخف على الجهاز · Lite (حوالي 136MB على CPU)</button>
   <button id="introSkip" class="introSkip" type="button">الدخول بدون تشغيل النموذج</button>
-  <p class="introData"><strong>بالضغط على «ابدأ NOVA» أو «تجربة أخف» بتوافق على تحميل وتشغيل النموذج المختار على جهازك.</strong> أول تحميل قد يكون مئات الميجابايت، وقد يُحسب استهلاك بيانات الإنترنت من باقتك. الموافقة دي للتحميل فقط، وهنفتكرها على نفس المتصفح للزيارات الجاية بشبكة مناسبة. تقدر تلغيها من الإعدادات.</p>
+  <p class="introData"><strong>«ابدأ فورًا» لا يحمّل أي نموذج.</strong> بالضغط على تشغيل AI أو Lite بتوافق على تنزيل النموذج المختار على جهازك. أول تحميل قد يكون مئات الميجابايت، وقد يُحسب استهلاك بيانات الإنترنت من باقتك. الموافقة دي للتحميل فقط، وهنفتكرها على نفس المتصفح للزيارات الجاية بشبكة مناسبة. تقدر تلغيها من الإعدادات.</p>
   <div id="introWarmStatus" aria-live="polite"></div>
  </div>
 </div>
@@ -298,10 +307,12 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
             <div class="welcomeMark" aria-hidden="true"><span>✦</span></div>
             <div class="eyebrow">✧ &nbsp; ذكاء اصطناعي شخصي · مجاني · خاص</div>
             <h1>مساحتك للأفكار.<br><span>من غير حدود للفواتير.</span></h1>
-            <p class="welcomeDesc">اسأل، اكتب، أو جرّب فكرة جديدة. شغّل نموذجًا على جهازك وابدأ محادثة بذاكرة متوسطة، من غير مفاتيح API.</p>
+            <p class="welcomeDesc">ابحث بمصادر حقيقية، جهّز قالب رسالة أو كود فورًا. ولو عايز ردود AI مفتوحة، شغّل النموذج المحلي باختيارك.</p>
             <div class="suggestions">
-              <button class="suggestion" type="button" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>اشرح لي فكرة</strong><small>تعلم بطريقة سهلة</small></span></button>
-              <button class="suggestion" type="button" data-prompt="اكتب لي مقدمة قصيرة وجذابة لمشروع جديد."><span class="tileIcon">✎</span><span><strong>ساعدني في الكتابة</strong><small>صياغة وأفكار</small></span></button>
+              <button class="suggestion" type="button" data-task="research" data-prompt="ابحث عن الطاقة الشمسية وفوائدها"><span class="tileIcon">⌕</span><span><strong>بحث بالمصادر</strong><small>ويكيبيديا وأبحاث · بدون نموذج</small></span></button>
+              <button class="suggestion" type="button" data-task="write_fast" data-prompt="اكتب إيميل رسمي للاستفسار عن حالة طلبي"><span class="tileIcon">✎</span><span><strong>قالب كتابة فوري</strong><small>بدون تنزيل نموذج</small></span></button>
+               <button class="suggestion" type="button" data-task="code_fast" data-prompt="اعمل آلة حاسبة Python"><span class="tileIcon">⌘</span><span><strong>قالب برمجة</strong><small>Python وHTML وJavaScript</small></span></button>
+               <button class="suggestion" type="button" data-task="explain" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>شرح بالذكاء الاصطناعي</strong><small>يتطلب تشغيل النموذج</small></span></button>
               <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>جرّب حساب سريع</strong><small>حاسبة دقيقة محليًا</small></span></button>
               <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص سريع</strong><small>من نصك · بدون تحميل</small></span></button>
             </div>
@@ -310,6 +321,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <div class="composerDock">
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
+             <div id="instantBanner" class="instantBanner" role="status"><span id="instantStatus">⚡ البحث والقوالب متاحة حتى لو نموذج AI ما اتحمّلش.</span><button id="quickStartAi" type="button">تشغيل نموذج AI</button></div>
             <div id="loadAssist" class="loadAssist" hidden aria-live="polite">
               <span>أول تجهيز للنموذج ممكن ياخد وقت. لو جهازك بطيء، جرّب وضع أسرع:</span>
               <button id="loadAssistFast" type="button">Fast · عربي</button>
@@ -320,7 +332,10 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
   <label for="taskMode">مساعدة في</label>
   <select id="taskMode" aria-label="نوع المهمة">
    <option value="auto">✦ تلقائي</option>
-   <option value="explain">شرح وفهم</option>
+   <option value="research">⌕ بحث بمصادر حقيقية (إنترنت)</option>
+    <option value="write_fast">⚡ قالب كتابة فوري (بدون AI)</option>
+    <option value="code_fast">⚡ قوالب كود جاهزة (بدون AI)</option>
+    <option value="explain">شرح وفهم (AI)</option>
    <option value="study">حل خطوة بخطوة</option>
    <option value="writing">كتابة وصياغة</option>
    <option value="coding">برمجة وكود</option>
@@ -338,7 +353,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
                 <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
               </div>
             </div>
-            <div class="underComposer">الحسابات والتلخيص السريع من نصّك بيشتغلوا فورًا. باقي مهام الذكاء الاصطناعي تحتاج تحميل النموذج.</div>
+            <div class="underComposer">البحث يرسل كلمات البحث فقط إلى ويكيبيديا وCrossref لما تضغط إرسال. الحساب والتلخيص والقوالب محلية وفورية؛ الردود المفتوحة تحتاج نموذج AI.</div>
           </div>
         </div>
       </main>
@@ -357,10 +372,10 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
             <option value="fast">Fast · Qwen2.5 0.5B (أسرع نسبيًا)</option>
             <option value="lite">Lite · SmolLM2 135M (أخف)</option>
           </select>
-          <span class="fieldHint">حجم الملفات الرئيسي تقريبًا: Fast ‏512MB، Lite ‏136MB على CPU. Smart ‏919MB على CPU أو ‏570MB على GPU مناسب. Smart أقوى لكنه أثقل.</span>
+          <span class="fieldHint">البحث والقوالب لا تحتاج نموذج. عند تشغيل AI: Lite حوالي 136MB، Fast حوالي 512MB، Smart حوالي 919MB على CPU (أقل على بعض GPU). الموبايل ممكن يكون أبطأ.</span>
         </div>
         <div class="modelMeta">
-          <div class="statBox"><strong>100% محلي</strong><small>بدون Gateway</small></div>
+          <div class="statBox"><strong>المحادثات محلية</strong><small>البحث الخارجي اختياري</small></div>
           <div class="statBox"><strong>اختياري</strong><small>تنزيل النموذج</small></div>
         </div>
         <div class="sectionHead"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>المحادثة</div>
@@ -416,6 +431,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 <div class="screenOverlay" id="screenOverlay" aria-hidden="true"></div>
 <script src="./local-math.js?v=2.7.0"></script>
 <script src="./local-tasks.js?v=2.8.1"></script>
+<script src="./local-instant.js?v=2.9.0"></script>
 <script>
 (()=>{
 'use strict';
@@ -424,6 +440,7 @@ const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
 let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null,lastModelActivity=0;
 let sessions=[],currentId=null,history=[];
+let instantRequestId=0,doingInstant=false;
 const welcome=$('welcome');
 const MODEL_CONSENT='nova_local_download_consent_v1';
 function consentValue(){try{return localStorage.getItem(MODEL_CONSENT)||'unset';}catch(e){return 'unset';}}
@@ -462,6 +479,7 @@ function skipIntro(){
  closeIntro();$('prompt').focus();
 }
 $('introEnter').addEventListener('click',()=>enterIntro());
+$('introInstant').addEventListener('click',()=>{skipIntro();notice('⚡ اختار البحث أو قالب كتابة أو كود من الأمثلة، من غير تحميل نموذج.');});
 $('introQuick').addEventListener('click',()=>enterIntro('lite'));
 $('introSkip').addEventListener('click',skipIntro);
 function beginBackgroundWarmup(){
@@ -529,11 +547,21 @@ function persist(updateCurrent=true){
  renderSessions();
  syncActions();
 }
+function instantModeFor(message){
+ const mode=$('taskMode').value;
+ if(['research','write_fast','code_fast'].includes(mode))return mode;
+ if(mode!=='auto')return null;
+ if(/^\s*(?:ابحث|بحث عن|دور على|research|find sources|search for|look up)/iu.test(message))return 'research';
+ if(!ready&&/^\s*(?:اكتب|ممكن تكتب|write|draft)\s+(?:لي\s+)?(?:إيميل|ايميل|رسالة|email|letter)/iu.test(message))return 'write_fast';
+ if(!ready&&/^\s*(?:اكتب كود|اعمل|write|create)\s+.*(?:calculator|python|html|javascript|قائمة مهام|حاسبة|آلة حاسبة)/iu.test(message))return 'code_fast';
+ return null;
+}
 function refreshSend(){
  const candidate=$('prompt').value.trim();
  const arithmetic=Boolean(globalThis.NovaLocalMath?.tryArithmetic?.(candidate));
  const quickSummary=Boolean(globalThis.NovaLocalTasks?.tryQuickSummary?.(candidate,$('taskMode').value));
- $('send').disabled=generating||Boolean(queuedQuestion)||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary);
+ const instant=Boolean(globalThis.NovaInstant?.isInstant?.(candidate,instantModeFor(candidate)));
+ $('send').disabled=generating||Boolean(queuedQuestion)||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary&&!instant);
 }
 function syncActions(){
  const exists=Boolean(current())&&history.length>0;
@@ -571,6 +599,20 @@ function renderSessions(){
   row.append(button,del);list.append(row);
  }
 }
+function renderTrustedSourceLinks(parent,content){
+ // Plain text and anchors only: never insert HTML returned from search APIs.
+ const pattern=/(https:\/\/(?:ar\.wikipedia\.org|en\.wikipedia\.org|doi\.org)\/[^\s]+)/g;
+ let start=0,match;
+ while((match=pattern.exec(content))!==null){
+  parent.append(document.createTextNode(content.slice(start,match.index)));
+  const anchor=document.createElement('a');
+  anchor.className='instantLink';anchor.href=match[0];
+  anchor.target='_blank';anchor.rel='noopener noreferrer';
+  anchor.textContent=match[0];parent.append(anchor);
+  start=match.index+match[0].length;
+ }
+ parent.append(document.createTextNode(content.slice(start)));
+}
 function buildMessage(entry,typing=false){
  const row=document.createElement('div');
  row.className='message '+(entry.role==='user'?'user':'ai')+(typing?' typing':'');
@@ -579,7 +621,10 @@ function buildMessage(entry,typing=false){
  avatar.setAttribute('aria-hidden','true');
  const bubble=document.createElement('div');bubble.className='bubble '+(entry.role==='user'?'user':'ai');
  const title=document.createElement('b');title.textContent=entry.role==='user'?'You':'NOVA Local';
- const body=document.createElement('div');body.textContent=typing?'جاري تجهيز الرد…':entry.content;body.dir='auto';
+ const body=document.createElement('div');body.dir='auto';
+ if(!typing&&entry.role==='assistant'&&/https:\/\/(?:ar\.wikipedia\.org|en\.wikipedia\.org|doi\.org)\//.test(entry.content)){
+  renderTrustedSourceLinks(body,entry.content);
+ }else body.textContent=typing?'جاري تجهيز الرد…':entry.content;
  bubble.append(title,body);
  if(!typing&&entry.role==='assistant'){
   const actions=document.createElement('div');actions.className='messageActions';
@@ -627,7 +672,10 @@ function updateMemoryInfo(){
 function state(text,mode){
  $('state').textContent=String(text||'');
  $('statusPill').classList.toggle('live',mode==='ready');
- $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':'NOVA Local';
+ $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':mode==='instant'?'أدوات فورية':'NOVA Local';
+ $('instantStatus').textContent=loading?'نموذج AI بيتجهز في الخلفية. البحث والقوالب شغّالين من غير ما تستناه.':ready?'النموذج المحلي جاهز. الأدوات الفورية متاحة كمان.':'⚡ البحث والقوالب متاحة فورًا من غير تنزيل نموذج.';
+ $('quickStartAi').disabled=loading||ready;
+ $('quickStartAi').textContent=ready?'نموذج AI جاهز':loading?'جاري تجهيز AI…':'تشغيل نموذج AI';
 }
 function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
@@ -680,13 +728,18 @@ $('toggleSidebar').addEventListener('click',()=>openPanel('sidebar'));
 $('toggleSettings').addEventListener('click',()=>openPanel('settingsPanel'));
 $('closeSettings').addEventListener('click',closePanels);
 $('screenOverlay').addEventListener('click',closePanels);
+$('quickStartAi').addEventListener('click',()=>startModel('manual'));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closePanels();});
 $('searchConversations').addEventListener('input',renderSessions);
 $('exportChat').addEventListener('click',exportCurrent);
 $('newChat').addEventListener('click',newChat);
 $('clear').addEventListener('click',()=>{if(currentId)deleteSession(currentId);else newChat();});
 document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListener('click',()=>{
- $('prompt').value=button.dataset.prompt||'';refreshSend();$('prompt').focus();closePanels();
+ if(queuedQuestion){queuedQuestion=null;$('cancelReply').hidden=true;}
+ if(button.dataset.task&&[...$('taskMode').options].some(x=>x.value===button.dataset.task))
+  $('taskMode').value=button.dataset.task;
+ $('prompt').value=button.dataset.prompt||'';
+ refreshSend();$('prompt').focus();closePanels();
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
@@ -850,9 +903,47 @@ $('stop').addEventListener('click',()=>{
  try{sessionStorage.setItem('nova_no_autowarm','1');}catch(e){}
  stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
 });
+async function sendInstant(message,mode){
+ if(generating)return;
+ const requestId=++instantRequestId;
+ generating=true;doingInstant=true;pending=message;
+ $('cancelReply').hidden=false;
+ $('send').disabled=true;$('prompt').disabled=true;
+ syncActions();notice('');
+ showPending(message);
+ const indicator=$('typingIndicator');
+ if(indicator){
+  const label=indicator.querySelector('.bubble > div:not(.messageActions)');
+  if(label)label.textContent=mode==='research'?'ببحث في مصادر حقيقية…':'بجهّز قالب فوري…';
+ }
+ try{
+  const result=await globalThis.NovaInstant.perform(message,mode,{language:$('language').value});
+  if(requestId!==instantRequestId)return;
+  addAnswer(message,String(result.text||''));
+  $('prompt').value='';
+  state(result.network?'نتائج بحث فعلية من مصادر عامة':'قالب فوري محلي',ready?'ready':'instant');
+  notice('');
+ }catch(error){
+  if(requestId!==instantRequestId)return;
+  display();
+  notice('معرفتش أكمل المهمة: '+String(error?.message||'خطأ غير معروف').slice(0,250)+' — سؤالك محفوظ. جرّب تاني.');
+  state('مساعدة مطلوبة','error');
+ }finally{
+  if(requestId===instantRequestId){
+   generating=false;doingInstant=false;pending=null;
+   $('prompt').disabled=false;$('cancelReply').hidden=true;
+   syncActions();
+  }
+ }
+}
 function send(){
  if(generating)return;
  const message=$('prompt').value.trim();if(!message)return;
+ const mode=instantModeFor(message);
+ if(mode&&globalThis.NovaInstant?.isInstant?.(message,mode)){
+  void sendInstant(message,mode);
+  return;
+ }
  const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
  if(arithmetic){
   const arabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(message);
@@ -895,6 +986,12 @@ function send(){
  });
 }
 $('cancelReply').addEventListener('click',()=>{
+ if(doingInstant){
+  instantRequestId++;doingInstant=false;generating=false;pending=null;
+  $('cancelReply').hidden=true;$('prompt').disabled=false;
+  display();syncActions();notice('تم إلغاء المهمة الفورية؛ سؤالك لسه في صندوق الكتابة.');
+  return;
+ }
  if(loading&&!ready&&queuedQuestion){
   queuedQuestion=null;$('cancelReply').hidden=true;
   refreshSend();
@@ -935,10 +1032,13 @@ for(const [id,key] of [
  $(id).addEventListener('change',()=>{
   try{localStorage.setItem(key,$(id).value);}catch(e){}
   if(id==='memory')updateMemoryInfo();
-  if(id==='taskMode')refreshSend();
+  if(id==='taskMode'){
+   if(queuedQuestion){queuedQuestion=null;$('cancelReply').hidden=true;}
+   refreshSend();
+  }
  });
 }
-loadSaved();updateMemoryInfo();display();renderSessions();syncActions();beginBackgroundWarmup();
+loadSaved();updateMemoryInfo();display();renderSessions();syncActions();state('الأدوات الفورية جاهزة','instant');beginBackgroundWarmup();
 })();
 </script>
 </body>
