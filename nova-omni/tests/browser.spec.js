@@ -335,9 +335,9 @@ test('local AI page is mobile responsive and worker endpoint is served',async({p
  expect(result.scroll).toBeLessThanOrEqual(result.viewport+2);
 });
 
-test('balanced local profile and memory are selected by default',async({page})=>{
+test('new visitors default to Fast and balanced memory',async({page})=>{
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
- await expect(page.locator('#profile')).toHaveValue('balanced');
+ await expect(page.locator('#profile')).toHaveValue('fast');
  await expect(page.locator('#memory')).toHaveValue('balanced');
  await expect(page.locator('#memoryInfo')).toContainText('14');
  await expect(page.locator('#memoryInfo')).toContainText('60');
@@ -420,7 +420,7 @@ test('premium Local AI desktop layout shows navigation, welcome and settings wit
  await expect(page.locator('#settingsPanel')).toBeVisible();
  await expect(page.locator('.welcome h1')).toContainText('مساحتك للأفكار');
  await expect(page.locator('#memory')).toHaveValue('balanced');
- await expect(page.locator('#profile')).toHaveValue('balanced');
+ await expect(page.locator('#profile')).toHaveValue('fast');
  const dimensions=await page.evaluate(()=>({
   viewport:window.innerWidth,document:document.documentElement.scrollWidth,
   chat:document.querySelector('#chat').getBoundingClientRect().width,

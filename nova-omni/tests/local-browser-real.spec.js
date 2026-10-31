@@ -12,6 +12,7 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
  page.on('pageerror',e=>failures.push('Page error '+e.message));
  await page.addInitScript(()=>{
   Object.defineProperty(navigator,'connection',{configurable:true,value:{type:'wifi',saveData:false,effectiveType:'4g'}});
+  localStorage.setItem('nova_local_profile','balanced');
  });
  page.on('dialog',dialog=>dialog.accept());
  const response=await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:45000});

@@ -103,11 +103,12 @@ test('repetition cleanup removes exact adjacent duplicate sentences but preserve
  assert.equal((answer.match(/هنا شرح واضح/g)||[]).length,1);
 });
 
-test('CPU uses smaller q8 weights; modern FP16 WebGPU uses q4f16',()=>{
- assert.equal(helpers.runtimeFor(false,false).device,'wasm');
- assert.equal(helpers.runtimeFor(false,false).dtype,'q8');
- assert.equal(helpers.runtimeFor(true,false).dtype,'q8');
- assert.equal(helpers.runtimeFor(true,false).device,'wasm');
- assert.equal(helpers.runtimeFor(true,true).device,'webgpu');
- assert.equal(helpers.runtimeFor(true,true).dtype,'q4f16');
+test('Fast and Lite use smaller q8 CPU; Smart uses q4 CPU and q4f16 GPU',()=>{
+ assert.equal(helpers.runtimeFor('fast',false,false).device,'wasm');
+ assert.equal(helpers.runtimeFor('fast',false,false).dtype,'q8');
+ assert.equal(helpers.runtimeFor('lite',false,false).dtype,'q8');
+ assert.equal(helpers.runtimeFor('balanced',false,false).dtype,'q4');
+ assert.equal(helpers.runtimeFor('fast',true,false).dtype,'q8');
+ assert.equal(helpers.runtimeFor('balanced',true,true).device,'webgpu');
+ assert.equal(helpers.runtimeFor('balanced',true,true).dtype,'q4f16');
 });

@@ -116,3 +116,9 @@ A versioned worker URL ensures users receive new inference code after deploying.
 Arabic user requests now receive shorter, Arabic-first system instructions. Explain, study, writing, coding, planning, summarisation and translation each have focused guidance; the small model remains limited and can hallucinate, so never represent it as a cloud-scale reasoning model. Unverified external actions and claims remain explicitly forbidden in model prompts. For file summaries, only the first 3700 text characters are placed into the visible draft, and the UI tells the visitor when the input was truncated, so the worker's last-message context window does not silently omit a larger portion.
 
 A versioned worker URL forces the browser to load the updated prompt logic instead of a stale cached script. CPU/q8 and GPU/q4f16 selection and the same explicit data-download consent continue to apply.
+
+## NOVA Local v2.6 — Fast first, proven Smart CPU settings
+
+Real Chromium testing found that the smaller Qwen3 q8 CPU weights were very slow to generate (the answer did not finish within a 120-second test window). Smart now uses the previously verified q4 CPU weights (~919MB) or q4f16 on compatible WebGPU (~570MB). Fast and Lite keep smaller q8 CPU weights (~512MB and ~136MB respectively). Small files do not automatically mean fast inference.
+
+New visitors start with Fast instead of automatically downloading Smart's largest CPU file; explicit past profile choices are preserved. The independent conversation memory remains Balanced by default (14 messages / 9000 characters). These on-device models remain much weaker than large hosted AI services, with no paid cloud fallback.

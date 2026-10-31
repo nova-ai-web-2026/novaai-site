@@ -121,8 +121,11 @@ function trimRepeats(text){
  }
  return result.join(' ').trim();
 }
-function runtimeFor(hasGPU,hasFP16){
- return hasGPU&&hasFP16?{device:'webgpu',dtype:'q4f16'}:{device:'wasm',dtype:'q8'};
+function runtimeFor(profile,hasGPU,hasFP16){
+ if(hasGPU&&hasFP16)return {device:'webgpu',dtype:'q4f16'};
+ // Smart CPU q8 was significantly slower during real inference tests.
+ // Use its previously tested q4 variant. Fast and Lite retain smaller q8.
+ return {device:'wasm',dtype:profile==='balanced'?'q4':'q8'};
 }
 async function init(request){
  if(generator){
@@ -155,7 +158,7 @@ async function init(request){
   // Qwen3 q4=919MB vs q8=618MB; Qwen2.5 q4=786MB vs q8=512MB.
   // Prefer smaller q8 CPU files (often more accurate, too), and q4f16
   // only on GPUs explicitly supporting shader-f16. Never fetch both variants.
-  const {device,dtype}=runtimeFor(hasGPU,hasFP16);
+  const {device,dtype}=runtimeFor(profile,hasGPU,hasFP16);
   send('status',{phase:'model',model:model.id,device,dtype,text:'Preparing '+model.name+' locally'});
   let lastEmit=-1;
   generator=await pipeline('text-generation',model.id,{

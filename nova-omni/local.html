@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.5.1">
+<meta name="nova-local-version" content="2.6.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -272,7 +272,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.5.1 · PRIVATE & FREE</div>
+    <div class="railFoot">NOVA LOCAL v2.6 · PRIVATE & FREE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -350,7 +350,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
             <option value="fast">Fast · Qwen2.5 0.5B (أسرع نسبيًا)</option>
             <option value="lite">Lite · SmolLM2 135M (أخف)</option>
           </select>
-          <span class="fieldHint">حجم الملفات الرئيسي تقريبي: Smart ‏618 MB على CPU، Fast ‏512 MB، Lite ‏136 MB. مع GPU ممكن تختلف. مش ضمان لسرعة أو جودة الرد.</span>
+          <span class="fieldHint">حجم الملفات الرئيسي تقريبًا: Fast ‏512MB، Lite ‏136MB على CPU. Smart ‏919MB على CPU أو ‏570MB على GPU مناسب. Smart أقوى لكنه أثقل.</span>
         </div>
         <div class="modelMeta">
           <div class="statBox"><strong>100% محلي</strong><small>بدون Gateway</small></div>
@@ -749,7 +749,7 @@ function startModel(source='manual'){
  hideModelHelp();scheduleModelHelp();
  notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
-  worker=new Worker(new URL('./local-ai-worker.js?v=2.5.1',location.href),{type:'module'});
+  worker=new Worker(new URL('./local-ai-worker.js?v=2.6.0',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
    if(data.type==='status')state('NOVA محلي',generating?'working':'loading');
@@ -843,7 +843,7 @@ $('prompt').addEventListener('keydown',e=>{
 });
 try{
  for(const [id,key,fallback] of [
-  ['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto']
+  ['language','nova_language','auto'],['profile','nova_local_profile','fast'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto']
  ]){
   let value=localStorage.getItem(key)||fallback;
   if(id==='profile'&&!localStorage.getItem(key)){
