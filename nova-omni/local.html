@@ -191,6 +191,17 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 .progressWrap progress{display:none!important}
 .statusPill:not(.live) .dot{background:#77769a}
 @media(max-width:540px){.introCard{padding:30px 20px 22px;border-radius:23px}.introCard h2{font-size:33px}.introLogo{width:66px;height:66px;font-size:32px}}
+
+@media(max-height:660px){
+ .introOverlay{place-items:start center;padding-block:12px}
+ .introCard{margin:auto}
+ .introLogo{height:55px;width:55px;margin-bottom:13px;font-size:27px;border-radius:16px}
+ .introCard h2{margin-top:7px;font-size:29px}
+ .introFeatures{margin:12px 0 16px}
+ .introCard p.introLead{font-size:12px}
+ .introData{padding-top:10px;margin-top:8px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.introEnter{transition:none!important}}
 </style>
 </head>
 <body>
