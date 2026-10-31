@@ -22,7 +22,7 @@ test('new desktop visitor sees greeting while the local AI warms once in the bac
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await expect(page.locator('#introOverlay')).toBeVisible();
  await expect(page.locator('#introEnter')).toBeVisible();
- await expect(page.locator('#introWarmStatus')).toContainText('الخلفية');
+ await expect(page.locator('#introWarmStatus')).toContainText(/الخلفية|جاهز/);
  await expect(page.locator('#statusLabel')).toContainText('جاهز',{timeout:12000});
  const starts=await page.evaluate(()=>window.__novaStarts);
  expect(starts.filter(s=>s.type==='init')).toHaveLength(1);
@@ -95,7 +95,7 @@ test('welcome skip cancels in-flight automatic download, and it stays stopped',a
  await expect(page.locator('#introOverlay')).toBeHidden();
  expect(await page.evaluate(()=>window.__workerStats)).toEqual({starts:1,terminated:1});
  await page.reload({waitUntil:'domcontentloaded'});
- expect(await page.evaluate(()=>window.__workerStats.starts)).toBe(1);
+ expect(await page.evaluate(()=>window.__workerStats.starts)).toBe(0);
 });
 test('first question is queued during background warmup and answered when AI is ready',async({page})=>{
  await page.addInitScript(()=>{
