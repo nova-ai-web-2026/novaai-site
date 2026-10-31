@@ -6,6 +6,8 @@ on:
       - 'nova-omni/local.html'
       - 'nova-omni/local-ai-worker.js'
       - 'nova-omni/local-math.js'
+      - 'nova-omni/local-tasks.js'
+      - 'nova-omni/tests/local-quick-tasks.test.js'
       - 'nova-omni/tests/local-memory.test.js'
       - 'nova-omni/tests/browser.spec.js'
       - 'nova-omni/tests/local-autowarm.spec.js'
@@ -37,7 +39,7 @@ jobs:
             if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?check=$GITHUB_SHA-$i" -o /tmp/nova-main.html &&
                curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${NOVA_SITE_URL}local.html?check=$GITHUB_SHA-$i" -o /tmp/nova-local.html &&
                grep -Fq 'name="nova-version" content="1.6.0"' /tmp/nova-main.html &&
-               grep -Fq 'name="nova-local-version" content="2.6.0"' /tmp/nova-local.html; then
+               grep -Fq 'name="nova-local-version" content="2.7.0"' /tmp/nova-local.html; then
               echo 'Both main workspace and Local AI pages are published'
               exit 0
             fi
