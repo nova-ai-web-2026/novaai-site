@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.9.0">
+<meta name="nova-local-version" content="2.9.1">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -387,6 +387,14 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
           </select>
         </div>
         <div class="memoryInfo" id="memoryInfo">ذاكرة متوسطة: لغاية 14 رسالة للسياق · محفوظ محليًا حتى 60 رسالة.</div>
+         <div class="field"><label for="responseLength">طول رد AI · السرعة أو التفصيل</label>
+          <select id="responseLength" aria-label="Local AI answer length">
+           <option value="quick">سريع · رد أقصر، مناسب للأجهزة البطيئة</option>
+           <option value="normal">متوازن · تفاصيل أكتر</option>
+           <option value="detailed">مفصل · أبطأ على CPU</option>
+          </select>
+          <span class="fieldHint">AI على CPU ممكن يتأخر حتى بعد التحميل. اختر رد سريع لأقل انتظار.</span>
+         </div>
         <div class="field"><label for="language">لغة الرد</label>
           <select id="language" aria-label="Response language">
             <option value="auto">تلقائي · Auto</option><option value="ar-eg">المصري · العربية المصرية</option>
@@ -438,7 +446,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
-let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null,lastModelActivity=0;
+let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null,lastModelActivity=0,generationHelpTimer=null,generationDeadlineTimer=null;
 let sessions=[],currentId=null,history=[];
 let instantRequestId=0,doingInstant=false;
 const welcome=$('welcome');
@@ -837,7 +845,7 @@ function startModel(source='manual'){
  hideModelHelp();scheduleModelHelp();
  notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
-  worker=new Worker(new URL('./local-ai-worker.js?v=2.8.0',location.href),{type:'module'});
+  worker=new Worker(new URL('./local-ai-worker.js?v=2.9.1',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
     if(loading&&['status','progress','ready','error'].includes(data.type))lastModelActivity=Date.now();
@@ -982,7 +990,7 @@ function send(){
  worker.postMessage({
   type:'generate',
   history:[...history.slice(-24),{role:'user',content:message}],
-  language:$('language').value,memory:$('memory').value,task:$('taskMode').value==='summarise_ai'?'summarise':$('taskMode').value
+  language:$('language').value,memory:$('memory').value,responseLength:$('responseLength').value,task:$('taskMode').value==='summarise_ai'?'summarise':$('taskMode').value
  });
 }
 $('cancelReply').addEventListener('click',()=>{
@@ -1015,7 +1023,7 @@ $('prompt').addEventListener('keydown',e=>{
 });
 try{
  for(const [id,key,fallback] of [
-  ['language','nova_language','auto'],['profile','nova_local_profile','fast'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto']
+  ['language','nova_language','auto'],['profile','nova_local_profile','fast'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto'],['responseLength','nova_local_response_length','quick']
  ]){
   let value=localStorage.getItem(key)||fallback;
   if(id==='profile'&&!localStorage.getItem(key)){
@@ -1027,7 +1035,7 @@ try{
  }
 }catch(e){}
 for(const [id,key] of [
- ['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory'],['taskMode','nova_local_task']
+ ['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory'],['taskMode','nova_local_task'],['responseLength','nova_local_response_length']
 ]){
  $(id).addEventListener('change',()=>{
   try{localStorage.setItem(key,$(id).value);}catch(e){}
