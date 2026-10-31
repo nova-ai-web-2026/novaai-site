@@ -688,7 +688,7 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
- if(loadDeadlineTimer){clearTimeout(loadDeadlineTimer);loadDeadlineTimer=null;}
+ if(loadDeadlineTimer){clearInterval(loadDeadlineTimer);loadDeadlineTimer=null;}
  $('modelHelp').hidden=true;$('loadAssist').hidden=true;
 }
 function showModelHelp(explanation){
