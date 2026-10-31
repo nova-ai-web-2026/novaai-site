@@ -10,12 +10,18 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
   if(r.url().includes('huggingface.co/')&&modelUrls.length<8)modelUrls.push(r.url().slice(0,150));
  });
  page.on('pageerror',e=>failures.push('Page error '+e.message));
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'connection',{configurable:true,value:{type:'wifi',saveData:false,effectiveType:'4g'}});
+ });
  page.on('dialog',dialog=>dialog.accept());
  const response=await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:45000});
  expect(response.status()).toBe(200);
  await expect(page.locator('#profile')).toHaveValue('balanced');
- await page.locator('#start').click();
+ await expect(page.locator('#introOverlay')).toBeVisible();
+ await expect(page.locator('#introWarmStatus')).toContainText('الخلفية');
  await expect(page.locator('#state')).toContainText('ready',{timeout:240000});
+ await page.locator('#introEnter').click();
+ await expect(page.locator('#introOverlay')).toBeHidden();
  await page.locator('#language').selectOption('ar-eg');
  await page.locator('#prompt').fill('قول صباح الخير بالمصري في جملة قصيرة.');
  await page.locator('#send').click();
