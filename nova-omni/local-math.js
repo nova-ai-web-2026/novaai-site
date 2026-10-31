@@ -64,18 +64,15 @@
  function tryArithmetic(question){
   const input=toAsciiDigits(String(question||'').trim());
   if(input.length<3||input.length>300)return null;
-  let expr=input;
-  // Isolate only an explicit numeric expression from a user question.
-  if(!/^[\s\d.a-z+\-*/^()]+$/i.test(expr)){
-   const match=input.match(/^\s*(?:what\s+is|what's|calculate|compute|solve|احسب|كام|ما\s+ناتج|ما\s+نتيجة|ناتج|نتيجة)\s*:?\s*([\d.a-z()+\-*/^\s]+?)(?:\s*[?؟=]\s*.*)?\s*$/i);
-   if(!match)return null;
-   expr=match[1];
-  }
+  const query=input.match(/^\s*(?:what\s+is|what's|calculate|compute|solve|احسب|كام|ما\s+ناتج|ما\s+نتيجة|ناتج|نتيجة)\s*:?\s*([\d.a-z()+\-*/^\s]+?)(?:\s*[?؟=]\s*.*)?\s*$/i);
+  let expr=query?query[1]:input;
   expr=expr.trim();
-  if(!expr||!/[0-9]|pi|sqrt|sin|cos|tan|abs|log|ln|exp/i.test(expr))return null;
+  if(!/^[\s\d.a-z+\-*/^()]+$/i.test(expr))return null;
+  if(!/[0-9]|pi|sqrt|sin|cos|tan|abs|log|ln|exp/i.test(expr))return null;
   if(!/[+\-*/^]|(?:sqrt|sin|cos|tan|abs|ln|log|exp)\s*\(/i.test(expr))return null;
   try{return {expression:expr,value:calculate(expr)};}
   catch(e){return null;}
  }
+
  return Object.freeze({calculate,tryArithmetic,toAsciiDigits});
 });
