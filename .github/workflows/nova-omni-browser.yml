@@ -8,6 +8,7 @@ on:
       - 'nova-omni/local-math.js'
       - 'nova-omni/tests/local-memory.test.js'
       - 'nova-omni/tests/browser.spec.js'
+      - 'nova-omni/tests/local-autowarm.spec.js'
       - '.github/workflows/nova-omni-browser.yml'
   workflow_dispatch:
 permissions:
@@ -36,7 +37,7 @@ jobs:
             if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "$NOVA_SITE_URL?check=$GITHUB_SHA-$i" -o /tmp/nova-main.html &&
                curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${NOVA_SITE_URL}local.html?check=$GITHUB_SHA-$i" -o /tmp/nova-local.html &&
                grep -Fq 'name="nova-version" content="1.6.0"' /tmp/nova-main.html &&
-               grep -Fq 'name="nova-local-version" content="2.1.0"' /tmp/nova-local.html; then
+               grep -Fq 'name="nova-local-version" content="2.2.0"' /tmp/nova-local.html; then
               echo 'Both main workspace and Local AI pages are published'
               exit 0
             fi
@@ -47,7 +48,7 @@ jobs:
       - name: Run against public GitHub Pages website
         env:
           NOVA_SITE_URL: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/
-        run: npx playwright test tests/browser.spec.js --reporter=line --workers=1 --timeout=25000
+        run: npx playwright test tests/browser.spec.js tests/local-autowarm.spec.js --reporter=line --workers=1 --timeout=25000
       - name: Upload browser diagnostics
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
