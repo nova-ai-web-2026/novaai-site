@@ -54,3 +54,9 @@ test('summary mode supports file imports without network requests or model downl
  assert.equal(x.kind,'extractive-summary');
  assert.ok(x.text.startsWith('•'));
 });
+
+test('AI-rewritten summary mode never shortcuts to extractive summary',()=>{
+ assert.equal(task.tryQuickSummary('Summarize:\n\n'+english,'summarise_ai'),null);
+ assert.equal(task.tryQuickSummary('لخص النص التالي:\n\n'+arabic,'summarise_ai'),null);
+ assert.ok(task.tryQuickSummary('Summarize:\n\n'+english,'summarise'));
+});
