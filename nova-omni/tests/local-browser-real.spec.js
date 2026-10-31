@@ -29,8 +29,9 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
  await expect(page.locator('#typingIndicator')).toBeVisible({timeout:12000});
  await expect(page.locator('#typingIndicator')).toHaveCount(0,{timeout:120000});
  await expect(page.locator('.bubble.ai')).toHaveCount(1,{timeout:12000});
- const result=(await page.locator('.bubble.ai > div').last().innerText()).trim().slice(0,300);
+ const result=(await page.locator('.bubble.ai > div:not(.messageActions)').first().innerText()).trim().slice(0,300);
  expect(result).not.toContain('جاري تجهيز الرد');
+ expect(result).not.toContain('نسخ الرد');
  console.log('BROWSER_QWEN3_REAL_MODEL: balanced');
  console.log('REAL_BROWSER_ARABIC_RESPONSE:',result);
  console.log('REAL_BROWSER_HF_MODEL_NETWORK_REQUESTS:',modelUrls.length);
