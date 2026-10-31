@@ -28,13 +28,13 @@ const profileFor=name=>PROFILES[name]||PROFILES.balanced;
 const memoryFor=name=>MEMORY[name]||MEMORY.balanced;
 function detectTask(text){
  const s=String(text||'').trim().toLowerCase().replace(/^(?:(?:لو سمحت|من فضلك|ممكن|عايزك|عايز|please|could you|can you|i need you to)\s*[,،]?\s*)+/iu,'');
- if(/^(?:ترجم|ترجمة|translate|translation)/iu.test(s))return 'translate';
- if(/^(?:لخّص|لخص|تلخيص|summari[sz]e|summary)/iu.test(s))return 'summarise';
- if(/^(?:اكتب كود|برمج|صلح الكود|صحح الكود|debug|fix (?:this|my) code|write (?:a )?(?:script|program|function)|code|python|javascript)/iu.test(s))return 'coding';
- if(/^(?:حل|مسألة|سؤال رياضيات|اثبت|برهن|solve|prove|work out|how (?:do|can) i solve)/iu.test(s))return 'study';
- if(/^(?:اشرح|فسر|وضح|ليه|لماذا|ما معنى|explain|what (?:does|is|are)|how (?:does|do|is))/iu.test(s))return 'explain';
- if(/^(?:خطة|خطوات|رتب|اعمل خطة|plan|roadmap|step.by.step)/iu.test(s))return 'planning';
- if(/^(?:اكتب|صياغة|رسالة|إيميل|email|draft|rewrite|write|polish|عدّل النص|حسن النص)/iu.test(s))return 'writing';
+ if(/^(?:ترجم|تترجم|ترجمة|translate|translation)/iu.test(s))return 'translate';
+ if(/^(?:لخّص|لخص|تلخص|تلخيص|summari[sz]e|summary)/iu.test(s))return 'summarise';
+ if(/^(?:اكتب كود|تكتب كود|برمج|تصلح الكود|صلح الكود|صحح الكود|debug|fix (?:this|my) code|write (?:a )?(?:script|program|function)|code|python|javascript)/iu.test(s))return 'coding';
+ if(/^(?:حل|تحل|مسألة|سؤال رياضيات|اثبت|برهن|solve|prove|work out|how (?:do|can) i solve)/iu.test(s))return 'study';
+ if(/^(?:اشرح|تشرح|فسر|تفهمني|وضح|توضح|ليه|لماذا|ما معنى|explain|what (?:does|is|are)|how (?:does|do|is))/iu.test(s))return 'explain';
+ if(/^(?:خطة|خطوات|رتب|اعمل خطة|تعمل خطة|plan|roadmap|step.by.step)/iu.test(s))return 'planning';
+ if(/^(?:اكتب|تكتب|صياغة|رسالة|إيميل|email|draft|rewrite|write|polish|عدّل النص|حسن النص)/iu.test(s))return 'writing';
  return 'general';
 }
 function resolvedTask(task,text){
