@@ -4,9 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.1.0">
+<meta name="nova-local-version" content="2.2.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://huggingface.co" crossorigin>
 <style>
 :root{color-scheme:dark;--bg:#0c0f15;--rail:#11151d;--surface:#141923;--raised:#1a202c;--edge:#272e3b;--edge-strong:#364052;--text:#f0f3fb;--muted:#98a3b5;--muted2:#738095;--violet:#aca1ff;--violet-dark:#282440;--mint:#87dfcf;--warn:#f4c18b;--shadow:0 24px 80px rgba(0,0,0,.24)}
 *{box-sizing:border-box}
@@ -164,9 +166,37 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 @keyframes pulseTyping{0%,60%,100%{opacity:.4;transform:scale(.8)}30%{opacity:1;transform:scale(1.13)}}
 @media(max-height:730px){.sessionsBlock{max-height:30vh}}
 @media(max-width:920px){.sessionsBlock{max-height:42vh}}
+
+.introOverlay{position:fixed;inset:0;z-index:99;display:grid;place-items:center;padding:16px;background:#070910ed;backdrop-filter:blur(18px)}
+.introOverlay[hidden]{display:none!important}
+.introCard{width:min(100%,450px);background:linear-gradient(150deg,#24223e,#141d27 75%);border:1px solid #5d557d;border-radius:25px;padding:37px 29px;text-align:center;box-shadow:0 25px 100px #0009}
+.introLogo{width:66px;height:66px;margin:0 auto 20px;border:1px solid #8a7bc4;border-radius:19px;display:grid;place-items:center;background:linear-gradient(145deg,#554989,#2b384b);color:#e2dcff;font-size:32px}
+.introEyebrow{font-size:10px;font-weight:850;letter-spacing:.16em;color:#baafea}
+.introCard h2{font-size:34px;line-height:1.35;margin:10px 0 11px}
+.introCard h2 span{background:linear-gradient(105deg,#cfbeff,#9deedd);background-clip:text;-webkit-background-clip:text;color:transparent}
+.introCard p{font-size:13px;color:#acb9cb;line-height:1.9;margin:0 0 20px}
+.introEnter{width:100%;min-height:52px;border:0;border-radius:12px;color:#181829;background:linear-gradient(105deg,#c2b5ff,#91e8d7);font-weight:850;font-size:14px}
+.introEnter:hover{filter:brightness(1.08)}
+.introSkip{margin-top:8px;padding:9px 10px;border:0;background:transparent;color:#aab6c9;font-size:12px}
+.introStatus{color:#bae7d8;min-height:22px;font-size:11px;margin:12px 0}
+.introData{border-top:1px solid #424759;padding-top:14px;margin-top:17px;color:#96a6b8;font-size:11px;line-height:1.85}
+.introData strong{color:#d9e7ef}
+@media(max-width:540px){.introCard{padding:27px 20px;border-radius:20px}.introCard h2{font-size:30px}}
 </style>
 </head>
 <body>
+<div id="introOverlay" class="introOverlay" role="dialog" aria-modal="true" aria-label="أهلاً بك في NOVA" hidden>
+ <div class="introCard">
+  <div class="introLogo" aria-hidden="true">✦</div>
+  <div class="introEyebrow">NOVA OMNI · PRIVATE AI</div>
+  <h2>أهلاً بيك في <span>NOVA</span></h2>
+  <p>مساعدك الشخصي للمحادثة والتعلم بلغات مختلفة. على الاتصال المناسب، بنجهّز النموذج على جهازك في الخلفية وإنت بتتعرف على الموقع.</p>
+  <button id="introEnter" class="introEnter" type="button">مرحبًا، ابدأ الآن ↗</button>
+  <button id="introSkip" class="introSkip" type="button">الدخول بدون تحميل النموذج</button>
+  <div id="introWarmStatus" class="introStatus" role="status" aria-live="polite">NOVA بيجهز لك التجربة</div>
+  <div class="introData"><strong>معلومة مهمة:</strong> تحميل النموذج أول مرة ممكن يستهلك مئات الميجابايت من بيانات الإنترنت. على Wi-Fi المعروف أو الكمبيوتر قد يبدأ تلقائيًا، وعلى الموبايل ببيانات محدودة محتاج موافقتك. تقدر توقفه من الإعدادات.</div>
+ </div>
+</div>
 <div class="shell">
   <aside class="sidebar" id="sidebar" aria-label="القائمة">
     <a class="brand" href="./local.html" aria-label="NOVA Local Home">
@@ -198,7 +228,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.1 · PRIVATE & FREE</div>
+    <div class="railFoot">NOVA LOCAL v2.2 · PRIVATE & FREE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -291,7 +321,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
           <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
           <p id="state" role="status">Not started · لم يبدأ التحميل</p>
         </div>
-        <p class="note" id="statusNote">أول مرة تحتاج اتصال إنترنت لتحميل النموذج (مئات الميجابايت). استخدم Wi-Fi لو بياناتك محدودة. معالجة المحادثة بعدها محلية.</p>
+        <p class="note" id="statusNote">بيبدأ تجهيز النموذج تلقائيًا على الكمبيوتر أو Wi-Fi المعروف. بيانات الموبايل وتوفير البيانات يحتاجوا إذن قبل التحميل الكبير. التحضير محلي، وبيانات الإنترنت قد تُحتسب من باقتك.</p>
         <div class="privacyCard"><strong><svg class="icon" style="width:16px" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>بدون اشتراك أو بطاقة</strong><p>لا تُرسل الأسئلة لـAI Gateway. سجل المحادثات بيتحفظ في متصفحك فقط، وتقدر تمسحه في أي وقت.</p></div>
         <button class="textButton" id="exportChat" type="button" disabled>
           <svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
@@ -310,9 +340,61 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
-let worker=null,ready=false,loading=false,generating=false,pending=null;
+let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null;
 let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
+function networkPolicy(){
+ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ if(navigator.onLine===false)return {auto:false,reason:'offline'};
+ if(sessionStorage.getItem('nova_no_autowarm')==='1')return {auto:false,reason:'opted-out'};
+ if(c?.saveData||/^(slow-2g|2g|3g)$/i.test(c?.effectiveType||''))return {auto:false,reason:'saving-data'};
+ if(['cellular','bluetooth','wimax','none'].includes(c?.type))return {auto:false,reason:'metered'};
+ const mobile=navigator.userAgentData?.mobile===true||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+ if(mobile&&c?.type!=='wifi'&&c?.type!=='ethernet')return {auto:false,reason:'mobile-unknown'};
+ if(typeof navigator.deviceMemory==='number'&&navigator.deviceMemory<4)return {auto:false,reason:'low-memory'};
+ return {auto:true,reason:c?.type==='wifi'?'wifi':'desktop'};
+}
+function introStatus(value){$('introWarmStatus').textContent=String(value||'');}
+function closeIntro(){
+ $('introOverlay').hidden=true;
+ sessionStorage.setItem('nova_intro_seen','1');
+}
+function enterIntro(){
+ const policy=networkPolicy();
+ closeIntro();
+ if(ready){$('prompt').focus();return;}
+ if(loading){
+  notice('NOVA بيتجهز في الخلفية. تقدر تكتب سؤالك وهيرد أول ما النموذج يشتغل.');
+  $('prompt').focus();return;
+ }
+ if(policy.reason==='offline'){notice('الإنترنت غير متاح لتحميل النموذج أول مرة.');return;}
+ if(policy.reason==='opted-out'){notice('تقدر تشغل النموذج من الإعدادات لما تحب.');return;}
+ if(!policy.auto){
+  const allow=confirm('توافق على تحميل نموذج Qwen3 بحجم قد يصل إلى مئات الميجابايت؟ بيانات الموبايل قد تُحسب عليك.');
+  if(allow)startModel('approved');
+  else notice('التحميل ما بدأش. الحسابات البسيطة شغالة من غير نموذج.');
+ }else startModel('automatic');
+ $('prompt').focus();
+}
+function skipIntro(){
+ if(loading)stop('تم إلغاء التحميل التلقائي.');
+ sessionStorage.setItem('nova_no_autowarm','1');
+ closeIntro();notice('دخلت من غير تحميل؛ تقدر تشغل النموذج لاحقًا من الإعدادات.');
+ $('prompt').focus();
+}
+$('introEnter').addEventListener('click',enterIntro);
+$('introSkip').addEventListener('click',skipIntro);
+function beginBackgroundWarmup(){
+ if(sessionStorage.getItem('nova_intro_seen')!=='1')$('introOverlay').hidden=false;
+ const policy=networkPolicy();
+ if(policy.auto){
+  introStatus('النموذج بيتجهز في الخلفية · بدون رسوم AI');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('automatic')));
+ }else{
+  introStatus(policy.reason==='offline'?'محتاج اتصال إنترنت لتحميل النموذج.':policy.reason==='opted-out'?'التحميل التلقائي متوقف باختيارك.':policy.reason==='low-memory'?'ذاكرة الجهاز قليلة؛ جرّب Lite.':'على الاتصال ده التحميل محتاج موافقتك.');
+ }
+}
+
 function messageOK(m){
  return m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim().length>0;
 }
@@ -363,7 +445,7 @@ function persist(updateCurrent=true){
 function refreshSend(){
  const candidate=$('prompt').value.trim();
  const arithmetic=Boolean(globalThis.NovaLocalMath?.tryArithmetic?.(candidate));
- $('send').disabled=generating||!candidate||(!ready&&!arithmetic);
+ $('send').disabled=generating||!candidate||(!ready&&!loading&&!arithmetic);
 }
 function syncActions(){
  const exists=Boolean(current())&&history.length>0;
@@ -520,19 +602,20 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 }));
 function stop(text){
  if(worker)worker.terminate();
- worker=null;ready=false;loading=false;generating=false;pending=null;
+ worker=null;ready=false;loading=false;generating=false;pending=null;queuedQuestion=null;
  $('start').disabled=false;$('stop').disabled=true;
  $('profile').disabled=false;$('prompt').disabled=false;
  $('progress').style.display='none';
  syncActions();
  state(text||'النموذج متوقف. تقدر تشغّله تاني.',text?.includes('error')?'error':null);
 }
-$('start').addEventListener('click',()=>{
+function startModel(source='manual'){
  if(loading||ready)return;
  const label=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
- if(!confirm('موافق تحمّل '+label+' مجانًا من Hugging Face؟ النموذج ممكن يستهلك مئات الميجابايت من بيانات الإنترنت وذاكرة الجهاز.'))return;
+ if(source==='automatic'&&sessionStorage.getItem('nova_no_autowarm')==='1')return;
+ if(source==='manual'&&!confirm('موافق تحمّل '+label+' من Hugging Face؟ أول تحميل ممكن يستهلك مئات الميجابايت من الإنترنت وبيانات الموبايل قد تكون مدفوعة.'))return;
  loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
- notice('');state('جاري إعداد '+label+'…','loading');closePanels();
+ notice('');state('NOVA بيتجهز على جهازك في الخلفية…','loading');introStatus('بيتحضّر في الخلفية. تقدر تدخل وتبدأ الكتابة.');closePanels();
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
   worker.onmessage=event=>{
@@ -546,7 +629,9 @@ $('start').addEventListener('click',()=>{
     ready=true;loading=false;
     refreshSend();$('stop').disabled=false;$('progress').style.display='none';
     state('✓ AI local ready · '+String(data.device||'browser')+' · بدون Gateway','ready');
+    introStatus('✓ NOVA جاهز للمحادثة.');
     notice('النموذج جاهز. اكتب سؤالك وابدأ المحادثة.');
+    if(queuedQuestion){const queued=queuedQuestion;queuedQuestion=null;if($('prompt').value.trim()===queued)send();}
    }else if(data.type==='answer'){
     if(!pending)return;
     addAnswer(pending,String(data.answer||''));
@@ -572,8 +657,9 @@ $('start').addEventListener('click',()=>{
    notice('حصلت مشكلة أثناء تشغيل النموذج. راجع الإنترنت أو جرّب الوضع الأخف.');
   };
   worker.postMessage({type:'init',profile:$('profile').value});
- }catch(e){stop('Local AI error: '+String(e.message||e));}
-});
+ }catch(e){stop('Local AI error: '+String(e.message||e));introStatus('تعذّر تشغيل النموذج.');}
+}
+$('start').addEventListener('click',()=>startModel('manual'));
 $('stop').addEventListener('click',()=>{
  if(generating)display();
  stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
@@ -589,6 +675,7 @@ function send(){
   state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.',ready?'ready':null);
   return;
  }
+ if(loading&&!ready){queuedQuestion=message;$('send').disabled=true;notice('سؤالك محفوظ؛ هيتبعت تلقائيًا أول ما النموذج يتجهز.');return;}
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
  generating=true;pending=message;
  $('send').disabled=true;$('prompt').disabled=true;
@@ -602,7 +689,7 @@ function send(){
  });
 }
 $('send').addEventListener('click',send);
-$('prompt').addEventListener('input',refreshSend);
+$('prompt').addEventListener('input',()=>{if(queuedQuestion&&$('prompt').value.trim()!==queuedQuestion)queuedQuestion=null;refreshSend();});
 $('prompt').addEventListener('keydown',e=>{
  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
 });
@@ -622,7 +709,7 @@ for(const [id,key] of [
   if(id==='memory')updateMemoryInfo();
  });
 }
-loadSaved();updateMemoryInfo();display();renderSessions();syncActions();
+loadSaved();updateMemoryInfo();display();renderSessions();syncActions();beginBackgroundWarmup();
 })();
 </script>
 </body>
