@@ -440,6 +440,7 @@ const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
 let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null,lastModelActivity=0;
 let sessions=[],currentId=null,history=[];
+let instantRequestId=0,doingInstant=false;
 const welcome=$('welcome');
 const MODEL_CONSENT='nova_local_download_consent_v1';
 function consentValue(){try{return localStorage.getItem(MODEL_CONSENT)||'unset';}catch(e){return 'unset';}}
@@ -478,6 +479,7 @@ function skipIntro(){
  closeIntro();$('prompt').focus();
 }
 $('introEnter').addEventListener('click',()=>enterIntro());
+$('introInstant').addEventListener('click',()=>{skipIntro();notice('⚡ اختار البحث أو قالب كتابة أو كود من الأمثلة، من غير تحميل نموذج.');});
 $('introQuick').addEventListener('click',()=>enterIntro('lite'));
 $('introSkip').addEventListener('click',skipIntro);
 function beginBackgroundWarmup(){
@@ -545,11 +547,21 @@ function persist(updateCurrent=true){
  renderSessions();
  syncActions();
 }
+function instantModeFor(message){
+ const mode=$('taskMode').value;
+ if(['research','write_fast','code_fast'].includes(mode))return mode;
+ if(mode!=='auto')return null;
+ if(/^\s*(?:ابحث|بحث عن|دور على|research|find sources|search for|look up)/iu.test(message))return 'research';
+ if(!ready&&/^\s*(?:اكتب|ممكن تكتب|write|draft)\s+(?:لي\s+)?(?:إيميل|ايميل|رسالة|email|letter)/iu.test(message))return 'write_fast';
+ if(!ready&&/^\s*(?:اكتب كود|اعمل|write|create)\s+.*(?:calculator|python|html|javascript|قائمة مهام|حاسبة|آلة حاسبة)/iu.test(message))return 'code_fast';
+ return null;
+}
 function refreshSend(){
  const candidate=$('prompt').value.trim();
  const arithmetic=Boolean(globalThis.NovaLocalMath?.tryArithmetic?.(candidate));
  const quickSummary=Boolean(globalThis.NovaLocalTasks?.tryQuickSummary?.(candidate,$('taskMode').value));
- $('send').disabled=generating||Boolean(queuedQuestion)||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary);
+ const instant=Boolean(globalThis.NovaInstant?.isInstant?.(candidate,instantModeFor(candidate)));
+ $('send').disabled=generating||Boolean(queuedQuestion)||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary&&!instant);
 }
 function syncActions(){
  const exists=Boolean(current())&&history.length>0;
@@ -643,7 +655,10 @@ function updateMemoryInfo(){
 function state(text,mode){
  $('state').textContent=String(text||'');
  $('statusPill').classList.toggle('live',mode==='ready');
- $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':'NOVA Local';
+ $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':mode==='instant'?'أدوات فورية':'NOVA Local';
+ $('instantStatus').textContent=loading?'نموذج AI بيتجهز في الخلفية. البحث والقوالب شغّالين من غير ما تستناه.':ready?'النموذج المحلي جاهز. الأدوات الفورية متاحة كمان.':'⚡ البحث والقوالب متاحة فورًا من غير تنزيل نموذج.';
+ $('quickStartAi').disabled=loading||ready;
+ $('quickStartAi').textContent=ready?'نموذج AI جاهز':loading?'جاري تجهيز AI…':'تشغيل نموذج AI';
 }
 function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
@@ -696,13 +711,18 @@ $('toggleSidebar').addEventListener('click',()=>openPanel('sidebar'));
 $('toggleSettings').addEventListener('click',()=>openPanel('settingsPanel'));
 $('closeSettings').addEventListener('click',closePanels);
 $('screenOverlay').addEventListener('click',closePanels);
+$('quickStartAi').addEventListener('click',()=>startModel('manual'));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closePanels();});
 $('searchConversations').addEventListener('input',renderSessions);
 $('exportChat').addEventListener('click',exportCurrent);
 $('newChat').addEventListener('click',newChat);
 $('clear').addEventListener('click',()=>{if(currentId)deleteSession(currentId);else newChat();});
 document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListener('click',()=>{
- $('prompt').value=button.dataset.prompt||'';refreshSend();$('prompt').focus();closePanels();
+ if(queuedQuestion){queuedQuestion=null;$('cancelReply').hidden=true;}
+ if(button.dataset.task&&[...$('taskMode').options].some(x=>x.value===button.dataset.task))
+  $('taskMode').value=button.dataset.task;
+ $('prompt').value=button.dataset.prompt||'';
+ refreshSend();$('prompt').focus();closePanels();
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
@@ -951,10 +971,13 @@ for(const [id,key] of [
  $(id).addEventListener('change',()=>{
   try{localStorage.setItem(key,$(id).value);}catch(e){}
   if(id==='memory')updateMemoryInfo();
-  if(id==='taskMode')refreshSend();
+  if(id==='taskMode'){
+   if(queuedQuestion){queuedQuestion=null;$('cancelReply').hidden=true;}
+   refreshSend();
+  }
  });
 }
-loadSaved();updateMemoryInfo();display();renderSessions();syncActions();beginBackgroundWarmup();
+loadSaved();updateMemoryInfo();display();renderSessions();syncActions();state('الأدوات الفورية جاهزة','instant');beginBackgroundWarmup();
 })();
 </script>
 </body>
