@@ -80,12 +80,12 @@ test('explicit task mode overrides automatic detection',()=>{
 });
 test('task prompt is tailored, multilingual, and avoids unverified claims',()=>{
  const text=helpers.instruction('ar-eg','coding','اكتب برنامج','fast');
- assert.match(text,/Egyptian Arabic/);
- assert.match(text,/runnable code/);
- assert.match(text,/Never invent/);
+ assert.match(text,/المصري/);
+ assert.match(text,/كودًا صغيرًا/);
+ assert.match(text,/لا تخترع/);
  const summary=helpers.instruction('auto','summarise','لخص النص','balanced');
- assert.match(summary,/ONLY text supplied/);
- assert.match(summary,/Arabic/);
+ assert.match(summary,/لخّص النص/);
+ assert.match(summary,/بالمصري/);
 });
 test('balanced memory preserves longer last user task while respecting context cap',()=>{
  const history=Array.from({length:15},(_,i)=>({role:i%2?'assistant':'user',content:'توضيح '.repeat(100)}));

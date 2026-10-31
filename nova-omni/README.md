@@ -110,3 +110,9 @@ For the ONNX models used by this app, **CPU q8 files are smaller than CPU q4**: 
 If a model is still preparing after 24 seconds or fails, a discreet choice appears to retry, switch to Fast, or use Lite. Changing models requires a fresh user confirmation because it can incur another large download. Browser and WASM caching are enabled. The app does not hide failures or claim readiness until the model actually loads.
 
 A versioned worker URL ensures users receive new inference code after deploying. The user's first explicit model-download consent and data-saving policies remain in place. Unit tests cover runtime quantization selection and task prompts. Browser tests cover streaming, local file import and recovery without remote model/API requests.
+
+## NOVA Local v2.5.1 — Arabic task guidance and transparent attachments
+
+Arabic user requests now receive shorter, Arabic-first system instructions. Explain, study, writing, coding, planning, summarisation and translation each have focused guidance; the small model remains limited and can hallucinate, so never represent it as a cloud-scale reasoning model. Unverified external actions and claims remain explicitly forbidden in model prompts. For file summaries, only the first 3700 text characters are placed into the visible draft, and the UI tells the visitor when the input was truncated, so the worker's last-message context window does not silently omit a larger portion.
+
+A versioned worker URL forces the browser to load the updated prompt logic instead of a stale cached script. CPU/q8 and GPU/q4f16 selection and the same explicit data-download consent continue to apply.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.5.0">
+<meta name="nova-local-version" content="2.5.1">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -272,7 +272,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.5 · PRIVATE & FREE</div>
+    <div class="railFoot">NOVA LOCAL v2.5.1 · PRIVATE & FREE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -712,12 +712,13 @@ $('textFile').addEventListener('change',async()=>{
  if(file.size>60000){notice('الملف كبير. جرّب ملف نصّي بحجم أقل من 60 كيلوبايت.');input.value='';return;}
  if(!/\.(?:txt|md|csv|json|js|ts|py|html|css)$/i.test(file.name)){notice('الملف مش من الأنواع النصية المدعومة.');input.value='';return;}
  try{
-  const content=(await file.text()).slice(0,4700);
+  const raw=await file.text();
+  const content=raw.slice(0,3700);
   const header='لخّص النص التالي واستخرج أهم النقاط، من غير إضافة معلومات مش موجودة:';
   const payload=header+'\n\n'+content;
   $('prompt').value=payload;
   $('taskMode').value='summarise';
-  refreshSend();notice('تم إدخال النص من '+file.name+' محليًا. راجع المحتوى واضغط إرسال.');
+  refreshSend();notice('تم إدخال النص من '+file.name+' محليًا'+(raw.length>3700?' (أول 3700 حرف فقط من الملف).':' .')+' راجع المحتوى واضغط إرسال.');
  }catch(e){notice('مش قادر أقرأ الملف ده. جرّب ملف نصّي آخر.');}
  input.value='';
 });
@@ -748,7 +749,7 @@ function startModel(source='manual'){
  hideModelHelp();scheduleModelHelp();
  notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
-  worker=new Worker(new URL('./local-ai-worker.js?v=2.5.0',location.href),{type:'module'});
+  worker=new Worker(new URL('./local-ai-worker.js?v=2.5.1',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
    if(data.type==='status')state('NOVA محلي',generating?'working':'loading');
