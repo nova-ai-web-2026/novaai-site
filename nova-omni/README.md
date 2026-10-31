@@ -76,3 +76,15 @@ Local AI: https://nova-ai-web-2026.github.io/novaai-site/nova-omni/local.html
 **Privacy and limitations:** Browser localStorage may be cleared by browsing data removal, private-mode expiry or quota limits; exported files give you an extra copy. No server or account synchronization was added. The neural model continues to use Balanced context (up to 14 messages / 9000 characters) even when many sessions are stored; deleting a session only removes its locally stored history.
 
 Visual changes: searching conversations in sidebar, compact chat list, user-facing progress, reply-copy affordances and cleaner mobile drawer navigation. Regression tests run against the deployed GitHub Pages page.
+
+## NOVA Local v2.2 — welcome-first background model warmup
+
+The free local page now displays a short Arabic welcome card with an enter button instead of forcing visitors to watch model-file progress. On supported desktop browsers and networks explicitly reported as Wi-Fi/Ethernet, it starts warming the selected local Qwen3/SmolLM2 model after the welcome view first paints. Warmup runs in a browser Web Worker and uses no server-side AI API or paid inference. Visitor conversations are stored locally exactly as before.
+
+**Data safety:** Large models may transfer hundreds of megabytes (and use significant device RAM). The welcome view states this clearly, and the visitor can cancel the warmup. Network Information API Save-Data, 2G/3G, known cellular, offline, low RAM and mobile browsers with unknown network type suppress automatic model downloads. These visitors are asked for explicit confirmation upon pressing Enter. The visitor can choose Enter Without Download or manually start/stop the model from Settings. Desktop browsers can still be tethered; download impact is disclosed in the welcome view. The application does not and cannot silently bypass device/network settings.
+
+**First response:** A visitor can type a question while the local model is preparing. One question is kept as a draft and sent exactly once after a successful model-ready event. If the model fails, is stopped, or the draft changes, the queued request is cancelled and no fake AI response is stored. Safe arithmetic calculations remain available immediately without model downloads.
+
+**Limits:** A first visit cannot guarantee instant model responses; browser model weights must download and compile on that device before inference can begin. Browser caching can speed subsequent visits, depending on browser storage policy. Background warmup applies to /local.html while that page is open; it is not a server-side always-on model or a download that continues after the tab closes. The main workspace still links to Local.
+
+UI tests in tests/local-autowarm.spec.js cover automatic Wi-Fi startup, mobile-data consent, Save-Data, cancellation, and waiting-first-question behavior. Existing manual download tests opt out of startup warming explicitly for deterministic coverage. The real Qwen3 browser test also verifies the background warmup path.
