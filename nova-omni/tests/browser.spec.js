@@ -1,6 +1,16 @@
 const {test,expect}=require('@playwright/test');
 const BASE=process.env.NOVA_SITE_URL||'https://nova-ai-web-2026.github.io/novaai-site/nova-omni/';
 test.use({browserName:'chromium',trace:'retain-on-failure',screenshot:'only-on-failure'});
+// Existing UI tests opt out of auto-warming to verify manual download and
+// deterministic controls. Automatic warmup is tested separately on real page
+// loads with a simulated Wi-Fi/mobile network.
+test.beforeEach(async({page})=>{
+ await page.addInitScript(()=>{
+  sessionStorage.setItem('nova_intro_seen','1');
+  sessionStorage.setItem('nova_no_autowarm','1');
+ });
+});
+
 const start=async page=>{
  const r=await page.goto(BASE+'?preview=1',{waitUntil:'domcontentloaded',timeout:40000});
  expect(r,'Site should return HTTP 200').toBeTruthy();
