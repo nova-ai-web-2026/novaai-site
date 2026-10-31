@@ -295,3 +295,55 @@ test('truly stalled download stops with recovery options and never deletes the d
  await expect(page.locator('#prompt')).toHaveValue('محتاج مساعدة في خطة مذاكرة');
  expect(await page.evaluate(()=>window.__terminated)).toBe(1);
 });
+
+test('local AI generation timeout recovers without erasing the unanswered draft',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  window.__stopCount=0;
+  window.__requests=[];
+  window.Worker=class {
+   constructor(){this.onmessage=null;}
+   postMessage(data){
+    window.__requests.push(data);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+    // Deliberately never emit a reply: represents a stalled CPU inference.
+   }
+   terminate(){window.__stopCount++;}
+  };
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#introEnter').click();
+ await expect(page.locator('#statusLabel')).toHaveText('جاهز');
+ await page.locator('#prompt').fill('اشرح الطاقة الحركية ببساطة');
+ await page.locator('#send').click();
+ await expect(page.locator('#typingIndicator')).toBeVisible();
+ await page.clock.runFor(116000);
+ await expect(page.locator('#typingIndicator')).toHaveCount(0);
+ await expect(page.locator('#prompt')).toHaveValue('اشرح الطاقة الحركية ببساطة');
+ await expect(page.locator('#quickStartAi')).toBeEnabled();
+ expect(await page.evaluate(()=>window.__stopCount)).toBe(1);
+ await expect(page.locator('#notice')).toContainText('أوقفنا الرد البطيء');
+});
+test('AI answer length setting is sent to worker and persists between visits',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__messages=[];
+  window.Worker=class {
+   constructor(){this.onmessage=null;}
+   postMessage(d){
+    window.__messages.push(d);
+    if(d.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+    if(d.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'answer',answer:'A short tested reply',contextMessages:1}}));
+   }
+   terminate(){}
+  };
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#responseLength').selectOption('normal');
+ await page.locator('#introEnter').click();
+ await page.locator('#prompt').fill('Explain gravity briefly');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('A short tested reply');
+ expect((await page.evaluate(()=>window.__messages)).find(x=>x.type==='generate').responseLength).toBe('normal');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('#responseLength')).toHaveValue('normal');
+});

@@ -1,4 +1,4 @@
-// NOVA OMNI Local v2.8 — on-device, no paid API or remote inference.
+// NOVA OMNI Local v2.9.1 — on-device, no paid API or remote inference.
 // Initiated only by the visitor's consent; memory and model profile are adjustable.
 const LIBRARY_URL='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1';
 const PROFILES=Object.freeze({
@@ -121,11 +121,21 @@ function trimRepeats(text){
  }
  return result.join(' ').trim();
 }
-function generationConfig(profile,task){
+function generationConfig(profile,task,device='unknown',answerLength='normal'){
+ const heavy=['study','coding','planning','writing'].includes(task);
  const baseline=profileFor(profile).maxTokens;
- const boost=['study','coding','planning','writing'].includes(task)?75:task==='explain'?40:0;
+ const boost=heavy?75:task==='explain'?40:0;
  const analytical=['study','coding','translate','summarise'].includes(task);
- return {max_new_tokens:Math.min(340,baseline+boost),do_sample:true,
+ // CPU/WASM on mobile can be much slower than the model-file download itself.
+ // Cap default responses to reduce multi-minute generation. Longer replies are opt-in.
+ const requested=['quick','normal','detailed'].includes(answerLength)?answerLength:'normal';
+ const cpu=device==='wasm';
+ const cpuCap=requested==='quick'?(heavy?88:52):
+  requested==='normal'?(heavy?140:95):(heavy?270:175);
+ const gpuCap=requested==='quick'?(heavy?115:85):
+  requested==='normal'?(heavy?200:150):340;
+ const limit=Math.min(340,baseline+boost,cpu?cpuCap:gpuCap);
+ return {max_new_tokens:limit,do_sample:true,
   temperature:profile==='lite'?0.68:analytical?0.44:task==='writing'?0.66:0.57,
   top_p:analytical?0.82:0.88,top_k:20,repetition_penalty:1.16};
 }
@@ -203,7 +213,7 @@ async function generate(request){
   const task=resolvedTask(request.task,lastText);
   if(selectedProfile==='balanced')history.at(-1).content+='\n/no_think';
   const messages=[{role:'system',content:instruction(request.language,task,lastText,selectedProfile)},...history];
-  const options=generationConfig(selectedProfile,task);
+  const options=generationConfig(selectedProfile,task,deviceUsed,request.responseLength);
    const generationMax=options.max_new_tokens;
   let partial='',lastUpdate=0;
   if(TextStreamerClass){
