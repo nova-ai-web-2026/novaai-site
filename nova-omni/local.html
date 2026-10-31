@@ -599,6 +599,20 @@ function renderSessions(){
   row.append(button,del);list.append(row);
  }
 }
+function renderTrustedSourceLinks(parent,content){
+ // Plain text and anchors only: never insert HTML returned from search APIs.
+ const pattern=/(https:\/\/(?:ar\.wikipedia\.org|en\.wikipedia\.org|doi\.org)\/[^\s]+)/g;
+ let start=0,match;
+ while((match=pattern.exec(content))!==null){
+  parent.append(document.createTextNode(content.slice(start,match.index)));
+  const anchor=document.createElement('a');
+  anchor.className='instantLink';anchor.href=match[0];
+  anchor.target='_blank';anchor.rel='noopener noreferrer';
+  anchor.textContent=match[0];parent.append(anchor);
+  start=match.index+match[0].length;
+ }
+ parent.append(document.createTextNode(content.slice(start)));
+}
 function buildMessage(entry,typing=false){
  const row=document.createElement('div');
  row.className='message '+(entry.role==='user'?'user':'ai')+(typing?' typing':'');
@@ -607,7 +621,10 @@ function buildMessage(entry,typing=false){
  avatar.setAttribute('aria-hidden','true');
  const bubble=document.createElement('div');bubble.className='bubble '+(entry.role==='user'?'user':'ai');
  const title=document.createElement('b');title.textContent=entry.role==='user'?'You':'NOVA Local';
- const body=document.createElement('div');body.textContent=typing?'جاري تجهيز الرد…':entry.content;body.dir='auto';
+ const body=document.createElement('div');body.dir='auto';
+ if(!typing&&entry.role==='assistant'&&/https:\/\/(?:ar\.wikipedia\.org|en\.wikipedia\.org|doi\.org)\//.test(entry.content)){
+  renderTrustedSourceLinks(body,entry.content);
+ }else body.textContent=typing?'جاري تجهيز الرد…':entry.content;
  bubble.append(title,body);
  if(!typing&&entry.role==='assistant'){
   const actions=document.createElement('div');actions.className='messageActions';
@@ -886,9 +903,47 @@ $('stop').addEventListener('click',()=>{
  try{sessionStorage.setItem('nova_no_autowarm','1');}catch(e){}
  stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
 });
+async function sendInstant(message,mode){
+ if(generating)return;
+ const requestId=++instantRequestId;
+ generating=true;doingInstant=true;pending=message;
+ $('cancelReply').hidden=false;
+ $('send').disabled=true;$('prompt').disabled=true;
+ syncActions();notice('');
+ showPending(message);
+ const indicator=$('typingIndicator');
+ if(indicator){
+  const label=indicator.querySelector('.bubble > div:not(.messageActions)');
+  if(label)label.textContent=mode==='research'?'ببحث في مصادر حقيقية…':'بجهّز قالب فوري…';
+ }
+ try{
+  const result=await globalThis.NovaInstant.perform(message,mode,{language:$('language').value});
+  if(requestId!==instantRequestId)return;
+  addAnswer(message,String(result.text||''));
+  $('prompt').value='';
+  state(result.network?'نتائج بحث فعلية من مصادر عامة':'قالب فوري محلي',ready?'ready':'instant');
+  notice('');
+ }catch(error){
+  if(requestId!==instantRequestId)return;
+  display();
+  notice('معرفتش أكمل المهمة: '+String(error?.message||'خطأ غير معروف').slice(0,250)+' — سؤالك محفوظ. جرّب تاني.');
+  state('مساعدة مطلوبة','error');
+ }finally{
+  if(requestId===instantRequestId){
+   generating=false;doingInstant=false;pending=null;
+   $('prompt').disabled=false;$('cancelReply').hidden=true;
+   syncActions();
+  }
+ }
+}
 function send(){
  if(generating)return;
  const message=$('prompt').value.trim();if(!message)return;
+ const mode=instantModeFor(message);
+ if(mode&&globalThis.NovaInstant?.isInstant?.(message,mode)){
+  void sendInstant(message,mode);
+  return;
+ }
  const arithmetic=globalThis.NovaLocalMath?.tryArithmetic?.(message);
  if(arithmetic){
   const arabic=$('language').value.startsWith('ar')||/[\u0600-\u06FF]/.test(message);
@@ -931,6 +986,12 @@ function send(){
  });
 }
 $('cancelReply').addEventListener('click',()=>{
+ if(doingInstant){
+  instantRequestId++;doingInstant=false;generating=false;pending=null;
+  $('cancelReply').hidden=true;$('prompt').disabled=false;
+  display();syncActions();notice('تم إلغاء المهمة الفورية؛ سؤالك لسه في صندوق الكتابة.');
+  return;
+ }
  if(loading&&!ready&&queuedQuestion){
   queuedQuestion=null;$('cancelReply').hidden=true;
   refreshSend();
