@@ -130,10 +130,13 @@ async function init(request){
     hasFP16=!!adapter?.features?.has('shader-f16');
    }catch(e){hasGPU=false;}
   }
-  const device=hasGPU?'webgpu':'wasm';
-  // Q4f16 is smaller/faster when supported by WebGPU. Do not download both
-  // GPU and CPU variants automatically — that may consume extra mobile data.
-  const dtype=hasGPU&&hasFP16?'q4f16':'q4';
+  // These particular ONNX repositories have unusually large q4 CPU files:
+  // Qwen3 q4=919MB vs q8=618MB; Qwen2.5 q4=786MB vs q8=512MB.
+  // Prefer smaller q8 CPU files (often more accurate, too), and q4f16
+  // only on GPUs explicitly supporting shader-f16. Never fetch both variants.
+  const fp16WebGPU=hasGPU&&hasFP16;
+  const device=fp16WebGPU?'webgpu':'wasm';
+  const dtype=fp16WebGPU?'q4f16':'q8';
   send('status',{phase:'model',model:model.id,device,dtype,text:'Preparing '+model.name+' locally'});
   let lastEmit=-1;
   generator=await pipeline('text-generation',model.id,{
