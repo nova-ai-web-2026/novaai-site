@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.7.0">
+<meta name="nova-local-version" content="2.8.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -422,7 +422,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
-let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null;
+let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null,lastModelActivity=0;
 let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
 const MODEL_CONSENT='nova_local_download_consent_v1';
@@ -531,7 +531,7 @@ function refreshSend(){
  const candidate=$('prompt').value.trim();
  const arithmetic=Boolean(globalThis.NovaLocalMath?.tryArithmetic?.(candidate));
  const quickSummary=Boolean(globalThis.NovaLocalTasks?.tryQuickSummary?.(candidate,$('taskMode').value));
- $('send').disabled=generating||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary);
+ $('send').disabled=generating||Boolean(queuedQuestion)||!candidate||(!ready&&!loading&&!arithmetic&&!quickSummary);
 }
 function syncActions(){
  const exists=Boolean(current())&&history.length>0;
@@ -688,7 +688,7 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
- if(loadDeadlineTimer){clearTimeout(loadDeadlineTimer);loadDeadlineTimer=null;}
+ if(loadDeadlineTimer){clearInterval(loadDeadlineTimer);loadDeadlineTimer=null;}
  $('modelHelp').hidden=true;$('loadAssist').hidden=true;
 }
 function showModelHelp(explanation){
@@ -697,29 +697,36 @@ function showModelHelp(explanation){
 }
 function scheduleModelHelp(){
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
- if(loadDeadlineTimer)clearTimeout(loadDeadlineTimer);
+ if(loadDeadlineTimer)clearInterval(loadDeadlineTimer);
  loadHelpTimer=setTimeout(()=>{
   loadHelpTimer=null;
-  if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز. لو التحميل علق أو الجهاز بطيء، جرّب Fast أو Lite. تغيير النموذج ممكن يحتاج تنزيلًا جديدًا.');
- },24000);
- loadDeadlineTimer=setTimeout(()=>{
-  loadDeadlineTimer=null;
-  if(loading&&!ready){
-   stop('التجهيز طول عن الحد المناسب. جرّب Fast أو Lite، أو أعد المحاولة على Wi-Fi.');
-   showModelHelp('انتهت محاولة تجهيز النموذج بعد دقيقتين ونصف. ممكن تكون الشبكة بطيئة أو ذاكرة الجهاز مش كافية. جرّب نموذجًا أخف.');
-   notice('NOVA مش قادر يجهز النموذج حاليًا. اختار Fast أو Lite، أو أعد المحاولة.');
+  if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز على جهازك. لو عايز تجربة أخف، اختار Lite؛ التحويل ممكن يحتاج تحميل جديد.');
+ },18000);
+ // Allow downloads longer than 150 seconds if real model progress continues.
+ loadDeadlineTimer=setInterval(()=>{
+  if(!loading||ready)return;
+  if(Date.now()-lastModelActivity>=120000){
+   stop('التجهيز ما أظهرش أي تقدم لمدة دقيقتين. جرّب Lite أو إعادة المحاولة.');
+   showModelHelp('التشغيل اتوقف بعد دقيقتين من عدم وجود تقدم. سؤالك مازال محفوظ.');
+   notice('NOVA محتاج إعادة المحاولة أو نسخة أخف. سؤالك في صندوق الكتابة.');
   }
- },150000);
+ },10000);
 }
 function pickFallback(profile){
  const next=profile==='fast'?'fast':'lite';
  const label=next==='fast'?'Fast (Qwen2.5 0.5B)':'Lite (SmolLM2 135M)';
  if(!confirm('التبديل إلى '+label+'؟ ده ممكن يحتاج تحميل ملفات نموذج جديد واستهلاك بيانات إضافية.'))return;
- stop('تم إيقاف النموذج السابق لتغيير الاختيار.');
+ const previousQueuedQuestion=queuedQuestion;
+  stop('تم إيقاف النموذج السابق لتغيير الاختيار.');
  $('profile').value=next;
  try{localStorage.setItem('nova_local_profile',next);}catch(e){}
  startModel('fallback');
-}
+  if(previousQueuedQuestion&&loading){
+   queuedQuestion=previousQueuedQuestion;
+   refreshSend();
+   notice('السؤال محفوظ وهيتبعت تلقائيًا بعد تجهيز النموذج الجديد.');
+  }
+ }
 $('tryFast').addEventListener('click',()=>pickFallback('fast'));
 $('tryLite').addEventListener('click',()=>pickFallback('lite'));
 $('loadAssistFast').addEventListener('click',()=>pickFallback('fast'));
@@ -749,7 +756,7 @@ $('textFile').addEventListener('change',async()=>{
 
 function stop(text){
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
- if(loadDeadlineTimer)clearTimeout(loadDeadlineTimer);
+ if(loadDeadlineTimer)clearInterval(loadDeadlineTimer);
  loadHelpTimer=null;loadDeadlineTimer=null;
  $('cancelReply').hidden=true;
  if(worker)worker.terminate();
@@ -771,17 +778,18 @@ function startModel(source='manual'){
      !confirm('توافق على تحميل وتشغيل '+label+' على جهازك؟ أول تحميل قد يستهلك مئات الميجابايت وقد يُحسب على باقتك.'))return;
   rememberConsent('granted');
  }
- loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
+ loading=true;lastModelActivity=Date.now();$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
  hideModelHelp();scheduleModelHelp();
  notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
-  worker=new Worker(new URL('./local-ai-worker.js?v=2.7.0',location.href),{type:'module'});
+  worker=new Worker(new URL('./local-ai-worker.js?v=2.8.0',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
+    if(loading&&['status','progress','ready','error'].includes(data.type))lastModelActivity=Date.now();
    if(data.type==='status')state('NOVA محلي',generating?'working':'loading');
    else if(data.type==='progress'){
     const progress=Math.max(0,Math.min(100,Number(data.progress)||0));
-    $('progress').style.display='block';$('progress').value=progress;
+    $('progress').value=progress; // visually hidden
     state('NOVA محلي','loading');
    }else if(data.type==='ready'){
     ready=true;loading=false;
@@ -797,7 +805,7 @@ function startModel(source='manual'){
      const visible=indicator.querySelector('.bubble > div:not(.messageActions)');
      if(visible&&data.text){
       indicator.querySelector('.bubble')?.classList.add('streaming');
-      visible.textContent=String(data.text).slice(0,2200);
+      visible.textContent=String(data.text).slice(0,4800);
       visible.dir='auto';
       $('chat').scrollTop=$('chat').scrollHeight;
      }
@@ -866,7 +874,7 @@ function send(){
   return;
  }
  if(loading&&!ready){
-  queuedQuestion=message;$('send').disabled=true;
+  queuedQuestion=message;refreshSend();
   $('cancelReply').hidden=false;
   notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');
   return;

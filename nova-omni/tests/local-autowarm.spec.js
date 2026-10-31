@@ -244,3 +244,53 @@ test('first-time visitor can consent to smaller Lite model directly from welcome
  expect(await page.evaluate(()=>localStorage.getItem('nova_local_download_consent_v1'))).toBe('granted');
  expect(popups).toBe(0);
 });
+
+test('active download may continue past 150 seconds without being killed, then answers queued prompt once',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  window.__workerCalls=[];
+  window.Worker=class{
+   constructor(){this.onmessage=null;window.__worker=this;}
+   postMessage(d){
+    window.__workerCalls.push(d);
+    if(d.type==='generate')queueMicrotask(()=>this.onmessage({data:{type:'answer',answer:'الرد وصل بعد التجهيز.',contextMessages:1}}));
+   }
+   terminate(){window.__terminated=(window.__terminated||0)+1;}
+  };
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#introEnter').click();
+ await page.locator('#prompt').fill('اشرح الطاقة الحركية');
+ await page.locator('#send').click();
+ await expect(page.locator('#send')).toBeDisabled();
+ for(let index=0;index<5;index++){
+  await page.clock.runFor(32000);
+  await page.evaluate(i=>window.__worker.onmessage({data:{type:'progress',progress:Math.min(99,(i+1)*14)}}),index);
+ }
+ expect(await page.evaluate(()=>window.__terminated||0)).toBe(0);
+ await expect(page.locator('#stop')).toBeEnabled();
+ await page.evaluate(()=>window.__worker.onmessage({data:{type:'ready',device:'wasm'}}));
+ await expect(page.locator('#chat')).toContainText('الرد وصل بعد التجهيز.');
+ const count=await page.evaluate(()=>window.__workerCalls.filter(x=>x.type==='generate').length);
+ expect(count).toBe(1);
+});
+test('truly stalled download stops with recovery options and never deletes the draft',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  window.__terminated=0;
+  window.Worker=class{
+   constructor(){this.onmessage=null;}
+   postMessage(){}
+   terminate(){window.__terminated++;}
+  };
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#introEnter').click();
+ await page.locator('#prompt').fill('محتاج مساعدة في خطة مذاكرة');
+ await page.locator('#send').click();
+ await page.clock.runFor(130000);
+ await expect(page.locator('#stop')).toBeDisabled();
+ await expect(page.locator('#modelHelp')).toBeVisible();
+ await expect(page.locator('#prompt')).toHaveValue('محتاج مساعدة في خطة مذاكرة');
+ expect(await page.evaluate(()=>window.__terminated)).toBe(1);
+});

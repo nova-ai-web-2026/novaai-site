@@ -1,4 +1,4 @@
-// NOVA OMNI Local v2.4 — on-device, no paid API or remote inference.
+// NOVA OMNI Local v2.8 — on-device, no paid API or remote inference.
 // Initiated only by the visitor's consent; memory and model profile are adjustable.
 const LIBRARY_URL='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1';
 const PROFILES=Object.freeze({
@@ -12,14 +12,14 @@ const MEMORY=Object.freeze({
  extended:{messages:18,characters:12000}
 });
 const TASK_INSTRUCTIONS=Object.freeze({
- general:'Understand the user request first. Answer directly, without generic filler or repeating the question. If ambiguous, make one reasonable assumption and state it.',
- explain:'Explain the concept clearly. Give a short definition, 2 or 3 logically ordered steps, and one correct simple example. Avoid unnecessary technical jargon.',
- writing:'Produce a finished, naturally worded draft ready to copy. Follow the desired tone and purpose; avoid generic introductions, invented facts, and repetitive sentences.',
- coding:'Provide short runnable code when practical, show how to use it, and point out any assumptions. Do not pretend code was tested. Never invent APIs, files or external access.',
- planning:'Give an actionable plan of realistic, ordered steps with what to do first and how to check progress. Avoid vague advice.',
- summarise:'Summarise ONLY text supplied by the user in this conversation. Keep key facts and distinctions. Never invent unseen material.',
- translate:'Translate the user-provided text faithfully into the requested language, preserving meaning and tone; avoid extra commentary.',
- study:'Act as a patient tutor. Explain how to solve the task, show working and verify each step. Admit uncertainty instead of guessing results.'
+ general:'Answer the latest question directly, using earlier chat to understand references. Cover each requested part; never invent facts.',
+ explain:'Give a clear definition, explain why it works and show a correct small example. Address the exact step asked.',
+ writing:'Produce a complete copy-ready draft in the requested tone and language. Preserve supplied facts without adding imaginary details.',
+ coding:'Provide useful concise code, a usage note and important assumptions. Never claim external access or that code was run.',
+ planning:'Provide practical ordered actions, constraints and a way to check results.',
+ summarise:'Summarise only user-provided source text. Preserve key numbers, names and distinctions; never invent unseen content.',
+ translate:'Translate into the requested language faithfully, preserving meaning, names and tone without extra commentary.',
+ study:'Identify givens and the question, choose the right rule, show substitution and reasoning and verify results.'
 });
 let generator=null,selectedProfile=null,deviceUsed='',initializing=false,generating=false,TextStreamerClass=null;
 let lastLoadActivity=0;
@@ -27,14 +27,14 @@ const send=(type,detail={})=>self.postMessage({type,...detail});
 const profileFor=name=>PROFILES[name]||PROFILES.balanced;
 const memoryFor=name=>MEMORY[name]||MEMORY.balanced;
 function detectTask(text){
- const s=String(text||'').trim().toLowerCase();
- if(/(?:^|\s)(?:ترجم|translate|translation|ترجمة)(?:\s|$)/i.test(s))return 'translate';
- if(/(?:^|\s)(?:لخص|لخّص|تلخيص|summari[sz]e|summary)(?:\s|$)/i.test(s))return 'summarise';
- if(/(?:^|\s)(?:كود|برمجة|برمج|python|javascript|html|code|program|debug)(?:\s|$)/i.test(s))return 'coding';
- if(/(?:^|\s)(?:اشرح|فسر|شرح|explain|what does|how does)(?:\s|$)/i.test(s))return 'explain';
- if(/(?:^|\s)(?:خطة|خطوات|رتب|plan|roadmap)(?:\s|$)/i.test(s))return 'planning';
- if(/(?:^|\s)(?:اكتب|صياغة|رسالة|إيميل|email|draft|rewrite|write)(?:\s|$)/i.test(s))return 'writing';
- if(/(?:^|\s)(?:حل|مسألة|سؤال|واجب|رياضيات|calculate|solve|proof)(?:\s|$)/i.test(s))return 'study';
+ const s=String(text||'').trim().toLowerCase().replace(/^(?:(?:لو سمحت|من فضلك|ممكن|عايزك|عايز|please|could you|can you|i need you to)\s*[,،]?\s*)+/iu,'');
+ if(/^(?:ترجم|تترجم|ترجمة|translate|translation)/iu.test(s))return 'translate';
+ if(/^(?:لخّص|لخص|تلخص|تلخيص|summari[sz]e|summary)/iu.test(s))return 'summarise';
+ if(/^(?:اكتب كود|تكتب كود|برمج|تصلح الكود|صلح الكود|صحح الكود|debug|fix (?:this|my) code|write (?:a )?(?:script|program|function)|code|python|javascript)/iu.test(s))return 'coding';
+ if(/^(?:حل|تحل|مسألة|سؤال رياضيات|اثبت|برهن|solve|prove|work out|how (?:do|can) i solve)/iu.test(s))return 'study';
+ if(/^(?:اشرح|تشرح|فسر|تفهمني|وضح|توضح|ليه|لماذا|ما معنى|explain|what (?:does|is|are)|how (?:does|do|is))/iu.test(s))return 'explain';
+ if(/^(?:خطة|خطوات|رتب|اعمل خطة|تعمل خطة|plan|roadmap|step.by.step)/iu.test(s))return 'planning';
+ if(/^(?:اكتب|تكتب|صياغة|رسالة|إيميل|email|draft|rewrite|write|polish|عدّل النص|حسن النص)/iu.test(s))return 'writing';
  return 'general';
 }
 function resolvedTask(task,text){
@@ -44,15 +44,15 @@ function instruction(language,task,lastText,profile){
  const arabicLast=/[\u0600-\u06ff]/.test(lastText);
  const arabic=['ar','ar-eg'].includes(language)||(language==='auto'&&arabicLast);
  const ArabicTasks={
-  general:'افهم الطلب وجاوب عليه مباشرة من غير كلام زيادة أو تكرار السؤال.',
-  explain:'اشرح الفكرة بتعريف واضح وسبب بسيط أو مثال صحيح. خلّي الشرح مرتب وسهل.',
-  study:'حل خطوة خطوة مع القانون أو السبب. راجع النتيجة، ولو مش متأكد وضّح ده.',
-  writing:'اكتب النص المطلوب كاملًا وجاهزًا للنسخ، بأسلوب طبيعي حسب طلب المستخدم.',
-  coding:'اكتب كودًا صغيرًا مفهومًا، واذكر طريقة تشغيله. لا تدّعي أنك نفذته أو اختبرته.',
-  planning:'اكتب خطوات عملية بالترتيب، ووضّح أول خطوة يمكن تنفيذها.',
-  summarise:'لخّص النص الموجود في رسالة المستخدم فقط، في نقاط قصيرة، من غير اختراع تفاصيل.',
-  translate:'ترجم النص بأمانة للغة المطلوبة، وحافظ على المعنى والأسلوب بدون شرح إضافي.'
- };
+   general:'جاوب مباشرة، واستخدم السياق السابق لفهم المتابعة وغطّي كل جزء من السؤال.',
+   explain:'ابدأ بتعريف صغير واشرح السبب بمثال، ولو السؤال عن خطوة معينة ركّز عليها.',
+   study:'حدّد المعطيات والمطلوب، واختار القانون، وحل خطوة خطوة وراجع الإجابة.',
+   writing:'اكتب النص كاملًا جاهزًا للنسخ بالنبرة المطلوبة، من غير اختراع تفاصيل.',
+   coding:'اكتب كودًا صغيرًا مفهومًا واذكر طريقة تشغيله والافتراضات. لا تدّعي أنك نفذته أو اختبرته.',
+   planning:'اكتب خطوات عملية بترتيب واضح وأول خطوة قابلة للتنفيذ، مش نصايح عامة.',
+   summarise:'لخّص النص الموجود فقط مع الحفاظ على الأرقام والأسماء، ومتخترعش معلومات.',
+   translate:'ترجم بأمانة للغة المطلوبة، وحافظ على المعنى والأسلوب بدون شرح إضافي.'
+  };
  if(arabic){
   const dialect=language==='ar-eg'||(language==='auto'&&arabicLast)?
    'اتكلم بالمصري الطبيعي الواضح، إلا لو المستخدم طلب لغة تانية.':'اكتب بالعربية الواضحة إلا لو طُلب غيرها.';
@@ -60,7 +60,7 @@ function instruction(language,task,lastText,profile){
   return [
    'أنت NOVA، مساعد ذكاء اصطناعي صغير على جهاز المستخدم، بدون اتصال بحث أو أدوات خارجية.',
    'ركّز على السؤال الحقيقي. لا تخترع معلومات أو نتائج، ولو مش عارف قول مش متأكد.',
-   'خلي الرد مباشر ومفيد وتجنب التكرار والجمل غير المفهومة.',
+   'جاوب كل الأجزاء المطلوبة من غير تكرار، واربط سؤال المتابعة بالرسائل السابقة.',
    translate,ArabicTasks[task]||ArabicTasks.general,
    profile==='lite'?'لأن النموذج صغير جدًا، استخدم إجابة قصيرة وواضحة.':''
   ].filter(Boolean).join('\n');
@@ -75,7 +75,7 @@ function instruction(language,task,lastText,profile){
   'Reply in the language of the latest user request.';
  return [
   'You are NOVA, a small local assistant with no access to browsing or other apps.',
-  'Focus only on the actual request. Be clear, accurate, direct and avoid repetition.',
+  'Use earlier chat for follow-ups. Answer directly, cover all parts and avoid filler or repetition.',
   'If uncertain, say so. Never invent sources or claim you executed code or actions.',
   output,TASK_INSTRUCTIONS[task]||TASK_INSTRUCTIONS.general
  ].join('\n');
@@ -113,13 +113,21 @@ function isRepetitive(s){
 }
 function trimRepeats(text){
  const parts=String(text).split(/(?<=[.!?؟])\s+/u);
- if(parts.length<3)return text;
+ if(parts.length<2)return text;
  const result=[];
  for(const part of parts){
   if(part.trim().length>7&&result.length&&part.trim().toLocaleLowerCase()===result.at(-1).trim().toLocaleLowerCase())continue;
   result.push(part);
  }
  return result.join(' ').trim();
+}
+function generationConfig(profile,task){
+ const baseline=profileFor(profile).maxTokens;
+ const boost=['study','coding','planning','writing'].includes(task)?75:task==='explain'?40:0;
+ const analytical=['study','coding','translate','summarise'].includes(task);
+ return {max_new_tokens:Math.min(340,baseline+boost),do_sample:true,
+  temperature:profile==='lite'?0.68:analytical?0.44:task==='writing'?0.66:0.57,
+  top_p:analytical?0.82:0.88,top_k:20,repetition_penalty:1.16};
 }
 function runtimeFor(profile,hasGPU,hasFP16){
  if(hasGPU&&hasFP16)return {device:'webgpu',dtype:'q4f16'};
@@ -195,13 +203,8 @@ async function generate(request){
   const task=resolvedTask(request.task,lastText);
   if(selectedProfile==='balanced')history.at(-1).content+='\n/no_think';
   const messages=[{role:'system',content:instruction(request.language,task,lastText,selectedProfile)},...history];
-  const generationMax=Math.min(320,profileFor(selectedProfile).maxTokens+
-   (['coding','writing','planning','study'].includes(task)?55:0));
-  const options={
-   max_new_tokens:generationMax,do_sample:true,
-   temperature:selectedProfile==='lite'?0.8:0.7,
-   top_p:selectedProfile==='lite'?0.88:0.8,top_k:20,repetition_penalty:1.14
-  };
+  const options=generationConfig(selectedProfile,task);
+   const generationMax=options.max_new_tokens;
   let partial='',lastUpdate=0;
   if(TextStreamerClass){
    options.streamer=new TextStreamerClass(generator.tokenizer,{
@@ -209,10 +212,10 @@ async function generate(request){
     callback_function:text=>{
      partial+=String(text||'');
      const now=Date.now();
-     if(now-lastUpdate<150||partial.length>1600)return;
+     if(now-lastUpdate<140||partial.length>5000)return;
      lastUpdate=now;
      const visible=cleanResponse(partial,history.at(-1).content);
-     if(visible)send('partial',{text:visible.slice(0,1700)});
+     if(visible)send('partial',{text:visible.slice(0,4800)});
     }
    });
   }
@@ -220,7 +223,16 @@ async function generate(request){
   const result=await generator(messages,options);
   let answer=trimRepeats(cleanResponse(result?.[0]?.generated_text,history.at(-1).content));
   if(!answer)throw Error('The local model returned no usable answer. Try a shorter question or a different profile.');
-  if(isRepetitive(answer))send('status',{phase:'quality',text:'Answer may contain repetition; smaller models have limits.'});
+  // Only repetitive drafts incur one bounded extra inference; ordinary answers stay fast.
+   if(isRepetitive(answer)&&selectedProfile!=='lite'){
+    send('status',{phase:'quality',text:'Improving a repetitive answer locally…'});
+    try{
+     const retry=await generator(messages,{...options,streamer:undefined,
+      max_new_tokens:Math.min(175,generationMax),temperature:0.4,repetition_penalty:1.28});
+     const revised=trimRepeats(cleanResponse(retry?.[0]?.generated_text,history.at(-1).content));
+     if(revised&&!isRepetitive(revised))answer=revised;
+    }catch(e){/* keep original draft if repair fails */}
+   }
   send('answer',{answer,task,model:profileFor(selectedProfile).id,contextMessages:history.length});
  }catch(error){
   send('error',{stage:'chat',message:String(error?.message||error).slice(0,330)});

@@ -29,7 +29,7 @@ const workerSource=fs.readFileSync(path.join(__dirname,'../local-ai-worker.js'),
 const mockSelf={postMessage(){}};
 const sandbox={self:mockSelf,console};
 vm.runInNewContext(workerSource+
- '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor,detectTask,resolvedTask,instruction,trimRepeats,runtimeFor};',sandbox,{filename:'local-ai-worker.js'});
+ '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor,detectTask,resolvedTask,instruction,trimRepeats,runtimeFor,generationConfig};',sandbox,{filename:'local-ai-worker.js'});
 const helpers=mockSelf.__testing;
 
 test('balanced memory uses up to 14 messages and 9000 characters',()=>{
@@ -111,4 +111,29 @@ test('Fast and Lite use smaller q8 CPU; Smart uses q4 CPU and q4f16 GPU',()=>{
  assert.equal(helpers.runtimeFor('fast',true,false).dtype,'q8');
  assert.equal(helpers.runtimeFor('balanced',true,true).device,'webgpu');
  assert.equal(helpers.runtimeFor('balanced',true,true).dtype,'q4f16');
+});
+
+test('NOVA recognises politely phrased Arabic and English tasks',()=>{
+ assert.equal(helpers.detectTask('ممكن تشرح قانون نيوتن؟'),'explain');
+ assert.equal(helpers.detectTask('عايزك تكتب إيميل رسمي'),'writing');
+ assert.equal(helpers.detectTask('لو سمحت حل المسألة'),'study');
+ assert.equal(helpers.detectTask('Could you translate this to French?'),'translate');
+ assert.equal(helpers.detectTask('Please write a program to sort names'),'coding');
+});
+test('study and coding generation use more careful settings than casual chat',()=>{
+ const general=helpers.generationConfig('fast','general');
+ const study=helpers.generationConfig('fast','study');
+ const coding=helpers.generationConfig('fast','coding');
+ assert.ok(study.max_new_tokens>general.max_new_tokens);
+ assert.ok(coding.temperature<general.temperature);
+ assert.ok(study.repetition_penalty>=1.15);
+ assert.ok(study.max_new_tokens<=340);
+});
+test('multilingual prompts prioritise context, completeness and honesty',()=>{
+ const arabic=helpers.instruction('ar-eg','study','حل المسألة دي','fast');
+ assert.match(arabic,/السياق السابق|الرسائل السابقة/);
+ assert.match(arabic,/القانون/);
+ const english=helpers.instruction('en','planning','Plan my project','fast');
+ assert.match(english,/earlier chat/);
+ assert.match(english,/Never invent|never invent|If uncertain/);
 });
