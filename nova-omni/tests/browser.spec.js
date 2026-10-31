@@ -8,6 +8,7 @@ test.beforeEach(async({page})=>{
  await page.addInitScript(()=>{
   sessionStorage.setItem('nova_intro_seen','1');
   sessionStorage.setItem('nova_no_autowarm','1');
+  localStorage.setItem('nova_local_download_consent_v1','declined');
  });
 });
 
