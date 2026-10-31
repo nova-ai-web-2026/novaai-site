@@ -624,6 +624,98 @@ test('ordinary questions without a loaded local AI cannot be submitted',async({p
  await expect(page.locator('#prompt')).toHaveValue('اشرح لي الثقوب السوداء');
 });
 
+
+test('first-time mobile visitor receives Fast Qwen2.5 profile with balanced memory',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'userAgent',{configurable:true,get:()=> 'Mozilla/5.0 (Linux; Android 16) Mobile Chrome/141'});
+  localStorage.removeItem('nova_local_profile');
+ });
+ await page.setViewportSize({width:390,height:844});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#profile')).toHaveValue('fast');
+ await expect(page.locator('#memory')).toHaveValue('balanced');
+ await expect(page.locator('#taskMode')).toHaveValue('auto');
+});
+test('task mode is sent to local model and streamed response is displayed progressively',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   postMessage(data){
+    window.__taskRequests??=[];
+    window.__taskRequests.push(data);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+    if(data.type==='generate'){
+     queueMicrotask(()=>this.onmessage({data:{type:'partial',text:'خطوة أولى: جهز البيانات'}}));
+     setTimeout(()=>this.onmessage({data:{type:'answer',answer:'خطوة أولى: جهز البيانات. خطوة ثانية: اكتب الكود.',contextMessages:1,task:'coding'}}),500);
+    }
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ await page.locator('#taskMode').selectOption('coding');
+ await page.locator('#prompt').fill('اكتب برنامج بسيط');
+ await page.locator('#send').click();
+ await expect(page.locator('#typingIndicator')).toContainText('جهز البيانات');
+ await expect(page.locator('.bubble.ai')).toContainText('خطوة ثانية');
+ const calls=await page.evaluate(()=>window.__taskRequests);
+ expect(calls.find(x=>x.type==='generate').task).toBe('coding');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('#taskMode')).toHaveValue('coding');
+});
+test('text file attachment stays local and selects summarising mode',async({page})=>{
+ let external=0;
+ page.on('request',r=>{if(/ai-gateway|api\/omni/.test(r.url()))external++;});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#textFile').setInputFiles({name:'lesson-notes.txt',mimeType:'text/plain',buffer:Buffer.from('The Sun is a star. Earth orbits around the Sun.')});
+ await expect(page.locator('#taskMode')).toHaveValue('summarise');
+ await expect(page.locator('#prompt')).toContainText('The Sun is a star');
+ await expect(page.locator('#notice')).toContainText('محليًا');
+ expect(external).toBe(0);
+});
+test('model failure offers a confirmed switch to faster model',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__workers=[];
+  class MockWorker{
+   constructor(){window.__workers.push(this);this.onmessage=null;}
+   postMessage(data){
+    if(data.type==='init'){
+     if(data.profile==='balanced')queueMicrotask(()=>this.onmessage({data:{type:'error',stage:'load',message:'Model download failed'}}));
+     else queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm',profile:data.profile}}));
+    }
+   }
+   terminate(){}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#modelHelp')).toBeVisible();
+ await expect(page.locator('#loadAssist')).toBeVisible();
+ await page.locator('#tryFast').click();
+ await expect(page.locator('#profile')).toHaveValue('fast');
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ expect(await page.evaluate(()=>window.__workers.length)).toBe(2);
+});
+test('long local-model start reveals actionable alternatives without percentages',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  window.Worker=class{postMessage(){}terminate(){}};
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#loadAssist')).toBeHidden();
+ await page.clock.fastForward(25000);
+ await expect(page.locator('#loadAssist')).toBeVisible();
+ await expect(page.locator('#loadAssistFast')).toBeEnabled();
+ await expect(page.locator('#progress')).toBeHidden();
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
