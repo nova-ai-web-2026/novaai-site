@@ -137,3 +137,21 @@ test('multilingual prompts prioritise context, completeness and honesty',()=>{
  assert.match(english,/earlier chat/);
  assert.match(english,/Never invent|never invent|If uncertain/);
 });
+
+test('CPU fast default caps generation length to avoid multi-minute responses',()=>{
+ const fastQuick=helpers.generationConfig('fast','explain','wasm','quick');
+ const fastNormal=helpers.generationConfig('fast','explain','wasm','normal');
+ const fastLong=helpers.generationConfig('fast','explain','wasm','detailed');
+ assert.ok(fastQuick.max_new_tokens<=52);
+ assert.ok(fastQuick.max_new_tokens<fastNormal.max_new_tokens);
+ assert.ok(fastNormal.max_new_tokens<fastLong.max_new_tokens);
+ assert.ok(helpers.generationConfig('fast','coding','wasm','quick').max_new_tokens<=88);
+ assert.ok(helpers.generationConfig('fast','study','wasm','normal').max_new_tokens>
+  helpers.generationConfig('fast','explain','wasm','normal').max_new_tokens);
+});
+test('GPU still offers longer requested outputs when explicitly selected',()=>{
+ const quick=helpers.generationConfig('balanced','writing','webgpu','quick');
+ const detailed=helpers.generationConfig('balanced','writing','webgpu','detailed');
+ assert.ok(detailed.max_new_tokens>quick.max_new_tokens);
+ assert.ok(detailed.max_new_tokens<=340);
+});
