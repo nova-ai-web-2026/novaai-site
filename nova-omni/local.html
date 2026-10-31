@@ -642,7 +642,7 @@ function startModel(source='manual'){
     notice('');
    }else if(data.type==='error'){
     const error='Local AI error: '+String(data.message||'غير متاح').slice(0,280);
-    if(data.stage==='load'){stop(error+' · جرّب Lite.');}
+    if(data.stage==='load'){stop(error+' · جرّب Lite.');introStatus('تعذر التحميل. ممكن تجرب Lite أو تدخل من غير تحميل.');}
     else{
      generating=false;pending=null;
      $('prompt').disabled=false;refreshSend();
@@ -654,6 +654,7 @@ function startModel(source='manual'){
   };
   worker.onerror=()=>{
    stop('Local AI error: النموذج ما اشتغلش. جرّب Lite أو متصفح أحدث.');
+   introStatus('تعذر تشغيل النموذج. تقدر تجرب وضع Lite.');
    notice('حصلت مشكلة أثناء تشغيل النموذج. راجع الإنترنت أو جرّب الوضع الأخف.');
   };
   worker.postMessage({type:'init',profile:$('profile').value});
