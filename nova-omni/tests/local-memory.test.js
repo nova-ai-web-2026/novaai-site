@@ -29,7 +29,7 @@ const workerSource=fs.readFileSync(path.join(__dirname,'../local-ai-worker.js'),
 const mockSelf={postMessage(){}};
 const sandbox={self:mockSelf,console};
 vm.runInNewContext(workerSource+
- '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor};',sandbox,{filename:'local-ai-worker.js'});
+ '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor,detectTask,resolvedTask,instruction,trimRepeats};',sandbox,{filename:'local-ai-worker.js'});
 const helpers=mockSelf.__testing;
 
 test('balanced memory uses up to 14 messages and 9000 characters',()=>{
@@ -57,4 +57,48 @@ test('worker does not preload models without an explicit init command',()=>{
 test('repetition detection catches repeated phrases in Arabic',()=>{
  assert.equal(helpers.isRepetitive('اهلا يا معلم ازيك النهارده اهلا يا معلم ازيك النهارده اهلا يا معلم ازيك النهارده'),true);
  assert.equal(helpers.isRepetitive('This is a normal helpful sentence that contains several different words with no repeated segments'),false);
+});
+
+
+test('fast multilingual Qwen2.5 profile exists alongside smart and light models',()=>{
+ assert.equal(helpers.profileFor('balanced').id,'onnx-community/Qwen3-0.6B-ONNX');
+ assert.equal(helpers.profileFor('fast').id,'onnx-community/Qwen2.5-0.5B-Instruct');
+ assert.equal(helpers.profileFor('lite').id,'onnx-community/SmolLM2-135M-Instruct-ONNX');
+});
+test('task router recognizes Arabic and English coding, writing, studying, and summarising',()=>{
+ assert.equal(helpers.detectTask('اشرح الكهرباء ببساطة'),'explain');
+ assert.equal(helpers.detectTask('اكتب كود Python'),'coding');
+ assert.equal(helpers.detectTask('لخص هذا النص'),'summarise');
+ assert.equal(helpers.detectTask('اكتب إيميل رسمي'),'writing');
+ assert.equal(helpers.detectTask('حل مسألة في الرياضيات'),'study');
+ assert.equal(helpers.detectTask('Translate this into Arabic'),'translate');
+ assert.equal(helpers.detectTask('help me today'),'general');
+});
+test('explicit task mode overrides automatic detection',()=>{
+ assert.equal(helpers.resolvedTask('coding','اشرح الفكرة'),'coding');
+ assert.equal(helpers.resolvedTask('auto','اشرح الفكرة'),'explain');
+});
+test('task prompt is tailored, multilingual, and avoids unverified claims',()=>{
+ const text=helpers.instruction('ar-eg','coding','اكتب برنامج','fast');
+ assert.match(text,/Egyptian Arabic/);
+ assert.match(text,/runnable code/);
+ assert.match(text,/Never invent/);
+ const summary=helpers.instruction('auto','summarise','لخص النص','balanced');
+ assert.match(summary,/ONLY text supplied/);
+ assert.match(summary,/Arabic/);
+});
+test('balanced memory preserves longer last user task while respecting context cap',()=>{
+ const history=Array.from({length:15},(_,i)=>({role:i%2?'assistant':'user',content:'توضيح '.repeat(100)}));
+ history.push({role:'user',content:'اشرح '+('كيف أبدأ العمل. '.repeat(210))});
+ const context=helpers.prepareHistory(history,'balanced');
+ assert.equal(context.at(-1).role,'user');
+ assert.ok(context.at(-1).content.length>2200);
+ assert.ok(context.reduce((sum,x)=>sum+x.content.length,0)<=9000);
+ assert.ok(context.length<=14);
+});
+test('repetition cleanup removes exact adjacent duplicate sentences but preserves content',()=>{
+ const answer=helpers.trimRepeats('أهلاً بك. أهلاً بك. هنا شرح واضح. هنا شرح واضح. مثال مختلف.');
+ assert.match(answer,/مثال مختلف/);
+ assert.equal((answer.match(/أهلاً بك/g)||[]).length,1);
+ assert.equal((answer.match(/هنا شرح واضح/g)||[]).length,1);
 });
