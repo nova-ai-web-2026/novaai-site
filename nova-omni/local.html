@@ -204,6 +204,12 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 @media(prefers-reduced-motion:reduce){.introEnter{transition:none!important}}
 
 /* v2.4 — task-aware assistant + clear recovery from slow/failed model startup */
+.loadAssist[hidden]{display:none!important}
+.loadAssist{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:#211f32;border:1px solid #554c78;color:#d7d1e8;border-radius:11px;padding:9px 11px;font-size:11px;margin:0 0 10px}
+.loadAssist span{flex:1;min-width:125px}
+.loadAssist button{border:1px solid #74649e;background:#3a3356;color:#f1eaff;border-radius:8px;padding:6px 9px;font-size:11px}
+.loadAssist button:hover{background:#4a3e69}
+
 .taskLine{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px;min-height:35px}
 .taskLine label{font-size:11px;color:#a4b0c3;white-space:nowrap}
 .taskLine select{background:#252d3e;color:#e7defc;border:1px solid #4b4e70;padding:5px 9px;border-radius:9px;font-size:11px;min-height:31px;max-width:145px}
@@ -298,6 +304,11 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <div class="composerDock">
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
+            <div id="loadAssist" class="loadAssist" hidden aria-live="polite">
+              <span>أول تجهيز للنموذج ممكن ياخد وقت. لو جهازك بطيء، جرّب وضع أسرع:</span>
+              <button id="loadAssistFast" type="button">Fast · عربي</button>
+              <button id="loadAssistLite" type="button">Lite · أخف</button>
+            </div>
             <div class="composerBox">
               <div class="taskLine">
   <label for="taskMode">مساعدة في</label>
@@ -663,11 +674,11 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
- $('modelHelp').hidden=true;
+ $('modelHelp').hidden=true;$('loadAssist').hidden=true;
 }
 function showModelHelp(explanation){
  if(explanation)$('modelHelpText').textContent=explanation;
- $('modelHelp').hidden=false;
+ $('modelHelp').hidden=false;$('loadAssist').hidden=false;
 }
 function scheduleModelHelp(){
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
@@ -687,6 +698,8 @@ function pickFallback(profile){
 }
 $('tryFast').addEventListener('click',()=>pickFallback('fast'));
 $('tryLite').addEventListener('click',()=>pickFallback('lite'));
+$('loadAssistFast').addEventListener('click',()=>pickFallback('fast'));
+$('loadAssistLite').addEventListener('click',()=>pickFallback('lite'));
 $('retryModel').addEventListener('click',()=>{
  if(!confirm('إعادة محاولة تحميل النموذج المختار؟ قد يستهلك بيانات إنترنت إضافية.'))return;
  if(loading||ready)stop('إعادة التجهيز من البداية.');
@@ -831,7 +844,12 @@ try{
  for(const [id,key,fallback] of [
   ['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto']
  ]){
-  const value=localStorage.getItem(key)||fallback;
+  let value=localStorage.getItem(key)||fallback;
+  if(id==='profile'&&!localStorage.getItem(key)){
+   // Faster Qwen2.5 for first-time mobile visitors; context memory stays Balanced.
+   const mobile=navigator.userAgentData?.mobile===true||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+   if(mobile)value='fast';
+  }
   if([...$(id).options].some(opt=>opt.value===value))$(id).value=value;
  }
 }catch(e){}
