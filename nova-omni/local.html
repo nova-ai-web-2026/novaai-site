@@ -1180,9 +1180,13 @@ async function sendInstant(message,mode){
   if(label)label.textContent=mode==='research'?'ببحث في مصادر حقيقية…':'بجهّز قالب فوري…';
  }
  try{
-  const result=await globalThis.NovaInstant.perform(message,mode,{language:$('language').value});
+  const templateId=globalThis.NovaSelectedTemplateId;
+  const preset=templateId&&globalThis.NovaTemplateLibrary?.getById(templateId);
+  const templateResult=preset?.mode===mode?globalThis.NovaTemplateLibrary.render(message,templateId,{language:$('language').value}):null;
+  const result=templateResult||await globalThis.NovaInstant.perform(message,mode,{language:$('language').value});
   if(requestId!==instantRequestId)return;
   addAnswer(message,String(result.text||''));
+  globalThis.NovaSelectedTemplateId=null;
   $('prompt').value='';
   state(result.network?'نتائج بحث فعلية من مصادر عامة':'قالب فوري محلي',ready?'ready':'instant');
   notice('');
@@ -1305,5 +1309,6 @@ for(const [id,key] of [
 loadSaved();updateMemoryInfo();display();renderSessions();syncActions();state('الأدوات الفورية جاهزة','instant');beginBackgroundWarmup();
 })();
 </script>
+<script src="./local-template-ui.js?v=3.0.0"></script>
 </body>
 </html>
