@@ -672,7 +672,7 @@ test('text file attachment stays local and selects summarising mode',async({page
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#textFile').setInputFiles({name:'lesson-notes.txt',mimeType:'text/plain',buffer:Buffer.from('The Sun is a star. Earth orbits around the Sun.')});
  await expect(page.locator('#taskMode')).toHaveValue('summarise');
- await expect(page.locator('#prompt')).toContainText('The Sun is a star');
+ await expect(page.locator('#prompt')).toHaveValue(/The Sun is a star/);
  await expect(page.locator('#notice')).toContainText('محليًا');
  expect(external).toBe(0);
 });
