@@ -88,3 +88,13 @@ The free local page now displays a short Arabic welcome card with an enter butto
 **Limits:** A first visit cannot guarantee instant model responses; browser model weights must download and compile on that device before inference can begin. Browser caching can speed subsequent visits, depending on browser storage policy. Background warmup applies to /local.html while that page is open; it is not a server-side always-on model or a download that continues after the tab closes. The main workspace still links to Local.
 
 UI tests in tests/local-autowarm.spec.js cover automatic Wi-Fi startup, mobile-data consent, Save-Data, cancellation, and waiting-first-question behavior. Existing manual download tests opt out of startup warming explicitly for deterministic coverage. The real Qwen3 browser test also verifies the background warmup path.
+
+## NOVA Local v2.3 — one-click welcome consent and quiet model initialization
+
+The model no longer starts a large download on a first visit before the user agrees. The welcome card clearly states that clicking **"مرحبًا، ابدأ NOVA"** authorizes the local Qwen3 model download (hundreds of MB possible; carrier data charges may apply). It does not grant camera, microphone, location, files, third-party app, or other device permissions. The click itself initiates the download in a Web Worker with **no second confirmation popup**. The visitor sees the normal chat interface immediately. The welcome text, layout, colours and typography have been redesigned.
+
+The model's file names, download percentages and progress bar are visually hidden. A neutral NOVA status is displayed until the model is actually ready; a user who sends a question early receives an accurate short delay message and their single queued prompt is submitted after readiness. The UI never pretends a model reply was generated while weights were loading. Detailed loading errors remain available in the application.
+
+Consent is saved in this browser as `nova_local_download_consent_v1`: previously approved visitors on a suitable unmetered connection can have the worker warm quietly on later visits; on known mobile data, Save-Data, offline or low-memory devices, automatic redownloading is suppressed. Clicking the Stop button revokes remembered automatic-start consent. Visitors selecting "الدخول بدون تشغيل النموذج" do not download anything. Upgrades from the old `nova_intro_seen` session flag do not bypass the new consent requirement.
+
+**Limitations:** A brand-new local browser device still needs to transfer/cache the model once; hiding progress does not remove the time, bandwidth, RAM or actual workload. Browser caching may improve subsequent visits but is not guaranteed. No paid cloud model is used.
