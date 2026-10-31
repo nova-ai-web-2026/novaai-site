@@ -717,6 +717,75 @@ test('long local-model start reveals actionable alternatives without percentages
  await expect(page.locator('#progress')).toBeHidden();
 });
 
+
+test('queued question can be cancelled without terminating a model that is still loading',async({page})=>{
+ await page.addInitScript(()=>{
+  class MockWorker{
+   constructor(){window.__pendingWorker=this;this.onmessage=null;window.__terminated=0;}
+   postMessage(data){window.__pendingCalls??=[];window.__pendingCalls.push(data);}
+   terminate(){window.__terminated++;}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',d=>d.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await page.locator('#prompt').fill('شرح قصير للموجات');
+ await page.locator('#send').click();
+ await expect(page.locator('#cancelReply')).toBeVisible();
+ await page.locator('#cancelReply').click();
+ await expect(page.locator('#cancelReply')).toBeHidden();
+ expect(await page.evaluate(()=>window.__terminated)).toBe(0);
+ await page.evaluate(()=>window.__pendingWorker.onmessage({data:{type:'ready',device:'wasm'}}));
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ expect((await page.evaluate(()=>window.__pendingCalls)).filter(x=>x.type==='generate')).toHaveLength(0);
+ await expect(page.locator('#prompt')).toHaveValue('شرح قصير للموجات');
+});
+test('cancel reply aborts local generation and preserves the unsent draft',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__terminated=0;
+  class MockWorker{
+   postMessage(data){
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',device:'wasm'}}));
+   }
+   terminate(){window.__terminated++;}
+  }
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',d=>d.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ await page.locator('#prompt').fill('اكتب خطة لمشروع صغير');
+ await page.locator('#send').click();
+ await expect(page.locator('#typingIndicator')).toBeVisible();
+ await expect(page.locator('#cancelReply')).toBeVisible();
+ await page.locator('#cancelReply').click();
+ await expect(page.locator('#typingIndicator')).toHaveCount(0);
+ await expect(page.locator('#prompt')).toHaveValue('اكتب خطة لمشروع صغير');
+ expect(await page.evaluate(()=>window.__terminated)).toBe(1);
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_sessions_v1')||'{}').sessions||[]);
+ expect(saved.some(x=>x.messages.some(m=>m.content.includes('اكتب خطة')))).toBe(false);
+});
+test('local model init gives recovery options and safely ends at the load deadline',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  window.__terminated=0;
+  class MockWorker{postMessage(){}terminate(){window.__terminated++;}}
+  window.Worker=MockWorker;
+ });
+ page.on('dialog',d=>d.accept());
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#start').click();
+ await page.clock.fastForward(152000);
+ await expect(page.locator('#modelHelp')).toBeVisible();
+ await expect(page.locator('#start')).toBeEnabled();
+ await expect(page.locator('#stop')).toBeDisabled();
+ expect(await page.evaluate(()=>window.__terminated)).toBe(1);
+ await expect(page.locator('#modelHelpText')).toContainText('دقيقتين ونصف');
+ await expect(page.locator('#prompt')).toBeEnabled();
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
