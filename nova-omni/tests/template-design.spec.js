@@ -24,7 +24,7 @@ test('29 real templates can be searched, filtered and selected without AI downlo
  await page.locator('.templateCard[data-template-id="python_csv"]').click();
  await expect(page.locator('#templateOverlay')).toBeHidden();
  await expect(page.locator('#taskMode')).toHaveValue('code_fast');
- await expect(page.locator('#prompt')).toContainText('CSV');
+ await expect(page.locator('#prompt')).toHaveValue(/CSV/);
  await expect(page.locator('#send')).toBeEnabled();
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai')).toContainText('csv.DictReader');
