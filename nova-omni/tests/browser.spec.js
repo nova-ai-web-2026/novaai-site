@@ -693,6 +693,7 @@ test('model failure offers a confirmed switch to faster model',async({page})=>{
  });
  page.on('dialog',dialog=>dialog.accept());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#profile').selectOption('balanced');
  await page.locator('#start').click();
  await expect(page.locator('#modelHelp')).toBeVisible();
  await expect(page.locator('#loadAssist')).toBeVisible();
