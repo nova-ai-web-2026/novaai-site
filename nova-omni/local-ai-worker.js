@@ -103,6 +103,9 @@ function trimRepeats(text){
  }
  return result.join(' ').trim();
 }
+function runtimeFor(hasGPU,hasFP16){
+ return hasGPU&&hasFP16?{device:'webgpu',dtype:'q4f16'}:{device:'wasm',dtype:'q8'};
+}
 async function init(request){
  if(generator){
   send('ready',{model:profileFor(selectedProfile).id,profile:selectedProfile,device:deviceUsed});
@@ -134,9 +137,7 @@ async function init(request){
   // Qwen3 q4=919MB vs q8=618MB; Qwen2.5 q4=786MB vs q8=512MB.
   // Prefer smaller q8 CPU files (often more accurate, too), and q4f16
   // only on GPUs explicitly supporting shader-f16. Never fetch both variants.
-  const fp16WebGPU=hasGPU&&hasFP16;
-  const device=fp16WebGPU?'webgpu':'wasm';
-  const dtype=fp16WebGPU?'q4f16':'q8';
+  const {device,dtype}=runtimeFor(hasGPU,hasFP16);
   send('status',{phase:'model',model:model.id,device,dtype,text:'Preparing '+model.name+' locally'});
   let lastEmit=-1;
   generator=await pipeline('text-generation',model.id,{

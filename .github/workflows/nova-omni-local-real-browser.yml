@@ -27,7 +27,7 @@ jobs:
         run: |
           for i in $(seq 1 24); do
             if curl -fsSL "https://nova-ai-web-2026.github.io/novaai-site/nova-omni/local.html?version=$i" -o /tmp/nova-local-real.html &&
-               grep -Fq 'name="nova-local-version" content="2.4.0"' /tmp/nova-local-real.html; then
+               grep -Fq 'name="nova-local-version" content="2.5.0"' /tmp/nova-local-real.html; then
               exit 0
             fi
             sleep 5

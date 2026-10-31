@@ -29,7 +29,7 @@ const workerSource=fs.readFileSync(path.join(__dirname,'../local-ai-worker.js'),
 const mockSelf={postMessage(){}};
 const sandbox={self:mockSelf,console};
 vm.runInNewContext(workerSource+
- '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor,detectTask,resolvedTask,instruction,trimRepeats};',sandbox,{filename:'local-ai-worker.js'});
+ '\nself.__testing={prepareHistory,isRepetitive,profileFor,memoryFor,detectTask,resolvedTask,instruction,trimRepeats,runtimeFor};',sandbox,{filename:'local-ai-worker.js'});
 const helpers=mockSelf.__testing;
 
 test('balanced memory uses up to 14 messages and 9000 characters',()=>{
@@ -101,4 +101,13 @@ test('repetition cleanup removes exact adjacent duplicate sentences but preserve
  assert.match(answer,/مثال مختلف/);
  assert.equal((answer.match(/أهلاً بك/g)||[]).length,1);
  assert.equal((answer.match(/هنا شرح واضح/g)||[]).length,1);
+});
+
+test('CPU uses smaller q8 weights; modern FP16 WebGPU uses q4f16',()=>{
+ assert.equal(helpers.runtimeFor(false,false).device,'wasm');
+ assert.equal(helpers.runtimeFor(false,false).dtype,'q8');
+ assert.equal(helpers.runtimeFor(true,false).dtype,'q8');
+ assert.equal(helpers.runtimeFor(true,false).device,'wasm');
+ assert.equal(helpers.runtimeFor(true,true).device,'webgpu');
+ assert.equal(helpers.runtimeFor(true,true).dtype,'q4f16');
 });

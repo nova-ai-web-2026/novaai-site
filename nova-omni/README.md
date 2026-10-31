@@ -98,3 +98,15 @@ The model's file names, download percentages and progress bar are visually hidde
 Consent is saved in this browser as `nova_local_download_consent_v1`: previously approved visitors on a suitable unmetered connection can have the worker warm quietly on later visits; on known mobile data, Save-Data, offline or low-memory devices, automatic redownloading is suppressed. Clicking the Stop button revokes remembered automatic-start consent. Visitors selecting "الدخول بدون تشغيل النموذج" do not download anything. Upgrades from the old `nova_intro_seen` session flag do not bypass the new consent requirement.
 
 **Limitations:** A brand-new local browser device still needs to transfer/cache the model once; hiding progress does not remove the time, bandwidth, RAM or actual workload. Browser caching may improve subsequent visits but is not guaranteed. No paid cloud model is used.
+
+## NOVA Local v2.5: faster, task-aware browser AI
+
+Three local profiles: **Smart** Qwen3 0.6B, **Fast** Qwen2.5 0.5B Instruct, **Lite** SmolLM2 135M. Mobile starts with Fast by default; devices that report less than 4 GB RAM start with Lite. Existing saved model preferences remain unchanged. Balanced conversation **memory** independently stays at 14 messages and 9000 characters.
+
+Transformers.js v4 streaming sends partial text to the chat as it is generated. Users can select a task type (automatic, explanations, study, writing, coding, planning, summarisation or translation). Prompts are task-specific, but small models still make mistakes and cannot execute external apps or browse the internet. Users may attach explicitly selected local text files up to 60 KB; up to 4700 characters are inserted into the current prompt for review and summarisation. No file or question is sent to a remote inference endpoint.
+
+For the ONNX models used by this app, **CPU q8 files are smaller than CPU q4**: Qwen3 ~618 MB instead of 919 MB, Qwen2.5 ~512 MB instead of 786 MB, SmolLM2 ~136 MB instead of 181 MB. On WebGPU adapters with shader-f16, q4f16 remains preferred (~570 MB, 483 MB, 117 MB respectively). We do not download multiple different quantizations automatically. The browser may use additional bytes for tokenizer/runtime files and memory for inference; this is not an instant chat on uncached devices.
+
+If a model is still preparing after 24 seconds or fails, a discreet choice appears to retry, switch to Fast, or use Lite. Changing models requires a fresh user confirmation because it can incur another large download. Browser and WASM caching are enabled. The app does not hide failures or claim readiness until the model actually loads.
+
+A versioned worker URL ensures users receive new inference code after deploying. The user's first explicit model-download consent and data-saving policies remain in place. Unit tests cover runtime quantization selection and task prompts. Browser tests cover streaming, local file import and recovery without remote model/API requests.
