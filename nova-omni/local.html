@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.3.0">
+<meta name="nova-local-version" content="2.4.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -202,6 +202,23 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
  .introData{padding-top:10px;margin-top:8px;font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.introEnter{transition:none!important}}
+
+/* v2.4 — task-aware assistant + clear recovery from slow/failed model startup */
+.taskLine{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 8px;min-height:35px}
+.taskLine label{font-size:11px;color:#a4b0c3;white-space:nowrap}
+.taskLine select{background:#252d3e;color:#e7defc;border:1px solid #4b4e70;padding:5px 9px;border-radius:9px;font-size:11px;min-height:31px;max-width:145px}
+.attachTask{font-size:11px;white-space:nowrap;padding:6px 10px;background:#262c39;color:#b9d7da;border:1px solid #475b60;border-radius:9px;min-height:31px}
+.attachTask:hover{background:#2e4145}
+.modelHelp[hidden]{display:none!important}
+.modelHelp{margin:13px 0 9px;border-radius:12px;border:1px solid #5d5066;background:#282335;padding:12px;color:#e9deee;font-size:11px}
+.modelHelp strong{font-size:12px;color:#f1e3ff}
+.modelHelp p{color:#c1b3ca;font-size:11px;line-height:1.6;margin:6px 0 10px}
+.modelHelpActions{display:flex;gap:6px;flex-wrap:wrap}
+.modelHelpActions button{font-size:10px;background:#383149;border:1px solid #6e5a82;color:#f2e8ff;border-radius:8px;padding:7px 8px}
+.modelHelpActions button:hover{background:#4a395c}
+.bubble.streaming{border-color:#686098}
+.bubble.streaming .messageActions{display:none}
+@media(max-width:450px){.taskLine{gap:6px}.taskLine select{max-width:120px}.taskLine label,.attachTask{font-size:10px}.composerHint{font-size:9px}}
 </style>
 </head>
 <body>
@@ -249,7 +266,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.3 · PRIVATE & FREE</div>
+    <div class="railFoot">NOVA LOCAL v2.4 · PRIVATE & FREE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -282,7 +299,22 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
             <div class="composerBox">
-              <textarea id="prompt" rows="2" maxlength="3000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
+              <div class="taskLine">
+  <label for="taskMode">مساعدة في</label>
+  <select id="taskMode" aria-label="نوع المهمة">
+   <option value="auto">✦ تلقائي</option>
+   <option value="explain">شرح وفهم</option>
+   <option value="study">حل خطوة بخطوة</option>
+   <option value="writing">كتابة وصياغة</option>
+   <option value="coding">برمجة وكود</option>
+   <option value="planning">خطة ومهام</option>
+   <option value="summarise">تلخيص</option>
+   <option value="translate">ترجمة</option>
+  </select>
+  <button class="attachTask" id="attachText" type="button">＋ ملف نصّي</button>
+  <input id="textFile" type="file" hidden accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,text/plain,text/markdown,text/csv">
+ </div>
+ <textarea id="prompt" rows="2" maxlength="7000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
               <div class="composerTools">
                 <div class="composerHint"><svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 2v8M8 7l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>Enter للإرسال · Shift + Enter لسطر جديد</span></div>
                 <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
@@ -303,10 +335,11 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <div class="sectionHead"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3h8l2 3v12l-2 3H8l-2-3V6Z"/><path d="M9 9h6v6H9Z"/></svg>الذكاء الاصطناعي</div>
         <div class="field"><label for="profile">قوة النموذج</label>
           <select id="profile" aria-label="Local model size">
-            <option value="balanced">Balanced · Qwen3 0.6B</option>
-            <option value="lite">Lite · SmolLM2 135M</option>
+            <option value="balanced">Smart · Qwen3 0.6B (عربي أفضل)</option>
+            <option value="fast">Fast · Qwen2.5 0.5B (أسرع نسبيًا)</option>
+            <option value="lite">Lite · SmolLM2 135M (أخف)</option>
           </select>
-          <span class="fieldHint">Balanced أفضل للعربي، وLite أصغر لكن أداؤه أضعف.</span>
+          <span class="fieldHint">Smart أذكى نسبيًا لكنه تقيل. Fast أصغر قليلًا ويدعم العربي. Lite أخف وأضعف، خصوصًا في العربي. حجم التنزيل الفعلي بيعتمد على دعم GPU.</span>
         </div>
         <div class="modelMeta">
           <div class="statBox"><strong>100% محلي</strong><small>بدون Gateway</small></div>
@@ -338,6 +371,15 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <div class="sectionHead" style="margin-top:0"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg>تشغيل النموذج</div>
         <button class="startButton" id="start" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg><span>تشغيل NOVA Local</span></button>
         <button class="stopButton" id="stop" type="button" disabled>إيقاف النموذج</button>
+        <div id="modelHelp" class="modelHelp" hidden role="status">
+         <strong>لو NOVA طول في التجهيز</strong>
+         <p id="modelHelpText">موديلات AI المحلية كبيرة؛ أول تحميل ممكن يستغرق وقتًا ويحتاج مساحة وذاكرة كافيتين.</p>
+         <div class="modelHelpActions">
+          <button id="tryFast" type="button">جرّب Fast</button>
+          <button id="tryLite" type="button">النسخة الأخف Lite</button>
+          <button id="retryModel" type="button">إعادة المحاولة</button>
+         </div>
+        </div>
         <div class="progressWrap">
           <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
           <p id="state" role="status">Not started · لم يبدأ التحميل</p>
@@ -361,7 +403,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
-let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null;
+let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null;
 let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
 const MODEL_CONSENT='nova_local_download_consent_v1';
@@ -619,7 +661,57 @@ $('clear').addEventListener('click',()=>{if(currentId)deleteSession(currentId);e
 document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListener('click',()=>{
  $('prompt').value=button.dataset.prompt||'';refreshSend();$('prompt').focus();closePanels();
 }));
+function hideModelHelp(){
+ if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
+ $('modelHelp').hidden=true;
+}
+function showModelHelp(explanation){
+ if(explanation)$('modelHelpText').textContent=explanation;
+ $('modelHelp').hidden=false;
+}
+function scheduleModelHelp(){
+ if(loadHelpTimer)clearTimeout(loadHelpTimer);
+ loadHelpTimer=setTimeout(()=>{
+  loadHelpTimer=null;
+  if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز. لو التحميل علق أو الجهاز بطيء، جرّب Fast أو Lite. تغيير النموذج ممكن يحتاج تنزيلًا جديدًا.');
+ },24000);
+}
+function pickFallback(profile){
+ const next=profile==='fast'?'fast':'lite';
+ const label=next==='fast'?'Fast (Qwen2.5 0.5B)':'Lite (SmolLM2 135M)';
+ if(!confirm('التبديل إلى '+label+'؟ ده ممكن يحتاج تحميل ملفات نموذج جديد واستهلاك بيانات إضافية.'))return;
+ stop('تم إيقاف النموذج السابق لتغيير الاختيار.');
+ $('profile').value=next;
+ try{localStorage.setItem('nova_local_profile',next);}catch(e){}
+ startModel('fallback');
+}
+$('tryFast').addEventListener('click',()=>pickFallback('fast'));
+$('tryLite').addEventListener('click',()=>pickFallback('lite'));
+$('retryModel').addEventListener('click',()=>{
+ if(!confirm('إعادة محاولة تحميل النموذج المختار؟ قد يستهلك بيانات إنترنت إضافية.'))return;
+ if(loading||ready)stop('إعادة التجهيز من البداية.');
+ startModel('fallback');
+});
+$('attachText').addEventListener('click',()=>$('textFile').click());
+$('textFile').addEventListener('change',async()=>{
+ const input=$('textFile'),file=input.files?.[0];
+ if(!file)return;
+ if(file.size>60000){notice('الملف كبير. جرّب ملف نصّي بحجم أقل من 60 كيلوبايت.');input.value='';return;}
+ if(!/\.(?:txt|md|csv|json|js|ts|py|html|css)$/i.test(file.name)){notice('الملف مش من الأنواع النصية المدعومة.');input.value='';return;}
+ try{
+  const content=(await file.text()).slice(0,4700);
+  const header='لخّص النص التالي واستخرج أهم النقاط، من غير إضافة معلومات مش موجودة:';
+  const payload=header+'\n\n'+content;
+  $('prompt').value=payload;
+  $('taskMode').value='summarise';
+  refreshSend();notice('تم إدخال النص من '+file.name+' محليًا. راجع المحتوى واضغط إرسال.');
+ }catch(e){notice('مش قادر أقرأ الملف ده. جرّب ملف نصّي آخر.');}
+ input.value='';
+});
+
 function stop(text){
+ if(loadHelpTimer)clearTimeout(loadHelpTimer);
+ loadHelpTimer=null;
  if(worker)worker.terminate();
  worker=null;ready=false;loading=false;generating=false;pending=null;queuedQuestion=null;
  $('start').disabled=false;$('stop').disabled=true;
@@ -630,7 +722,7 @@ function stop(text){
 }
 function startModel(source='manual'){
  if(loading||ready)return;
- const label=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
+ const label=$('profile').value==='lite'?'SmolLM2 135M':$('profile').value==='fast'?'Qwen2.5 0.5B':'Qwen3 0.6B';
  if(source==='remembered'&&(consentValue()!=='granted'||!connectionPolicy().auto))return;
  if(source==='manual'){
   // Starting from Settings is a separate informed action; repeat approval
@@ -640,6 +732,7 @@ function startModel(source='manual'){
   rememberConsent('granted');
  }
  loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
+ hideModelHelp();scheduleModelHelp();
  notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
@@ -652,11 +745,23 @@ function startModel(source='manual'){
     state('NOVA محلي','loading');
    }else if(data.type==='ready'){
     ready=true;loading=false;
-    refreshSend();$('stop').disabled=false;$('progress').style.display='none';
+    hideModelHelp();refreshSend();$('stop').disabled=false;$('progress').style.display='none';
     state('✓ AI local ready · '+String(data.device||'browser')+' · بدون Gateway','ready');
     introStatus('✓ NOVA جاهز للمحادثة.');
     notice('');
     if(queuedQuestion){const queued=queuedQuestion;queuedQuestion=null;if($('prompt').value.trim()===queued)send();}
+   }else if(data.type==='partial'){
+    if(!pending)return;
+    const indicator=$('typingIndicator');
+    if(indicator){
+     const visible=indicator.querySelector('.bubble > div:not(.messageActions)');
+     if(visible&&data.text){
+      indicator.querySelector('.bubble')?.classList.add('streaming');
+      visible.textContent=String(data.text).slice(0,2200);
+      visible.dir='auto';
+      $('chat').scrollTop=$('chat').scrollHeight;
+     }
+    }
    }else if(data.type==='answer'){
     if(!pending)return;
     addAnswer(pending,String(data.answer||''));
@@ -667,7 +772,7 @@ function startModel(source='manual'){
     notice('');
    }else if(data.type==='error'){
     const error='Local AI error: '+String(data.message||'غير متاح').slice(0,280);
-    if(data.stage==='load'){stop(error+' · جرّب Lite.');introStatus('تعذر التحميل. ممكن تجرب Lite أو تدخل من غير تحميل.');}
+    if(data.stage==='load'){stop(error+' · جرّب Fast أو Lite.');showModelHelp('فشل تجهيز النموذج. راجع الاتصال والمساحة المتاحة، وبعدها جرّب Fast أو Lite.');introStatus('تعذر التحميل. ممكن تجرب نموذجًا أخف.');}
     else{
      generating=false;pending=null;
      $('prompt').disabled=false;refreshSend();
@@ -679,7 +784,8 @@ function startModel(source='manual'){
   };
   worker.onerror=()=>{
    stop('Local AI error: النموذج ما اشتغلش. جرّب Lite أو متصفح أحدث.');
-   introStatus('تعذر تشغيل النموذج. تقدر تجرب وضع Lite.');
+   introStatus('تعذر تشغيل النموذج. جرّب Fast أو Lite.');
+   showModelHelp('النموذج تعطل. جرّب نسخة Fast أو Lite أو أعد المحاولة بعد التأكد من مساحة الجهاز.');
    notice('حصلت مشكلة أثناء تشغيل النموذج. راجع الإنترنت أو جرّب الوضع الأخف.');
   };
   worker.postMessage({type:'init',profile:$('profile').value});
@@ -713,7 +819,7 @@ function send(){
  worker.postMessage({
   type:'generate',
   history:[...history.slice(-24),{role:'user',content:message}],
-  language:$('language').value,memory:$('memory').value
+  language:$('language').value,memory:$('memory').value,task:$('taskMode').value
  });
 }
 $('send').addEventListener('click',send);
@@ -723,14 +829,14 @@ $('prompt').addEventListener('keydown',e=>{
 });
 try{
  for(const [id,key,fallback] of [
-  ['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced']
+  ['language','nova_language','auto'],['profile','nova_local_profile','balanced'],['memory','nova_local_memory','balanced'],['taskMode','nova_local_task','auto']
  ]){
   const value=localStorage.getItem(key)||fallback;
   if([...$(id).options].some(opt=>opt.value===value))$(id).value=value;
  }
 }catch(e){}
 for(const [id,key] of [
- ['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory']
+ ['language','nova_language'],['profile','nova_local_profile'],['memory','nova_local_memory'],['taskMode','nova_local_task']
 ]){
  $(id).addEventListener('change',()=>{
   try{localStorage.setItem(key,$(id).value);}catch(e){}
