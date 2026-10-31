@@ -18,10 +18,12 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
  expect(response.status()).toBe(200);
  await expect(page.locator('#profile')).toHaveValue('balanced');
  await expect(page.locator('#introOverlay')).toBeVisible();
- await expect(page.locator('#introWarmStatus')).toContainText('الخلفية');
- await expect(page.locator('#state')).toContainText('ready',{timeout:240000});
+ // Fresh visitors must approve the download before the first model request.
+ expect(modelUrls.length).toBe(0);
+ await expect(page.locator('#progress')).toBeHidden();
  await page.locator('#introEnter').click();
  await expect(page.locator('#introOverlay')).toBeHidden();
+ await expect(page.locator('#statusLabel')).toContainText('جاهز',{timeout:240000});
  await page.locator('#language').selectOption('ar-eg');
  await page.locator('#prompt').fill('قول صباح الخير بالمصري في جملة قصيرة.');
  await page.locator('#send').click();
