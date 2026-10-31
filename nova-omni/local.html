@@ -398,9 +398,9 @@ function beginBackgroundWarmup(){
   }
   return;
  }
- let seen=false;
- try{seen=sessionStorage.getItem('nova_intro_seen')==='1';}catch(e){}
- $('introOverlay').hidden=seen||consentValue()==='declined';
+ // Previous v2.2 sessions did not record explicit consent. Show the
+ // new consent screen even if an old intro_seen flag exists.
+ $('introOverlay').hidden=consentValue()==='declined';
  introStatus('لم يبدأ تنزيل أي نموذج قبل الموافقة.');
 }
 function messageOK(m){
