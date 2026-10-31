@@ -1,150 +1,208 @@
-// NOVA OMNI Local v1.2 — on-device inference, zero API keys or paid model calls.
-// Model downloads occur only after explicit user consent in local.html.
+// NOVA OMNI Local v2.4 — on-device, no paid API or remote inference.
+// Initiated only by the visitor's consent; memory and model profile are adjustable.
 const LIBRARY_URL='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1';
 const PROFILES=Object.freeze({
-  balanced:{id:'onnx-community/Qwen3-0.6B-ONNX',name:'Qwen3 0.6B · Balanced',maxTokens:190},
-  lite:{id:'onnx-community/SmolLM2-135M-Instruct-ONNX',name:'SmolLM2 135M · Lite (English-first)',maxTokens:155}
+ balanced:{id:'onnx-community/Qwen3-0.6B-ONNX',name:'Qwen3 0.6B — Smart',maxTokens:210,noThink:true},
+ fast:{id:'onnx-community/Qwen2.5-0.5B-Instruct',name:'Qwen2.5 0.5B — Fast',maxTokens:190,noThink:false},
+ lite:{id:'onnx-community/SmolLM2-135M-Instruct-ONNX',name:'SmolLM2 135M — Lite',maxTokens:140,noThink:false}
 });
 const MEMORY=Object.freeze({
-  short:{messages:8,characters:4800},
-  balanced:{messages:14,characters:9000},
-  extended:{messages:18,characters:12000}
+ short:{messages:8,characters:4800},
+ balanced:{messages:14,characters:9000},
+ extended:{messages:18,characters:12000}
 });
-let generator=null,selectedProfile=null,initializing=false,generating=false,deviceUsed='';
+const TASK_INSTRUCTIONS=Object.freeze({
+ general:'Understand the user request first. Answer directly, without generic filler or repeating the question. If ambiguous, make one reasonable assumption and state it.',
+ explain:'Explain the concept clearly. Give a short definition, 2 or 3 logically ordered steps, and one correct simple example. Avoid unnecessary technical jargon.',
+ writing:'Produce a finished, naturally worded draft ready to copy. Follow the desired tone and purpose; avoid generic introductions, invented facts, and repetitive sentences.',
+ coding:'Provide short runnable code when practical, show how to use it, and point out any assumptions. Do not pretend code was tested. Never invent APIs, files or external access.',
+ planning:'Give an actionable plan of realistic, ordered steps with what to do first and how to check progress. Avoid vague advice.',
+ summarise:'Summarise ONLY text supplied by the user in this conversation. Keep key facts and distinctions. Never invent unseen material.',
+ translate:'Translate the user-provided text faithfully into the requested language, preserving meaning and tone; avoid extra commentary.',
+ study:'Act as a patient tutor. Explain how to solve the task, show working and verify each step. Admit uncertainty instead of guessing results.'
+});
+let generator=null,selectedProfile=null,deviceUsed='',initializing=false,generating=false,TextStreamerClass=null;
+let lastLoadActivity=0;
 const send=(type,detail={})=>self.postMessage({type,...detail});
 const profileFor=name=>PROFILES[name]||PROFILES.balanced;
 const memoryFor=name=>MEMORY[name]||MEMORY.balanced;
-function instruction(language){
+function detectTask(text){
+ const s=String(text||'').trim().toLowerCase();
+ if(/(?:^|\s)(?:ترجم|translate|translation|ترجمة)(?:\s|$)/i.test(s))return 'translate';
+ if(/(?:^|\s)(?:لخص|لخّص|تلخيص|summari[sz]e|summary)(?:\s|$)/i.test(s))return 'summarise';
+ if(/(?:^|\s)(?:كود|برمجة|برمج|python|javascript|html|code|program|debug)(?:\s|$)/i.test(s))return 'coding';
+ if(/(?:^|\s)(?:اشرح|فسر|شرح|explain|what does|how does)(?:\s|$)/i.test(s))return 'explain';
+ if(/(?:^|\s)(?:خطة|خطوات|رتب|plan|roadmap)(?:\s|$)/i.test(s))return 'planning';
+ if(/(?:^|\s)(?:اكتب|صياغة|رسالة|إيميل|email|draft|rewrite|write)(?:\s|$)/i.test(s))return 'writing';
+ if(/(?:^|\s)(?:حل|مسألة|سؤال|واجب|رياضيات|calculate|solve|proof)(?:\s|$)/i.test(s))return 'study';
+ return 'general';
+}
+function resolvedTask(task,text){
+ return typeof task==='string'&&Object.hasOwn(TASK_INSTRUCTIONS,task)?task:detectTask(text);
+}
+function instruction(language,task,lastText,profile){
  const langs={
-  'ar-eg':'natural conversational Egyptian Arabic','ar':'Modern Standard Arabic',
+  'ar-eg':'natural Egyptian Arabic (المصري)',ar:'clear Modern Standard Arabic',
   en:'English',fr:'French',es:'Spanish',de:'German',pt:'Portuguese',it:'Italian',
   ru:'Russian',tr:'Turkish',hi:'Hindi',ur:'Urdu',zh:'Chinese',ja:'Japanese',
   ko:'Korean',id:'Indonesian',bn:'Bengali',fa:'Persian',sw:'Swahili',vi:'Vietnamese',
   th:'Thai',nl:'Dutch',pl:'Polish'
  };
- const output=langs[language]?'Respond in '+langs[language]+'.':'Respond in the language and dialect of the most recent user message.';
- return 'You are NOVA OMNI Local, a compact assistant that runs on the device. '+
-  'Give clear, helpful and accurate answers. If uncertain, say so. '+
-  'Avoid repetitive words or phrases and avoid making up facts. '+
-  'You have no live web search. Never claim you checked current information. '+
-  'Provide safe and age-appropriate answers. '+output;
+ const specified=langs[language];
+ const arabic=/[\u0600-\u06ff]/.test(lastText);
+ const output=specified?'Reply in '+specified+' unless explicitly asked to translate to another language.':
+  arabic?'Use natural clear Arabic in the same dialect as the user, not English.':
+  'Reply in the same language as the last user message.';
+ return [
+  'You are NOVA OMNI Local, a small offline assistant. You have no web or account access.',
+  'Be factual, useful and concise. State uncertainty and limits. Never invent facts or claim that you verified external information.',
+  'Follow safe age-appropriate behavior. Never invent a successful action, benchmark, file, or test result.',
+  output,TASK_INSTRUCTIONS[task]||TASK_INSTRUCTIONS.general,
+  'Keep answers well-organized. Prefer useful details over filler. Do not get stuck in loops.',
+  profile==='lite'?'This is a very small model. Prefer shorter straightforward answers.':''
+ ].filter(Boolean).join('\n');
 }
 function prepareHistory(input,depth){
  if(!Array.isArray(input))return [];
- const settings=memoryFor(depth);
- const data=input.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim()).slice(-settings.messages);
- let remaining=settings.characters;
+ const options=memoryFor(depth);
+ const data=input.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim()).slice(-options.messages);
+ let remaining=options.characters;
  const kept=[];
  for(let i=data.length-1;i>=0&&remaining>0;i--){
-  const m=data[i];
-  const text=m.content.trim().slice(0,Math.min(1600,remaining));
-  if(!text)continue;
-  kept.unshift({role:m.role,content:text});
-  remaining-=text.length;
+  const m=data[i],cap=i===data.length-1?4200:1300;
+  const content=m.content.trim().slice(0,Math.min(cap,remaining));
+  if(!content)continue;
+  kept.unshift({role:m.role,content});
+  remaining-=content.length;
  }
  return kept;
 }
 function cleanResponse(generated,prompt){
- let value=Array.isArray(generated)?String(generated.at(-1)?.content||''):String(generated||'');
- if(!Array.isArray(generated)&&value.startsWith(prompt))value=value.slice(prompt.length);
- return value.replace(/<think>[\s\S]*?<\/think>/g,'')
-   .replace(/^\s*<think>[\s\S]*$/,'')
-   .replace(/<\|[^|]+\|>/g,'')
-   .trim();
+ let text=Array.isArray(generated)?String(generated.at(-1)?.content||''):String(generated||'');
+ if(!Array.isArray(generated)&&text.startsWith(prompt))text=text.slice(prompt.length);
+ return text.replace(/<think>[\s\S]*?<\/think>/g,'')
+  .replace(/^\s*<think>[\s\S]*$/,'')
+  .replace(/<\|[^|]+\|>/g,'').trim();
 }
-function isRepetitive(text){
- const tokens=(text.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu)||[]);
- if(tokens.length<12)return false;
- for(let n=3;n<=6;n++){
-  for(let i=0;i+n*3<=tokens.length;i++){
-   const a=tokens.slice(i,i+n).join(' ');
-   if(a===tokens.slice(i+n,i+2*n).join(' ')&&a===tokens.slice(i+2*n,i+3*n).join(' '))return true;
-  }
- }
- const lines=text.split(/[\n.!?؟،؛]+/).map(s=>s.trim()).filter(s=>s.length>9);
- for(let i=0;i+2<lines.length;i++){
-  if(lines[i]===lines[i+1]&&lines[i]===lines[i+2])return true;
+function isRepetitive(s){
+ const words=(String(s).toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu)||[]);
+ if(words.length<12)return false;
+ for(let n=3;n<=6;n++)for(let i=0;i+3*n<=words.length;i++){
+  const phrase=words.slice(i,i+n).join(' ');
+  if(phrase===words.slice(i+n,i+2*n).join(' ')&&phrase===words.slice(i+2*n,i+3*n).join(' '))return true;
  }
  return false;
 }
-async function init(name){
+function trimRepeats(text){
+ const parts=String(text).split(/(?<=[.!?؟])\s+/u);
+ if(parts.length<3)return text;
+ const result=[];
+ for(const part of parts){
+  if(part.trim().length>7&&result.length&&part.trim().toLocaleLowerCase()===result.at(-1).trim().toLocaleLowerCase())continue;
+  result.push(part);
+ }
+ return result.join(' ').trim();
+}
+async function init(request){
  if(generator){
-  send('ready',{model:profileFor(selectedProfile).id,profile:selectedProfile,device:deviceUsed||'loaded'});
+  send('ready',{model:profileFor(selectedProfile).id,profile:selectedProfile,device:deviceUsed});
   return;
  }
  if(initializing)return;
  initializing=true;
- const profile=Object.hasOwn(PROFILES,name)?name:'balanced';
+ const profile=typeof request==='string'?request:Object.hasOwn(PROFILES,request?.profile)?request.profile:'balanced';
  const model=profileFor(profile);
  try{
-  send('status',{text:'Loading the AI library in your browser…'});
-  const {pipeline,env}=await import(LIBRARY_URL);
-  // Reuse downloaded WASM and ONNX weights where browser caching is available.
-  if(env)env.useWasmCache=true;
-  let gpu=false;
-  if(self.navigator?.gpu){
+  lastLoadActivity=Date.now();
+  send('status',{phase:'library',text:'Preparing browser inference library…'});
+  const {pipeline,TextStreamer,env,LogLevel}=await import(LIBRARY_URL);
+  TextStreamerClass=TextStreamer;
+  if(env){
+   env.useBrowserCache=true;
+   env.useWasmCache=true;
+   if(LogLevel)env.logLevel=LogLevel.WARNING;
+  }
+  let hasGPU=false,hasFP16=false;
+  if(request?.device!=='cpu'&&self.navigator?.gpu){
    try{
     const adapter=await self.navigator.gpu.requestAdapter();
-    gpu=Boolean(adapter?.features?.has('shader-f16'));
-   }catch(err){gpu=false;}
+    hasGPU=!!adapter;
+    hasFP16=!!adapter?.features?.has('shader-f16');
+   }catch(e){hasGPU=false;}
   }
-  const device=gpu?'webgpu':'wasm';
-  const dtype=gpu?'q4f16':'q4';
-  send('status',{text:'Preparing '+model.name+' using '+device+'…'});
-  let lastPercent=-1;
+  const device=hasGPU?'webgpu':'wasm';
+  // Q4f16 is smaller/faster when supported by WebGPU. Do not download both
+  // GPU and CPU variants automatically — that may consume extra mobile data.
+  const dtype=hasGPU&&hasFP16?'q4f16':'q4';
+  send('status',{phase:'model',model:model.id,device,dtype,text:'Preparing '+model.name+' locally'});
+  let lastEmit=-1;
   generator=await pipeline('text-generation',model.id,{
    device,dtype,
    progress_callback:info=>{
-    if(info?.status==='progress'&&typeof info.progress==='number'){
-     const progress=Math.max(0,Math.min(100,Math.round(info.progress)));
-     if(progress!==lastPercent){
-      lastPercent=progress;
-      send('progress',{progress,file:String(info.file||'model file').split('/').at(-1)});
+    lastLoadActivity=Date.now();
+    if(info?.status==='progress'||info?.status==='progress_total'){
+     const percent=Math.min(100,Math.max(0,Math.floor(Number(info.progress)||0)));
+     if(percent!==lastEmit){
+      lastEmit=percent;
+      send('progress',{phase:'download',progress:percent,loaded:Number(info.loaded)||0,total:Number(info.total)||0});
      }
-    }else if(info?.status==='initiate'||info?.status==='download'){
-     send('status',{text:'Downloading model files…'});
+    }else if(['initiate','download','done','ready'].includes(info?.status)){
+     send('status',{phase:info.status==='ready'?'compile':'download',text:'Preparing local model files'});
     }
    }
   });
   selectedProfile=profile;deviceUsed=device;
-  send('ready',{model:model.id,profile,device});
- }catch(err){
+  send('ready',{model:model.id,profile,device,dtype});
+ }catch(error){
   generator=null;selectedProfile=null;deviceUsed='';
-  send('error',{stage:'load',message:String(err?.message||err).slice(0,320)});
+  send('error',{stage:'load',message:String(error?.message||error).slice(0,330),model:model.id,
+   hint:'Check internet and free space. Try Fast or Lite for a smaller on-device download.'});
  }finally{initializing=false;}
 }
-async function generate(payload){
- if(!generator){send('error',{stage:'chat',message:'Load the local model first.'});return;}
- if(generating){send('error',{stage:'chat',message:'An answer is already being generated.'});return;}
+async function generate(request){
+ if(!generator){send('error',{stage:'chat',message:'Load a local model first.'});return;}
+ if(generating){send('error',{stage:'chat',message:'Please finish the previous response first.'});return;}
  generating=true;
  try{
-  const history=prepareHistory(payload.history,payload.memory);
-  if(history.length<1||history.at(-1).role!=='user')throw Error('Type a question before sending.');
-  // Official Qwen3 guidance: /no_think for short replies. Sampling avoids
-  // the deterministic repetition observed in the first real inference test.
+  const history=prepareHistory(request.history,request.memory);
+  if(!history.length||history.at(-1).role!=='user')throw Error('Type a question before sending.');
+  const lastText=history.at(-1).content;
+  const task=resolvedTask(request.task,lastText);
   if(selectedProfile==='balanced')history.at(-1).content+='\n/no_think';
-  const messages=[{role:'system',content:instruction(payload.language)},...history];
-  send('status',{text:'Generating on your device…'});
-  const max_new_tokens=profileFor(selectedProfile).maxTokens;
-  const settings=selectedProfile==='balanced'
-   ?{do_sample:true,temperature:0.7,top_p:0.8,top_k:20,repetition_penalty:1.12,max_new_tokens}
-   :{do_sample:true,temperature:0.8,top_p:0.88,top_k:25,repetition_penalty:1.12,max_new_tokens};
-  const out=await generator(messages,settings);
-  let answer=cleanResponse(out?.[0]?.generated_text,history.at(-1).content);
-  if(selectedProfile==='balanced'&&isRepetitive(answer)){
-   send('status',{text:'Improving a repetitive reply…'});
-   const retry=await generator(messages,{...settings,temperature:0.82,top_p:0.85,repetition_penalty:1.25,max_new_tokens:145});
-   const improved=cleanResponse(retry?.[0]?.generated_text,history.at(-1).content);
-   if(improved&&!isRepetitive(improved))answer=improved;
+  const messages=[{role:'system',content:instruction(request.language,task,lastText,selectedProfile)},...history];
+  const generationMax=Math.min(320,profileFor(selectedProfile).maxTokens+
+   (['coding','writing','planning','study'].includes(task)?55:0));
+  const options={
+   max_new_tokens:generationMax,do_sample:true,
+   temperature:selectedProfile==='lite'?0.8:0.7,
+   top_p:selectedProfile==='lite'?0.88:0.8,top_k:20,repetition_penalty:1.14
+  };
+  let partial='',lastUpdate=0;
+  if(TextStreamerClass){
+   options.streamer=new TextStreamerClass(generator.tokenizer,{
+    skip_prompt:true,skip_special_tokens:true,
+    callback_function:text=>{
+     partial+=String(text||'');
+     const now=Date.now();
+     if(now-lastUpdate<150||partial.length>1600)return;
+     lastUpdate=now;
+     const visible=cleanResponse(partial,history.at(-1).content);
+     if(visible)send('partial',{text:visible.slice(0,1700)});
+    }
+   });
   }
-  if(!answer)throw Error('The model did not produce a usable reply. Try a shorter question.');
-  send('answer',{answer,model:profileFor(selectedProfile).id,contextMessages:history.length});
- }catch(err){
-  send('error',{stage:'chat',message:String(err?.message||err).slice(0,300)});
+  send('status',{phase:'generation',text:'Generating on your device…',task});
+  const result=await generator(messages,options);
+  let answer=trimRepeats(cleanResponse(result?.[0]?.generated_text,history.at(-1).content));
+  if(!answer)throw Error('The local model returned no usable answer. Try a shorter question or a different profile.');
+  if(isRepetitive(answer))send('status',{phase:'quality',text:'Answer may contain repetition; smaller models have limits.'});
+  send('answer',{answer,task,model:profileFor(selectedProfile).id,contextMessages:history.length});
+ }catch(error){
+  send('error',{stage:'chat',message:String(error?.message||error).slice(0,330)});
  }finally{generating=false;}
 }
 self.onmessage=event=>{
  const data=event.data||{};
- if(data.type==='init')void init(data.profile);
+ if(data.type==='init')void init(data);
  else if(data.type==='generate')void generate(data);
 };
