@@ -1,45 +1,81 @@
-/* NOVA OMNI Local arithmetic: deterministic, no eval, no network calls. */
+/* NOVA Local Math v2.7 — safe deterministic parsing. No eval, no network. */
 (function(root,factory){
- const api=factory();
- if(typeof module==='object'&&module.exports)module.exports=api;
- else root.NovaLocalMath=api;
+ const exported=factory();
+ if(typeof module==='object'&&module.exports)module.exports=exported;
+ else root.NovaLocalMath=exported;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
- function calculate(input){
-  const str=String(input||'').replace(/\s+/g,'');
-  if(str.length<3||str.length>150||!/^[0-9.\-+*\/^()]+$/.test(str))throw Error('Not a supported arithmetic expression');
-  let i=0;
-  const eat=c=>str[i]===c?(i++,true):false;
-  function number(){
-   if(eat('(')){const x=sum();if(!eat(')'))throw Error('Missing )');return x;}
-   const n=str.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)/);
-   if(!n)throw Error('Invalid number');
-   i+=n[0].length;return Number(n[0]);
-  }
-  function power(){let n=number();if(eat('^'))n=Math.pow(n,unary());return n;}
-  function unary(){if(eat('+'))return unary();if(eat('-'))return -unary();return power();}
-  function product(){let n=unary();while(i<str.length){if(eat('*'))n*=unary();else if(eat('/'))n/=unary();else break;}return n;}
-  function sum(){let n=product();while(i<str.length){if(eat('+'))n+=product();else if(eat('-'))n-=product();else break;}return n;}
-  const n=sum();
-  if(i!==str.length||!Number.isFinite(n))throw Error('Invalid or non-finite arithmetic');
-  return Math.round(n*1e12)/1e12;
+ const FUNCTIONS=Object.freeze({
+  sqrt:Math.sqrt,sin:Math.sin,cos:Math.cos,tan:x=>{
+   if(Math.abs(Math.cos(x))<1e-12)throw Error('tan undefined at this angle');
+   return Math.tan(x);
+  },
+  abs:Math.abs,ln:Math.log,log:Math.log10,exp:Math.exp
+ });
+ function toAsciiDigits(text){
+  return String(text).replace(/[\u0660-\u0669]/g,c=>String(c.charCodeAt(0)-0x0660))
+   .replace(/[\u06f0-\u06f9]/g,c=>String(c.charCodeAt(0)-0x06f0))
+   .replace(/[×·]/g,'*').replace(/÷/g,'/')
+   .replace(/[−–]/g,'-').replace(/π/g,'pi');
  }
- function toAsciiDigits(source){
-  return source.replace(/[\u0660-\u0669]/g,c=>String(c.charCodeAt(0)-0x0660))
-   .replace(/[\u06F0-\u06F9]/g,c=>String(c.charCodeAt(0)-0x06F0));
+ function calculate(expression){
+  const s=toAsciiDigits(expression).replace(/\s+/g,'').toLowerCase();
+  if(!s||s.length>160||!/^[a-z0-9.+\-*/^()]+$/.test(s))throw Error('Invalid expression');
+  let i=0;
+  const eat=c=>s[i]===c?(i++,true):false;
+  function atom(){
+   if(eat('(')){
+    const x=sum();
+    if(!eat(')'))throw Error('Missing closing parenthesis');
+    return x;
+   }
+   const n=s.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/);
+   if(n){i+=n[0].length;return Number(n[0]);}
+   const name=s.slice(i).match(/^[a-z]+/);
+   if(name){
+    const id=name[0];i+=id.length;
+    if(id==='pi')return Math.PI;
+    if(id==='e')return Math.E;
+    if(!Object.hasOwn(FUNCTIONS,id)||!eat('('))throw Error('Unsupported function');
+    const x=sum();
+    if(!eat(')'))throw Error('Missing function parenthesis');
+    return FUNCTIONS[id](x);
+   }
+   throw Error('Expected number');
+  }
+  function power(){let n=atom();if(eat('^'))n=Math.pow(n,unary());return n;}
+  function unary(){if(eat('-'))return -unary();if(eat('+'))return unary();return power();}
+  function product(){
+   let n=unary();
+   while(i<s.length){if(eat('*'))n*=unary();else if(eat('/'))n/=unary();else break;}
+   return n;
+  }
+  function sum(){
+   let n=product();
+   while(i<s.length){if(eat('+'))n+=product();else if(eat('-'))n-=product();else break;}
+   return n;
+  }
+  const result=sum();
+  if(i!==s.length||!Number.isFinite(result))throw Error('Invalid or non-finite arithmetic');
+  const precise=Math.abs(result)<1e10?Number(result.toFixed(12)):Number(result.toPrecision(12));
+  if(!Number.isFinite(precise))throw Error('Arithmetic overflow');
+  return precise;
  }
  function tryArithmetic(question){
-  const source=toAsciiDigits(String(question||'').trim());
-  if(source.length<3||source.length>250)return null;
-  let expression=source;
-  if(!/^[\s\d().+\-*\/^]+$/.test(expression)){
-   const match=source.match(/^\s*(?:what\s+is|what's|calculate|compute|احسب|كام|ما\s+ناتج|ناتج|نتيجة)\s*:?\s*([\d().+\-*\/^\s]+)(?:[?؟=]\s*.*)?\s*$/i);
+  const input=toAsciiDigits(String(question||'').trim());
+  if(input.length<3||input.length>300)return null;
+  let expr=input;
+  // Isolate only an explicit numeric expression from a user question.
+  if(!/^[\s\d.a-z+\-*/^()]+$/i.test(expr)){
+   const match=input.match(/^\s*(?:what\s+is|what's|calculate|compute|solve|احسب|كام|ما\s+ناتج|ما\s+نتيجة|ناتج|نتيجة)\s*:?\s*([\d.a-z()+\-*/^\s]+?)(?:\s*[?؟=]\s*.*)?\s*$/i);
    if(!match)return null;
-   expression=match[1].trim();
+   expr=match[1];
   }
-  if(!/[+\-*\/^]/.test(expression)||!/\d/.test(expression))return null;
-  try{return {expression:expression.trim(),value:calculate(expression)};}
+  expr=expr.trim();
+  if(!expr||!/[0-9]|pi|sqrt|sin|cos|tan|abs|log|ln|exp/i.test(expr))return null;
+  if(!/[+\-*/^]|(?:sqrt|sin|cos|tan|abs|ln|log|exp)\s*\(/i.test(expr))return null;
+  try{return {expression:expr,value:calculate(expr)};}
   catch(e){return null;}
  }
- return Object.freeze({calculate,tryArithmetic});
+ return Object.freeze({calculate,tryArithmetic,toAsciiDigits});
 });
