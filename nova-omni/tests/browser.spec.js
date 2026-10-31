@@ -418,7 +418,7 @@ test('premium Local AI desktop layout shows navigation, welcome and settings wit
  expect(response.status()).toBe(200);
  await expect(page.locator('.sidebar')).toBeVisible();
  await expect(page.locator('#settingsPanel')).toBeVisible();
- await expect(page.locator('.welcome h1')).toContainText('مساحتك للأفكار');
+ await expect(page.locator('.welcome h1')).toContainText('فكرتك تبدأ هنا');
  await expect(page.locator('#memory')).toHaveValue('balanced');
  await expect(page.locator('#profile')).toHaveValue('fast');
  const dimensions=await page.evaluate(()=>({
