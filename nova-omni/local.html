@@ -817,7 +817,25 @@ $('textFile').addEventListener('change',async()=>{
  input.value='';
 });
 
+function clearGenerationTimers(){
+ if(generationHelpTimer)clearTimeout(generationHelpTimer);
+ if(generationDeadlineTimer)clearTimeout(generationDeadlineTimer);
+ generationHelpTimer=null;generationDeadlineTimer=null;
+}
+function scheduleGenerationTimers(){
+ clearGenerationTimers();
+ generationHelpTimer=setTimeout(()=>{
+  if(generating&&!doingInstant)notice('نموذج AI بطيء على الجهاز. تقدر تلغي الرد أو تختار وضع رد سريع. البحث والقوالب متاحة فورًا.');
+ },25000);
+ generationDeadlineTimer=setTimeout(()=>{
+  if(!generating||doingInstant)return;
+  stop('الرد المحلي ما اكتملش في وقت مناسب. جرّب وضع رد سريع أو نسخة Lite.');
+  display();
+  notice('أوقفنا الرد البطيء من غير ما نحذف سؤالك. القوالب والبحث متاحين، وتقدر تعيد تشغيل AI من الزر.');
+ },115000);
+}
 function stop(text){
+ clearGenerationTimers();
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
  if(loadDeadlineTimer)clearInterval(loadDeadlineTimer);
  loadHelpTimer=null;loadDeadlineTimer=null;
@@ -875,6 +893,7 @@ function startModel(source='manual'){
     }
    }else if(data.type==='answer'){
     if(!pending)return;
+    clearGenerationTimers();
     addAnswer(pending,String(data.answer||''));
     pending=null;generating=false;
     $('cancelReply').hidden=true;
@@ -883,6 +902,7 @@ function startModel(source='manual'){
     state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');
     notice('');
    }else if(data.type==='error'){
+    clearGenerationTimers();
     const error='Local AI error: '+String(data.message||'غير متاح').slice(0,280);
     if(data.stage==='load'){stop(error+' · جرّب Fast أو Lite.');showModelHelp('فشل تجهيز النموذج. راجع الاتصال والمساحة المتاحة، وبعدها جرّب Fast أو Lite.');introStatus('تعذر التحميل. ممكن تجرب نموذجًا أخف.');}
     else{
@@ -987,6 +1007,7 @@ function send(){
  syncActions();notice('');
  state('بجهّز رد بالذاكرة '+(MEMORY_LABELS[$('memory').value]||'14')+' رسالة…','working');
  showPending(message);
+ scheduleGenerationTimers();
  worker.postMessage({
   type:'generate',
   history:[...history.slice(-24),{role:'user',content:message}],
