@@ -786,6 +786,58 @@ test('local model init gives recovery options and safely ends at the load deadli
  await expect(page.locator('#prompt')).toBeEnabled();
 });
 
+
+test('advanced verified math works instantly with no model worker or AI API',async({page})=>{
+ let cloudCalls=0;
+ page.on('request',r=>{if(/ai-gateway|huggingface|cdn\.jsdelivr/.test(r.url()))cloudCalls++;});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#prompt').fill('Calculate sqrt(144)+2^3');
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('20');
+ await page.locator('#prompt').fill('ما نتيجة sin(pi/2)؟');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai').last()).toContainText('1');
+ expect(cloudCalls).toBe(0);
+});
+test('Arabic quick summary extracts key sentences from provided text without model',async({page})=>{
+ let requests=0;
+ page.on('request',r=>{if(/ai-gateway|huggingface|api\/omni/.test(r.url()))requests++;});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await page.locator('#taskMode').selectOption('summarise');
+ const source='تعتبر الطاقة الشمسية من مصادر الطاقة المتجددة التي تعتمد على ضوء الشمس. تقوم الألواح الشمسية بتحويل الضوء إلى كهرباء باستخدام الخلايا الكهروضوئية. وتساعد هذه التقنية في تقليل استخدام الوقود الأحفوري. ويمكن تخزين الكهرباء في بطاريات لاستخدامها أثناء الليل. لكن كفاءة الألواح تتأثر بالطقس والظل ودرجة الحرارة.';
+ await page.locator('#prompt').fill('لخص النص التالي:\n\n'+source);
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#send').click();
+ const result=await page.locator('.bubble.ai > div:not(.messageActions)').innerText();
+ expect(result).toContain('ملخص سريع');
+ expect(result).toContain('•');
+ expect(result).toContain('النص الأصلي');
+ expect(requests).toBe(0);
+});
+test('English uploaded text can be summarised instantly without model loading',async({page})=>{
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ const notes='Photosynthesis allows plants to convert sunlight into chemical energy. Green leaves contain chlorophyll which absorbs incoming light. Plants use water and carbon dioxide to make glucose. The process produces oxygen which is released into the surrounding air. Changes in sunlight and temperature can affect the rate of photosynthesis.';
+ await page.locator('#textFile').setInputFiles({
+  name:'science-notes.txt',mimeType:'text/plain',buffer:Buffer.from(notes)
+ });
+ await expect(page.locator('#taskMode')).toHaveValue('summarise');
+ await expect(page.locator('#send')).toBeEnabled();
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('ملخص سريع');
+ await expect(page.locator('#statusLabel')).toHaveText('NOVA Local');
+ await expect(page.locator('#start')).toBeEnabled();
+});
+test('AI-rewritten summary is a separate opt-in and does not pretend the offline extractor is AI',async({page})=>{
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ const source='The weather was sunny throughout the morning. Children visited the garden to observe bees and butterflies. The class made careful notes about the flowers and insects. They later discussed how plants and animals depend on each other. Everyone returned to school with observations for their science project.';
+ await page.locator('#taskMode').selectOption('summarise_ai');
+ await page.locator('#prompt').fill('Summarize:\n\n'+source);
+ await expect(page.locator('#send')).toBeDisabled();
+ await page.locator('#taskMode').selectOption('summarise');
+ await expect(page.locator('#send')).toBeEnabled();
+});
+
 for(const viewport of [{width:320,height:780},{width:390,height:844},{width:768,height:900},{width:1440,height:900}]){
  test('responsive layout '+viewport.width+'px without horizontal overflow',async({page})=>{
   await page.setViewportSize(viewport);await start(page);
