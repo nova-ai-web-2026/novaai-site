@@ -260,14 +260,14 @@ test('local no-key AI page loads without starting a model download',async({page}
  await expect(page).toHaveTitle(/NOVA OMNI Local/);
  await expect(page.locator('#start')).toBeEnabled();
  await expect(page.locator('#send')).toBeDisabled();
- await expect(page.locator('#state')).toContainText('Not started');
+ await expect(page.locator('#state')).toContainText('الأدوات الفورية جاهزة');
  expect(modelRequests).toBe(0);
 });
 test('local AI requires consent before any worker is loaded',async({page})=>{
  page.on('dialog',dialog=>dialog.dismiss());
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await page.locator('#start').click();
- await expect(page.locator('#state')).toContainText('Not started');
+ await expect(page.locator('#state')).toContainText('الأدوات الفورية جاهزة');
  await expect(page.locator('#send')).toBeDisabled();
 });
 test('local AI mock worker responds in Egyptian Arabic without any backend requests',async({page})=>{
@@ -452,8 +452,9 @@ test('premium Local AI example cards populate the real composer without loading 
  await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
  await expect(page.locator('#send')).toBeDisabled();
  await page.locator('[data-prompt]').first().click();
- await expect(page.locator('#prompt')).toHaveValue('اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال.');
- await expect(page.locator('#send')).toBeDisabled();
+ await expect(page.locator('#prompt')).toHaveValue('ابحث عن الطاقة الشمسية وفوائدها');
+ await expect(page.locator('#taskMode')).toHaveValue('research');
+ await expect(page.locator('#send')).toBeEnabled();
 });
 test('premium Local AI chat retains layout and conversation after mocked model response',async({page})=>{
  await page.addInitScript(()=>{
