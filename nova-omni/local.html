@@ -247,7 +247,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <span>مساحة العمل</span><svg class="icon" style="width:13px;color:#657185" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg><b>المحادثة المحلية</b>
       </div>
       <div class="topActions">
-        <div class="statusPill" id="statusPill"><span class="dot" aria-hidden="true"></span><span id="statusLabel">غير مُشغّل</span></div>
+        <div class="statusPill" id="statusPill"><span class="dot" aria-hidden="true"></span><span id="statusLabel">NOVA Local</span></div>
         <button class="topButton mobileOnly" id="toggleSettings" type="button" aria-label="فتح إعدادات النموذج" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       </div>
     </header>
@@ -353,58 +353,56 @@ const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
 let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null;
 let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
-function networkPolicy(){
+const MODEL_CONSENT='nova_local_download_consent_v1';
+function consentValue(){try{return localStorage.getItem(MODEL_CONSENT)||'unset';}catch(e){return 'unset';}}
+function rememberConsent(value){try{localStorage.setItem(MODEL_CONSENT,value);}catch(e){}}
+function connectionPolicy(){
  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
  if(navigator.onLine===false)return {auto:false,reason:'offline'};
- if(sessionStorage.getItem('nova_no_autowarm')==='1')return {auto:false,reason:'opted-out'};
- if(c?.saveData||/^(slow-2g|2g|3g)$/i.test(c?.effectiveType||''))return {auto:false,reason:'saving-data'};
+ if(c?.saveData||/^(slow-2g|2g|3g)$/i.test(c?.effectiveType||''))return {auto:false,reason:'save-data'};
  if(['cellular','bluetooth','wimax','none'].includes(c?.type))return {auto:false,reason:'metered'};
  const mobile=navigator.userAgentData?.mobile===true||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
  if(mobile&&c?.type!=='wifi'&&c?.type!=='ethernet')return {auto:false,reason:'mobile-unknown'};
  if(typeof navigator.deviceMemory==='number'&&navigator.deviceMemory<4)return {auto:false,reason:'low-memory'};
- return {auto:true,reason:c?.type==='wifi'?'wifi':'desktop'};
+ return {auto:true,reason:'wifi-or-desktop'};
 }
-function introStatus(value){$('introWarmStatus').textContent=String(value||'');}
+function introStatus(text){$('introWarmStatus').textContent=String(text||'');}
 function closeIntro(){
  $('introOverlay').hidden=true;
- sessionStorage.setItem('nova_intro_seen','1');
+ try{sessionStorage.setItem('nova_intro_seen','1');}catch(e){}
 }
 function enterIntro(){
- const policy=networkPolicy();
+ // The visitor approves only local model download; no device permissions.
+ rememberConsent('granted');
+ try{sessionStorage.removeItem('nova_no_autowarm');}catch(e){}
  closeIntro();
- if(ready){$('prompt').focus();return;}
- if(loading){
-  notice('NOVA بيتجهز في الخلفية. تقدر تكتب سؤالك وهيرد أول ما النموذج يشتغل.');
-  $('prompt').focus();return;
- }
- if(policy.reason==='offline'){notice('الإنترنت غير متاح لتحميل النموذج أول مرة.');return;}
- if(policy.reason==='opted-out'){notice('تقدر تشغل النموذج من الإعدادات لما تحب.');return;}
- if(!policy.auto){
-  const allow=confirm('توافق على تحميل نموذج Qwen3 بحجم قد يصل إلى مئات الميجابايت؟ بيانات الموبايل قد تُحسب عليك.');
-  if(allow)startModel('approved');
-  else notice('التحميل ما بدأش. الحسابات البسيطة شغالة من غير نموذج.');
- }else startModel('automatic');
+ if(!ready&&!loading)startModel('welcome');
  $('prompt').focus();
 }
 function skipIntro(){
- if(loading||ready)stop('تم إيقاف النموذج وتجهيزه التلقائي بناءً على اختيارك.');
- sessionStorage.setItem('nova_no_autowarm','1');
- closeIntro();notice('دخلت من غير تحميل؛ تقدر تشغل النموذج لاحقًا من الإعدادات.');
- $('prompt').focus();
+ rememberConsent('declined');
+ try{sessionStorage.setItem('nova_no_autowarm','1');}catch(e){}
+ if(loading||ready)stop('تم إيقاف نموذج NOVA.');
+ closeIntro();$('prompt').focus();
 }
 $('introEnter').addEventListener('click',enterIntro);
 $('introSkip').addEventListener('click',skipIntro);
 function beginBackgroundWarmup(){
- if(sessionStorage.getItem('nova_intro_seen')!=='1')$('introOverlay').hidden=false;
- const policy=networkPolicy();
- if(policy.auto){
-  introStatus('النموذج بيتجهز في الخلفية · بدون رسوم AI');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('automatic')));
- }else{
-  introStatus(policy.reason==='offline'?'محتاج اتصال إنترنت لتحميل النموذج.':policy.reason==='opted-out'?'التحميل التلقائي متوقف باختيارك.':policy.reason==='low-memory'?'ذاكرة الجهاز قليلة؛ جرّب Lite.':'على الاتصال ده التحميل محتاج موافقتك.');
+ const approved=consentValue()==='granted';
+ if(approved){
+  $('introOverlay').hidden=true;
+  // Already approved on this browser. Never repeat a large download on
+  // metered/Save-Data connections unless the visitor manually requests it.
+  if(connectionPolicy().auto){
+   requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('remembered')));
+  }
+  return;
  }
+ let seen=false;
+ try{seen=sessionStorage.getItem('nova_intro_seen')==='1';}catch(e){}
+ $('introOverlay').hidden=seen||consentValue()==='declined';
+ introStatus('لم يبدأ تنزيل أي نموذج قبل الموافقة.');
 }
-
 function messageOK(m){
  return m&&['user','assistant'].includes(m.role)&&typeof m.content==='string'&&m.content.trim().length>0;
 }
@@ -549,7 +547,7 @@ function updateMemoryInfo(){
 function state(text,mode){
  $('state').textContent=String(text||'');
  $('statusPill').classList.toggle('live',mode==='ready');
- $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='loading'?'بيتحمّل':mode==='working'?'بيفكّر':mode==='error'?'مشكلة تشغيل':'غير مُشغّل';
+ $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':'NOVA Local';
 }
 function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
@@ -622,25 +620,31 @@ function stop(text){
 function startModel(source='manual'){
  if(loading||ready)return;
  const label=$('profile').value==='lite'?'SmolLM2 135M':'Qwen3 0.6B';
- if(source==='automatic'&&sessionStorage.getItem('nova_no_autowarm')==='1')return;
- if(source==='manual'&&!confirm('موافق تحمّل '+label+' من Hugging Face؟ أول تحميل ممكن يستهلك مئات الميجابايت من الإنترنت وبيانات الموبايل قد تكون مدفوعة.'))return;
+ if(source==='remembered'&&(consentValue()!=='granted'||!connectionPolicy().auto))return;
+ if(source==='manual'){
+  // Starting from Settings is a separate informed action; repeat approval
+  // if the visitor is on metered or Save-Data connections.
+  if((consentValue()!=='granted'||!connectionPolicy().auto)&&
+     !confirm('توافق على تحميل وتشغيل '+label+' على جهازك؟ أول تحميل قد يستهلك مئات الميجابايت وقد يُحسب على باقتك.'))return;
+  rememberConsent('granted');
+ }
  loading=true;$('start').disabled=true;$('stop').disabled=false;$('profile').disabled=true;
- notice('');state('NOVA بيتجهز على جهازك في الخلفية…','loading');introStatus('بيتحضّر في الخلفية. تقدر تدخل وتبدأ الكتابة.');closePanels();
+ notice('');state('NOVA محلي','loading');introStatus('تم بدء التشغيل محليًا');closePanels();
  try{
   worker=new Worker(new URL('./local-ai-worker.js',location.href),{type:'module'});
   worker.onmessage=event=>{
    const data=event.data||{};
-   if(data.type==='status')state(data.text||'جاري التحميل…',generating?'working':'loading');
+   if(data.type==='status')state('NOVA محلي',generating?'working':'loading');
    else if(data.type==='progress'){
     const progress=Math.max(0,Math.min(100,Number(data.progress)||0));
     $('progress').style.display='block';$('progress').value=progress;
-    state('تحميل '+String(data.file||'النموذج')+' · '+Math.round(progress)+'% من الملف','loading');
+    state('NOVA محلي','loading');
    }else if(data.type==='ready'){
     ready=true;loading=false;
     refreshSend();$('stop').disabled=false;$('progress').style.display='none';
     state('✓ AI local ready · '+String(data.device||'browser')+' · بدون Gateway','ready');
     introStatus('✓ NOVA جاهز للمحادثة.');
-    notice('النموذج جاهز. اكتب سؤالك وابدأ المحادثة.');
+    notice('');
     if(queuedQuestion){const queued=queuedQuestion;queuedQuestion=null;if($('prompt').value.trim()===queued)send();}
    }else if(data.type==='answer'){
     if(!pending)return;
@@ -673,6 +677,8 @@ function startModel(source='manual'){
 $('start').addEventListener('click',()=>startModel('manual'));
 $('stop').addEventListener('click',()=>{
  if(generating)display();
+ rememberConsent('declined');
+ try{sessionStorage.setItem('nova_no_autowarm','1');}catch(e){}
  stop('تم إيقاف النموذج. محفوظة كل المحادثات والرسالة الحالية.');
 });
 function send(){
@@ -686,7 +692,7 @@ function send(){
   state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.',ready?'ready':null);
   return;
  }
- if(loading&&!ready){queuedQuestion=message;$('send').disabled=true;notice('سؤالك محفوظ؛ هيتبعت تلقائيًا أول ما النموذج يتجهز.');return;}
+ if(loading&&!ready){queuedQuestion=message;$('send').disabled=true;notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');return;}
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
  generating=true;pending=message;
  $('send').disabled=true;$('prompt').disabled=true;
