@@ -377,7 +377,7 @@ function enterIntro(){
  $('prompt').focus();
 }
 function skipIntro(){
- if(loading)stop('تم إلغاء التحميل التلقائي.');
+ if(loading||ready)stop('تم إيقاف النموذج وتجهيزه التلقائي بناءً على اختيارك.');
  sessionStorage.setItem('nova_no_autowarm','1');
  closeIntro();notice('دخلت من غير تحميل؛ تقدر تشغل النموذج لاحقًا من الإعدادات.');
  $('prompt').focus();
