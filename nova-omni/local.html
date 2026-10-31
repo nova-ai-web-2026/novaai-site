@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.9.1">
+<meta name="nova-local-version" content="3.0.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -271,6 +271,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
     </div>
     <nav class="railNav" aria-label="التنقل">
       <a class="railItem selected" href="./local.html" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 20l1.2-4.4A8.5 8.5 0 1 1 20 11.5Z"/></svg>المحادثة المحلية</a>
+       <button id="openTemplatesSidebar" class="railItem railTemplateButton" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="8" rx="1.5"/><rect x="13" y="4" width="8" height="8" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/><rect x="13" y="14" width="8" height="7" rx="1.5"/></svg>مكتبة القوالب</button>
       <a class="railItem" href="./index.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>مساحة NOVA الرئيسية</a>
     </nav>
     
@@ -285,9 +286,9 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
     <div class="railSpacer"></div>
     <div class="privacyMini">
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
-      <p>كل محادثة محفوظة عندك في المتصفح. تقدر ترجع لها أو تحذفها. من غير إرسال الكلام لـAI Gateway.</p>
+      <p>محادثاتك بتفضل في المتصفح. البحث الاختياري بس بيرسل كلمات الموضوع إلى ويكيبيديا وCrossref، من غير إرسال تاريخ المحادثة.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v2.7 · PRIVATE & FREE</div>
+    <div class="railFoot">NOVA LOCAL v3.0 · PRIVATE WORKSPACE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -296,7 +297,12 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <span>مساحة العمل</span><svg class="icon" style="width:13px;color:#657185" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg><b>المحادثة المحلية</b>
       </div>
       <div class="topActions">
-        <div class="statusPill" id="statusPill"><span class="dot" aria-hidden="true"></span><span id="statusLabel">NOVA Local</span></div>
+        <div class="textSizeControls" role="group" aria-label="حجم النص">
+          <button id="decreaseText" type="button" aria-label="تصغير حجم النص" title="تصغير النص">A−</button>
+          <button id="increaseText" type="button" aria-label="تكبير حجم النص" title="تكبير النص">A+</button>
+         </div>
+         <button id="openTemplatesTop" class="topButton topTemplatesButton" type="button" aria-label="فتح مكتبة القوالب" title="مكتبة القوالب"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="8" rx="1.5"/><rect x="13" y="4" width="8" height="8" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/><rect x="13" y="14" width="8" height="7" rx="1.5"/></svg><span>القوالب</span></button>
+         <div class="statusPill" id="statusPill"><span class="dot" aria-hidden="true"></span><span id="statusLabel">NOVA Local</span></div>
         <button class="topButton mobileOnly" id="toggleSettings" type="button" aria-label="فتح إعدادات النموذج" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
       </div>
     </header>
@@ -305,9 +311,9 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
         <div class="feed" id="chat" aria-live="polite" aria-label="Conversation">
           <section class="welcome" id="welcome">
             <div class="welcomeMark" aria-hidden="true"><span>✦</span></div>
-            <div class="eyebrow">✧ &nbsp; ذكاء اصطناعي شخصي · مجاني · خاص</div>
-            <h1>مساحتك للأفكار.<br><span>من غير حدود للفواتير.</span></h1>
-            <p class="welcomeDesc">ابحث بمصادر حقيقية، جهّز قالب رسالة أو كود فورًا. ولو عايز ردود AI مفتوحة، شغّل النموذج المحلي باختيارك.</p>
+            <div class="eyebrow">✦ &nbsp; NOVA WORKSPACE · أدوات سريعة وذكاء محلي اختياري</div>
+            <h1>فكرتك تبدأ هنا.<br><span>ونوفا يساعدك تنفذها.</span></h1>
+            <p class="welcomeDesc">بحث بروابط لمصادر حقيقية، وقوالب للكتابة والبرمجة والمذاكرة. اختار قالبًا وعدّله بطريقتك، من غير ما تنزّل نموذج AI.</p>
             <div class="suggestions">
               <button class="suggestion" type="button" data-task="research" data-prompt="ابحث عن الطاقة الشمسية وفوائدها"><span class="tileIcon">⌕</span><span><strong>بحث بالمصادر</strong><small>ويكيبيديا وأبحاث · بدون نموذج</small></span></button>
               <button class="suggestion" type="button" data-task="write_fast" data-prompt="اكتب إيميل رسمي للاستفسار عن حالة طلبي"><span class="tileIcon">✎</span><span><strong>قالب كتابة فوري</strong><small>بدون تنزيل نموذج</small></span></button>
@@ -315,10 +321,14 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
                <button class="suggestion" type="button" data-task="explain" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>شرح بالذكاء الاصطناعي</strong><small>يتطلب تشغيل النموذج</small></span></button>
               <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>جرّب حساب سريع</strong><small>حاسبة دقيقة محليًا</small></span></button>
               <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص سريع</strong><small>من نصك · بدون تحميل</small></span></button>
-            </div>
-          </section>
-        </div>
-        <div class="composerDock">
+            <div class="templateTeaser">
+               <div><strong>مكتبة القوالب الجديدة</strong><span>29 قالبًا منظمًا للكتابة والبرمجة والبحث والمذاكرة</span></div>
+               <button id="browseTemplatesWelcome" type="button">استعرض القوالب <span aria-hidden="true">↗</span></button>
+             </div>
+           </div>
+           </section>
+         </div>
+         <div class="composerDock">
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
              <div id="instantBanner" class="instantBanner" role="status"><span id="instantStatus">⚡ البحث والقوالب متاحة حتى لو نموذج AI ما اتحمّلش.</span><button id="quickStartAi" type="button">تشغيل نموذج AI</button></div>
@@ -344,6 +354,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
    <option value="translate">ترجمة</option>
   </select>
   <button class="attachTask" id="attachText" type="button">＋ ملف نصّي</button>
+   <button class="attachTask openTemplatesComposer" id="openTemplatesComposer" type="button">▦ القوالب</button>
   <input id="textFile" type="file" hidden accept=".txt,.md,.csv,.json,.js,.ts,.py,.html,.css,text/plain,text/markdown,text/csv">
  </div>
  <textarea id="prompt" rows="2" maxlength="7000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
@@ -395,7 +406,15 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
           </select>
           <span class="fieldHint">AI على CPU ممكن يتأخر حتى بعد التحميل. اختر رد سريع لأقل انتظار.</span>
          </div>
-        <div class="field"><label for="language">لغة الرد</label>
+        <div class="field"><label for="textSizeSetting">حجم الخط في التطبيق</label>
+           <select id="textSizeSetting" aria-label="حجم النص في NOVA">
+             <option value="small">صغير · للعرض المكثّف</option>
+             <option value="normal">متوسط · الافتراضي</option>
+             <option value="large">كبير · قراءة أوضح</option>
+           </select>
+           <span class="fieldHint">تقدر كمان تكبّر وتصغّر النص من A+ وA− فوق المحادثة.</span>
+         </div>
+         <div class="field"><label for="language">لغة الرد</label>
           <select id="language" aria-label="Response language">
             <option value="auto">تلقائي · Auto</option><option value="ar-eg">المصري · العربية المصرية</option>
             <option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option>
@@ -437,9 +456,34 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
   </div>
 </div>
 <div class="screenOverlay" id="screenOverlay" aria-hidden="true"></div>
+<div id="templateOverlay" class="templateOverlay" hidden>
+  <section class="templateDialog" role="dialog" aria-modal="true" aria-labelledby="templateDialogTitle" tabindex="-1">
+    <header class="templateHeader">
+      <div class="templateHeading">
+        <span class="templateKicker">NOVA · TEMPLATE LIBRARY</span>
+        <h2 id="templateDialogTitle">قوالب جاهزة تبدأ منها</h2>
+        <p>اختار قالبًا وعدّل تفاصيله. البحث بمصادر فعلية، والباقي قوالب قابلة للتعديل بدون نموذج AI.</p>
+      </div>
+      <button id="closeTemplates" class="templateClose" type="button" aria-label="إغلاق مكتبة القوالب">×</button>
+    </header>
+    <div class="templateToolbar">
+      <label class="templateSearchWrap"><span aria-hidden="true">⌕</span><input id="templateSearch" type="search" autocomplete="off" placeholder="ابحث عن قالب..." aria-label="البحث في القوالب"></label>
+      <div id="templateFilters" class="templateFilters" role="group" aria-label="تصنيف القوالب">
+        <button type="button" data-filter="all" aria-pressed="true">الكل</button>
+        <button type="button" data-filter="writing" aria-pressed="false">✎ كتابة</button>
+        <button type="button" data-filter="code" aria-pressed="false">⌘ برمجة</button>
+        <button type="button" data-filter="research" aria-pressed="false">⌕ بحث</button>
+        <button type="button" data-filter="study" aria-pressed="false">▤ مذاكرة</button>
+      </div>
+      <p id="templateCount" class="templateCount" aria-live="polite">القوالب المتاحة</p>
+    </div>
+    <div id="templateGrid" class="templateGrid"></div>
+  </section>
+</div>
 <script src="./local-math.js?v=2.7.0"></script>
 <script src="./local-tasks.js?v=2.8.1"></script>
 <script src="./local-instant.js?v=2.9.0"></script>
+<script src="./local-template-library.js?v=3.0.0"></script>
 <script>
 (()=>{
 'use strict';
