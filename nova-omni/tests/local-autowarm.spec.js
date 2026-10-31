@@ -198,3 +198,21 @@ test('old intro_seen flag cannot bypass new explicit model consent',async({page}
  await expect(page.locator('#introOverlay')).toBeVisible();
  expect(await page.evaluate(()=>window.__created)).toBe(0);
 });
+
+test('new welcome is readable and usable on a compact 320px mobile display',async({page})=>{
+ await page.setViewportSize({width:320,height:568});
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'connection',{configurable:true,value:{type:'cellular',saveData:true,effectiveType:'4g'}});
+  window.__workerCount=0;
+  window.Worker=class{constructor(){window.__workerCount++;}postMessage(){}terminate(){}};
+ });
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#introOverlay')).toBeVisible();
+ await expect(page.locator('#introTitle')).toContainText('NOVA');
+ await page.locator('#introEnter').scrollIntoViewIfNeeded();
+ await expect(page.locator('#introEnter')).toBeInViewport();
+ const dimensions=await page.evaluate(()=>({width:innerWidth,document:document.documentElement.scrollWidth,button:document.querySelector('#introEnter').getBoundingClientRect().width}));
+ expect(dimensions.document).toBeLessThanOrEqual(dimensions.width+2);
+ expect(dimensions.button).toBeGreaterThan(220);
+ expect(await page.evaluate(()=>window.__workerCount)).toBe(0);
+});
