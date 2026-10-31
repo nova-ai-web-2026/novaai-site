@@ -79,6 +79,8 @@
    kind:'extractive-summary',sourceChars:source.length,originalSentences:sentences.length};
  }
  function tryQuickSummary(prompt,task){
+   // Explicit AI rewrite mode must never become a quick extractive answer.
+   if(task==='summarise_ai')return null;
   const text=String(prompt||'');
   if(!['summarise','summary'].includes(task)&&
    !/^\s*(?:لخّص|لخص|تلخيص|summari[sz]e|summary)(?:\s|[:：])/iu.test(text))

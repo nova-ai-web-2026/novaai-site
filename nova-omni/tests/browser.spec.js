@@ -767,7 +767,7 @@ test('cancel reply aborts local generation and preserves the unsent draft',async
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nova_omni_local_sessions_v1')||'{}').sessions||[]);
  expect(saved.some(x=>x.messages.some(m=>m.content.includes('اكتب خطة')))).toBe(false);
 });
-test('local model init gives recovery options and safely ends at the load deadline',async({page})=>{
+test('stalled local model offers recovery after inactivity',async({page})=>{
  await page.clock.install();
  await page.addInitScript(()=>{
   window.__terminated=0;
@@ -782,7 +782,7 @@ test('local model init gives recovery options and safely ends at the load deadli
  await expect(page.locator('#start')).toBeEnabled();
  await expect(page.locator('#stop')).toBeDisabled();
  expect(await page.evaluate(()=>window.__terminated)).toBe(1);
- await expect(page.locator('#modelHelpText')).toContainText('دقيقتين ونصف');
+ await expect(page.locator('#modelHelpText')).toContainText('دقيقتين');
  await expect(page.locator('#prompt')).toBeEnabled();
 });
 
