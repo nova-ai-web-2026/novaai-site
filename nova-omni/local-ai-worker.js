@@ -41,26 +41,44 @@ function resolvedTask(task,text){
  return typeof task==='string'&&Object.hasOwn(TASK_INSTRUCTIONS,task)?task:detectTask(text);
 }
 function instruction(language,task,lastText,profile){
+ const arabicLast=/[\u0600-\u06ff]/.test(lastText);
+ const arabic=['ar','ar-eg'].includes(language)||(language==='auto'&&arabicLast);
+ const ArabicTasks={
+  general:'افهم الطلب وجاوب عليه مباشرة من غير كلام زيادة أو تكرار السؤال.',
+  explain:'اشرح الفكرة بتعريف واضح وسبب بسيط أو مثال صحيح. خلّي الشرح مرتب وسهل.',
+  study:'حل خطوة خطوة مع القانون أو السبب. راجع النتيجة، ولو مش متأكد وضّح ده.',
+  writing:'اكتب النص المطلوب كاملًا وجاهزًا للنسخ، بأسلوب طبيعي حسب طلب المستخدم.',
+  coding:'اكتب كودًا صغيرًا مفهومًا، واذكر طريقة تشغيله. لا تدّعي أنك نفذته أو اختبرته.',
+  planning:'اكتب خطوات عملية بالترتيب، ووضّح أول خطوة يمكن تنفيذها.',
+  summarise:'لخّص النص الموجود في رسالة المستخدم فقط، في نقاط قصيرة، من غير اختراع تفاصيل.',
+  translate:'ترجم النص بأمانة للغة المطلوبة، وحافظ على المعنى والأسلوب بدون شرح إضافي.'
+ };
+ if(arabic){
+  const dialect=language==='ar-eg'||(language==='auto'&&arabicLast)?
+   'اتكلم بالمصري الطبيعي الواضح، إلا لو المستخدم طلب لغة تانية.':'اكتب بالعربية الواضحة إلا لو طُلب غيرها.';
+  const translate=task==='translate'?'خلي الترجمة باللغة اللي طلبها المستخدم، حتى لو مش عربي.':dialect;
+  return [
+   'أنت NOVA، مساعد ذكاء اصطناعي صغير على جهاز المستخدم، بدون اتصال بحث أو أدوات خارجية.',
+   'ركّز على السؤال الحقيقي. لا تخترع معلومات أو نتائج، ولو مش عارف قول مش متأكد.',
+   'خلي الرد مباشر ومفيد وتجنب التكرار والجمل غير المفهومة.',
+   translate,ArabicTasks[task]||ArabicTasks.general,
+   profile==='lite'?'لأن النموذج صغير جدًا، استخدم إجابة قصيرة وواضحة.':''
+  ].filter(Boolean).join('\n');
+ }
  const langs={
-  'ar-eg':'natural Egyptian Arabic (المصري)',ar:'clear Modern Standard Arabic',
   en:'English',fr:'French',es:'Spanish',de:'German',pt:'Portuguese',it:'Italian',
   ru:'Russian',tr:'Turkish',hi:'Hindi',ur:'Urdu',zh:'Chinese',ja:'Japanese',
   ko:'Korean',id:'Indonesian',bn:'Bengali',fa:'Persian',sw:'Swahili',vi:'Vietnamese',
   th:'Thai',nl:'Dutch',pl:'Polish'
  };
- const specified=langs[language];
- const arabic=/[\u0600-\u06ff]/.test(lastText);
- const output=specified?'Reply in '+specified+' unless explicitly asked to translate to another language.':
-  arabic?'Use natural clear Arabic in the same dialect as the user, not English.':
-  'Reply in the same language as the last user message.';
+ const output=langs[language]?'Reply in '+langs[language]+' unless a translation to another language was requested.':
+  'Reply in the language of the latest user request.';
  return [
-  'You are NOVA OMNI Local, a small offline assistant. You have no web or account access.',
-  'Be factual, useful and concise. State uncertainty and limits. Never invent facts or claim that you verified external information.',
-  'Follow safe age-appropriate behavior. Never invent a successful action, benchmark, file, or test result.',
-  output,TASK_INSTRUCTIONS[task]||TASK_INSTRUCTIONS.general,
-  'Keep answers well-organized. Prefer useful details over filler. Do not get stuck in loops.',
-  profile==='lite'?'This is a very small model. Prefer shorter straightforward answers.':''
- ].filter(Boolean).join('\n');
+  'You are NOVA, a small local assistant with no access to browsing or other apps.',
+  'Focus only on the actual request. Be clear, accurate, direct and avoid repetition.',
+  'If uncertain, say so. Never invent sources or claim you executed code or actions.',
+  output,TASK_INSTRUCTIONS[task]||TASK_INSTRUCTIONS.general
+ ].join('\n');
 }
 function prepareHistory(input,depth){
  if(!Array.isArray(input))return [];
