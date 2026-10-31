@@ -40,3 +40,34 @@ test('real Qwen3 Balanced model loads in Chromium and responds without AI Gatewa
  expect(result.length).toBeGreaterThan(2);
  expect(failures).toEqual([]);
 });
+
+
+test('real Fast Qwen2.5 local model can generate a simple Arabic response on CPU',async({page})=>{
+ test.setTimeout(340000);
+ const gatewayCalls=[];
+ page.on('request',request=>{if(request.url().includes('ai-gateway.vercel.sh'))gatewayCalls.push(request.url());});
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'connection',{configurable:true,value:{type:'cellular',saveData:false,effectiveType:'4g'}});
+  Object.defineProperty(navigator,'userAgent',{configurable:true,get:()=> 'Mozilla/5.0 (Linux; Android 16) Mobile Chrome/141'});
+  localStorage.removeItem('nova_local_profile');
+ });
+ const res=await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:45000});
+ expect(res.status()).toBe(200);
+ await expect(page.locator('#profile')).toHaveValue('fast');
+ await expect(page.locator('#introOverlay')).toBeVisible();
+ await page.locator('#introEnter').click();
+ await expect(page.locator('#introOverlay')).toBeHidden();
+ await expect(page.locator('#statusLabel')).toHaveText('جاهز',{timeout:240000});
+ await page.locator('#language').selectOption('ar-eg');
+ await page.locator('#taskMode').selectOption('explain');
+ await page.locator('#prompt').fill('اشرح لي الشمس في جملة واحدة بسيطة.');
+ await page.locator('#send').click();
+ await expect(page.locator('#typingIndicator')).toBeVisible({timeout:12000});
+ await expect(page.locator('#typingIndicator')).toHaveCount(0,{timeout:110000});
+ const text=(await page.locator('.bubble.ai > div:not(.messageActions)').last().innerText()).trim();
+ expect(text.length).toBeGreaterThan(4);
+ expect(text).not.toContain('نسخ الرد');
+ expect(text).not.toContain('جاري تجهيز الرد');
+ expect(gatewayCalls).toHaveLength(0);
+ console.log('REAL_FAST_MODEL_RESPONSE:',text.slice(0,320));
+});
