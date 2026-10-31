@@ -167,3 +167,26 @@ The local assistant now defaults to **Quick response length**. Its worker caps C
 If a model-generated answer takes over 25 seconds, the chat shows a nonblocking explanation with cancellation and instant-tool options. If a generation remains unanswered for 115 seconds, the browser terminates its worker, preserves the unsent prompt, and offers clear recovery instead of leaving an endless typing indicator. This timeout is for **answer generation**, not for an actively progressing model download. It does not interrupt instant source research, offline arithmetic or the writing/code template tools.
 
 Unit checks verify device-aware generation caps; browser checks simulate stalled model inference and preserve draft safety, and verify answer-length persistence and worker messages. Real model responsiveness still requires separate, explicit real-device verification and is not inferred from mocked workers.
+
+## NOVA Local v3.0 — improved visual hierarchy and expanded template library
+
+This release refines the existing free on-device workspace rather than changing its underlying AI model or introducing a paid inference provider.
+
+### Visual and mobile improvements
+- Consistent readable Arabic/English typography with clearer differences between major headings, explanatory copy, message content, metadata and controls.
+- A more legible dark navy/indigo interface, compact but appropriately sized chat composer, polished responsive starter cards, and an accessible template dialog.
+- Preserves usability at viewport widths of 320, 390, 768 and 1440 pixels, with no horizontal overflow in browser tests.
+- A− / A+ controls in the header and a Small/Normal/Large setting adjust the main application text scale. The setting is persisted in `nova_local_text_size` without modifying saved chats or download consent.
+
+### Template library (29)
+Accessible from the header, sidebar, composer and initial welcome screen. Search and category filters let visitors choose among **12 writing**, **12 programming**, **3 public-source research**, and **2 study** templates. Each template populates an editable prompt in the existing conversation and is usable without downloading local model weights.
+
+- Writing: formal email, follow-up, complaint, leave request, job application, cover letter, professional summary, social post, meeting notes, project outline, essay outline and report structure.
+- Programming: Python calculator, tasks, quiz, CSV and JSON; JavaScript fetch, counter, filtering and timer; HTML page, contact form and responsive CSS cards.
+- Research: user-initiated Wikimedia/Crossref query templates; results contain actual source links and excerpts, not a fabricated AI synthesis or independently verified research findings.
+- Study: revision checklist and weekly study-plan structure.
+
+**Integrity:** Writing items are fill-in starter structures with placeholders rather than AI-generated prose. Coding items are editable examples; they have not been executed as part of each user's task. Unsupported legacy coding prompts retain their honest limitations. Source searches transmit only the explicit search topic, never private conversation histories. The local model remains optional, potentially slow and significantly weaker than a cloud-scale model.
+
+### Verification
+Node tests check catalog size, unique identifiers, filters, safe writing structures and code starters. Browser tests exercise the picker and filters, real rendering in the existing chat, persistence of font preferences, keyboard close behavior, mobile navigation and display overflow at the viewport sizes above. Existing arithmetic, model consent, local history and local worker tests remain in the test suite.
