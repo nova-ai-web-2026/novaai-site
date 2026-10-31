@@ -1,0 +1,34 @@
+name: NOVA instant workspace PR browser QA
+on:
+  pull_request:
+    paths:
+      - 'nova-omni/**'
+      - '.github/workflows/nova-omni-instant-pr.yml'
+permissions:
+  contents: read
+jobs:
+  instant-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: nova-omni
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install Playwright
+        run: npm install --no-save --no-package-lock --ignore-scripts @playwright/test@1.56.1
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Test instant tools and existing model consent locally
+        env:
+          NOVA_SITE_URL: http://127.0.0.1:4173/
+        run: |
+          set -eu
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/nova-instant-http.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -fsSL --max-time 2 http://127.0.0.1:4173/local.html -o /dev/null; then break; fi
+            sleep 1
+          done
+          npx playwright test tests/instant-browser.spec.js tests/local-autowarm.spec.js --reporter=line --workers=1 --timeout=30000
