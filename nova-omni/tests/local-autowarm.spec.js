@@ -216,3 +216,31 @@ test('new welcome is readable and usable on a compact 320px mobile display',asyn
  expect(dimensions.button).toBeGreaterThan(220);
  expect(await page.evaluate(()=>window.__workerCount)).toBe(0);
 });
+
+
+test('first-time visitor can consent to smaller Lite model directly from welcome without a second popup',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__selected=[];
+  window.Worker=class {
+   constructor(){this.onmessage=null;}
+   postMessage(data){
+    window.__selected.push(data);
+    if(data.type==='init')queueMicrotask(()=>this.onmessage({data:{type:'ready',profile:'lite',device:'wasm'}}));
+   }
+   terminate(){}
+  };
+ });
+ let popups=0;
+ page.on('dialog',async d=>{popups++;await d.dismiss();});
+ await page.goto(BASE+'local.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#introOverlay')).toBeVisible();
+ await expect(page.locator('#introQuick')).toBeEnabled();
+ await page.locator('#introQuick').click();
+ await expect(page.locator('#introOverlay')).toBeHidden();
+ await expect(page.locator('#profile')).toHaveValue('lite');
+ await expect(page.locator('#statusLabel')).toContainText('جاهز');
+ expect((await page.evaluate(()=>window.__selected)).filter(e=>e.type==='init').map(e=>e.profile)).toEqual(['lite']);
+ expect(await page.evaluate(()=>localStorage.getItem('nova_local_profile'))).toBe('lite');
+ expect(await page.evaluate(()=>localStorage.getItem('nova_local_download_consent_v1'))).toBe('granted');
+ expect(popups).toBe(0);
+});
