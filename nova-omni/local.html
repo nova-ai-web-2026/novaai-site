@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="2.8.0">
+<meta name="nova-local-version" content="2.8.1">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -415,7 +415,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 </div>
 <div class="screenOverlay" id="screenOverlay" aria-hidden="true"></div>
 <script src="./local-math.js?v=2.7.0"></script>
-<script src="./local-tasks.js?v=2.7.0"></script>
+<script src="./local-tasks.js?v=2.8.1"></script>
 <script>
 (()=>{
 'use strict';
@@ -471,9 +471,11 @@ function beginBackgroundWarmup(){
   // Already approved on this browser. Never repeat a large download on
   // metered/Save-Data connections unless the visitor manually requests it.
   if(connectionPolicy().auto){
-   requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('remembered')));
-  }
-  return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('remembered')));
+   }else{
+    notice('التشغيل التلقائي متوقف على الشبكة دي لحماية باقة الإنترنت. تقدر تشغّل NOVA يدويًا من إعدادات النموذج.');
+   }
+   return;
  }
  // Previous v2.2 sessions did not record explicit consent. Show the
  // new consent screen even if an old intro_seen flag exists.
