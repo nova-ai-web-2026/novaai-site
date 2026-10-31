@@ -215,6 +215,9 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 .taskLine select{background:#252d3e;color:#e7defc;border:1px solid #4b4e70;padding:5px 9px;border-radius:9px;font-size:11px;min-height:31px;max-width:145px}
 .attachTask{font-size:11px;white-space:nowrap;padding:6px 10px;background:#262c39;color:#b9d7da;border:1px solid #475b60;border-radius:9px;min-height:31px}
 .attachTask:hover{background:#2e4145}
+.cancelReply{display:inline-flex;align-items:center;justify-content:center;background:#352632;border:1px solid #835764;border-radius:9px;color:#f1c6cc;padding:9px 12px;min-height:38px;font-size:11px;white-space:nowrap}
+.cancelReply[hidden]{display:none!important}
+.cancelReply:hover{background:#4b2d3a}
 .modelHelp[hidden]{display:none!important}
 .modelHelp{margin:13px 0 9px;border-radius:12px;border:1px solid #5d5066;background:#282335;padding:12px;color:#e9deee;font-size:11px}
 .modelHelp strong{font-size:12px;color:#f1e3ff}
@@ -328,6 +331,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
  <textarea id="prompt" rows="2" maxlength="7000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
               <div class="composerTools">
                 <div class="composerHint"><svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 2v8M8 7l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>Enter للإرسال · Shift + Enter لسطر جديد</span></div>
+                <button class="cancelReply" id="cancelReply" type="button" hidden>إلغاء الرد</button>
                 <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
               </div>
             </div>
@@ -414,7 +418,7 @@ progress{display:none;accent-color:#a99ffb;height:6px;width:100%;border:0;margin
 const $=id=>document.getElementById(id);
 const HISTORY_LIMIT=60,SESSION_LIMIT=24,STORAGE_KEY='nova_omni_local_sessions_v1';
 const MEMORY_LABELS={short:'8',balanced:'14',extended:'18'};
-let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null;
+let worker=null,ready=false,loading=false,generating=false,pending=null,queuedQuestion=null,loadHelpTimer=null,loadDeadlineTimer=null;
 let sessions=[],currentId=null,history=[];
 const welcome=$('welcome');
 const MODEL_CONSENT='nova_local_download_consent_v1';
@@ -674,6 +678,7 @@ document.querySelectorAll('[data-prompt]').forEach(button=>button.addEventListen
 }));
 function hideModelHelp(){
  if(loadHelpTimer){clearTimeout(loadHelpTimer);loadHelpTimer=null;}
+ if(loadDeadlineTimer){clearTimeout(loadDeadlineTimer);loadDeadlineTimer=null;}
  $('modelHelp').hidden=true;$('loadAssist').hidden=true;
 }
 function showModelHelp(explanation){
@@ -682,10 +687,19 @@ function showModelHelp(explanation){
 }
 function scheduleModelHelp(){
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
+ if(loadDeadlineTimer)clearTimeout(loadDeadlineTimer);
  loadHelpTimer=setTimeout(()=>{
   loadHelpTimer=null;
   if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز. لو التحميل علق أو الجهاز بطيء، جرّب Fast أو Lite. تغيير النموذج ممكن يحتاج تنزيلًا جديدًا.');
  },24000);
+ loadDeadlineTimer=setTimeout(()=>{
+  loadDeadlineTimer=null;
+  if(loading&&!ready){
+   stop('التجهيز طول عن الحد المناسب. جرّب Fast أو Lite، أو أعد المحاولة على Wi-Fi.');
+   showModelHelp('انتهت محاولة تجهيز النموذج بعد دقيقتين ونصف. ممكن تكون الشبكة بطيئة أو ذاكرة الجهاز مش كافية. جرّب نموذجًا أخف.');
+   notice('NOVA مش قادر يجهز النموذج حاليًا. اختار Fast أو Lite، أو أعد المحاولة.');
+  }
+ },150000);
 }
 function pickFallback(profile){
  const next=profile==='fast'?'fast':'lite';
@@ -725,7 +739,9 @@ $('textFile').addEventListener('change',async()=>{
 
 function stop(text){
  if(loadHelpTimer)clearTimeout(loadHelpTimer);
- loadHelpTimer=null;
+ if(loadDeadlineTimer)clearTimeout(loadDeadlineTimer);
+ loadHelpTimer=null;loadDeadlineTimer=null;
+ $('cancelReply').hidden=true;
  if(worker)worker.terminate();
  worker=null;ready=false;loading=false;generating=false;pending=null;queuedQuestion=null;
  $('start').disabled=false;$('stop').disabled=true;
@@ -780,6 +796,7 @@ function startModel(source='manual'){
     if(!pending)return;
     addAnswer(pending,String(data.answer||''));
     pending=null;generating=false;
+    $('cancelReply').hidden=true;
     $('prompt').value='';$('prompt').disabled=false;refreshSend();
     syncActions();updateMemoryInfo();
     state('✓ رد محلي جاهز · السياق: '+Number(data.contextMessages||0)+' رسالة','ready');
@@ -789,6 +806,7 @@ function startModel(source='manual'){
     if(data.stage==='load'){stop(error+' · جرّب Fast أو Lite.');showModelHelp('فشل تجهيز النموذج. راجع الاتصال والمساحة المتاحة، وبعدها جرّب Fast أو Lite.');introStatus('تعذر التحميل. ممكن تجرب نموذجًا أخف.');}
     else{
      generating=false;pending=null;
+     $('cancelReply').hidden=true;
      $('prompt').disabled=false;refreshSend();
      display();syncActions();
      state(error+' · Your draft is still here','error');
@@ -823,9 +841,15 @@ function send(){
   state('✓ حساب دقيق على جهازك، من غير نموذج سحابي.',ready?'ready':null);
   return;
  }
- if(loading&&!ready){queuedQuestion=message;$('send').disabled=true;notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');return;}
+ if(loading&&!ready){
+  queuedQuestion=message;$('send').disabled=true;
+  $('cancelReply').hidden=false;
+  notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');
+  return;
+ }
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
  generating=true;pending=message;
+ $('cancelReply').hidden=false;
  $('send').disabled=true;$('prompt').disabled=true;
  syncActions();notice('');
  state('بجهّز رد بالذاكرة '+(MEMORY_LABELS[$('memory').value]||'14')+' رسالة…','working');
@@ -836,8 +860,25 @@ function send(){
   language:$('language').value,memory:$('memory').value,task:$('taskMode').value
  });
 }
+$('cancelReply').addEventListener('click',()=>{
+ if(loading&&!ready&&queuedQuestion){
+  queuedQuestion=null;$('cancelReply').hidden=true;
+  refreshSend();
+  notice('اتلغى إرسال السؤال، لكن تحميل النموذج لسه شغال. تقدر توقفه من الإعدادات.');
+  return;
+ }
+ if(generating){
+  stop('تم إلغاء الرد. تقدر تعيد تشغيل NOVA من الإعدادات لو محتاج سؤال تاني.');
+  display();notice('الرد اتلغى من غير حفظه. احتفظت بالرسالة في صندوق الكتابة.');
+ }
+});
 $('send').addEventListener('click',send);
-$('prompt').addEventListener('input',()=>{if(queuedQuestion&&$('prompt').value.trim()!==queuedQuestion)queuedQuestion=null;refreshSend();});
+$('prompt').addEventListener('input',()=>{
+ if(queuedQuestion&&$('prompt').value.trim()!==queuedQuestion){
+  queuedQuestion=null;$('cancelReply').hidden=true;
+ }
+ refreshSend();
+});
 $('prompt').addEventListener('keydown',e=>{
  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
 });
