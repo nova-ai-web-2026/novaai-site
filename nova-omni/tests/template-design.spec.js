@@ -7,7 +7,7 @@ async function enterInstant(page){
  if(await page.locator('#introOverlay').isVisible())await page.locator('#introInstant').click();
  await expect(page.locator('#introOverlay')).toBeHidden();
 }
-test('29 real templates can be searched, filtered and selected without AI downloads',async({page})=>{
+test('34 real templates can be searched, filtered and selected without AI downloads',async({page})=>{
  await page.addInitScript(()=>{
   window.__workers=0;
   window.Worker=class{constructor(){window.__workers++;}postMessage(){}terminate(){}};
@@ -15,10 +15,10 @@ test('29 real templates can be searched, filtered and selected without AI downlo
  await enterInstant(page);
  await page.locator('#browseTemplatesWelcome').click();
  await expect(page.locator('#templateOverlay')).toBeVisible();
- await expect(page.locator('.templateCard')).toHaveCount(29);
- await expect(page.locator('#templateCount')).toContainText('29');
+ await expect(page.locator('.templateCard')).toHaveCount(34);
+ await expect(page.locator('#templateCount')).toContainText('34');
  await page.locator('[data-filter="code"]').click();
- await expect(page.locator('.templateCard')).toHaveCount(12);
+ await expect(page.locator('.templateCard')).toHaveCount(13);
  await page.locator('#templateSearch').fill('CSV');
  await expect(page.locator('.templateCard')).toHaveCount(1);
  await page.locator('.templateCard[data-template-id="python_csv"]').click();
@@ -34,7 +34,7 @@ test('different writing and study templates are distinct and preserve user edits
  await enterInstant(page);
  await page.locator('#openTemplatesTop').click();
  await page.locator('[data-filter="writing"]').click();
- await expect(page.locator('.templateCard')).toHaveCount(12);
+ await expect(page.locator('.templateCard')).toHaveCount(14);
  await page.locator('.templateCard[data-template-id="email_followup"]').click();
  await page.locator('#prompt').fill('متابعة طلبي المؤرخ 20 أكتوبر');
  await page.locator('#send').click();
@@ -42,7 +42,7 @@ test('different writing and study templates are distinct and preserve user edits
  await expect(page.locator('.bubble.ai')).toContainText('أشكركم مقدمًا');
  await page.locator('#openTemplatesTop').click();
  await page.locator('[data-filter="study"]').click();
- await expect(page.locator('.templateCard')).toHaveCount(2);
+ await expect(page.locator('.templateCard')).toHaveCount(3);
  await page.locator('.templateCard[data-template-id="study_revision"]').click();
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai').last()).toContainText('نقاط');
@@ -76,7 +76,7 @@ test('library opens after chat history, supports Escape, keyboard focus and empt
  await page.keyboard.press('Escape');
  await expect(page.locator('#templateOverlay')).toBeHidden();
  await page.locator('#openTemplatesTop').click();
- await expect(page.locator('.templateCard')).toHaveCount(29);
+ await expect(page.locator('.templateCard')).toHaveCount(34);
  await page.locator('#closeTemplates').click();
  await expect(page.locator('#templateOverlay')).toBeHidden();
 });
@@ -96,15 +96,18 @@ for(const size of [{width:320,height:760},{width:390,height:844},{width:768,heig
   expect(metrics.select).toBeGreaterThanOrEqual(11.5);
   await page.locator('#openTemplatesTop').click();
   await expect(page.locator('#templateOverlay')).toBeVisible();
-  await expect(page.locator('.templateCard')).toHaveCount(29);
+  await expect(page.locator('.templateCard')).toHaveCount(34);
   const modal=await page.evaluate(()=>({
    viewport:innerWidth,body:document.documentElement.scrollWidth,
    right:document.querySelector('.templateDialog').getBoundingClientRect().right,
-   left:document.querySelector('.templateDialog').getBoundingClientRect().left
+   left:document.querySelector('.templateDialog').getBoundingClientRect().left,
+   width:document.querySelector('.templateDialog').getBoundingClientRect().width
   }));
   expect(modal.body).toBeLessThanOrEqual(modal.viewport+2);
   expect(modal.left).toBeGreaterThanOrEqual(-2);
   expect(modal.right).toBeLessThanOrEqual(modal.viewport+2);
+  expect(modal.width).toBeLessThanOrEqual(Math.min(modal.viewport*.95,422));
+  expect(modal.right).toBeGreaterThan(modal.viewport-3);
  });
 }
 test('mobile navigation can open template library without losing conversations',async({page})=>{
@@ -120,4 +123,43 @@ test('mobile navigation can open template library without losing conversations',
  await expect(page.locator('#taskMode')).toHaveValue('code_fast');
  await page.locator('#send').click();
  await expect(page.locator('.bubble.ai')).toContainText('clearInterval');
+});
+
+test('hosted template catalogue is fetched only when opening the compact shelf',async({page})=>{
+ let requests=0;
+ await page.route('**/templates/catalog.json**',async route=>{
+  requests++;
+  await route.continue();
+ });
+ await enterInstant(page);
+ expect(requests).toBe(0);
+ await page.locator('#openTemplatesTop').click();
+ await expect(page.locator('#templateOverlay')).toBeVisible();
+ await expect(page.locator('.templateCard')).toHaveCount(34);
+ await expect(page.locator('#templateHostStatus')).toContainText('الفهرس محمّل من استضافة NOVA',{timeout:10000});
+ expect(requests).toBe(1);
+ expect(await page.evaluate(()=>window.NovaTemplateLibrary.catalogOrigin())).toBe('hosted');
+});
+test('hosted server unreachable still opens all 34 local templates immediately',async({page})=>{
+ await page.route('**/templates/catalog.json**',route=>route.abort());
+ await enterInstant(page);
+ await page.locator('#openTemplatesTop').click();
+ await expect(page.locator('.templateCard')).toHaveCount(34);
+ await expect(page.locator('#templateHostStatus')).toContainText('القوالب المحلية جاهزة',{timeout:7000});
+ await page.locator('.templateCard[data-template-id="study_flashcards"]').click();
+ await expect(page.locator('#taskMode')).toHaveValue('write_fast');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('البطاقة 1');
+});
+test('five additional templates coexist with original items in the narrow shelf',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await enterInstant(page);
+ await page.locator('#openTemplatesTop').click();
+ for(const id of ['payment_confirmation','interview_thanks','js_form_validation','research_comparison','study_flashcards'])
+  await expect(page.locator('.templateCard[data-template-id="'+id+'"]')).toHaveCount(1);
+ await page.locator('.templateCard[data-template-id="payment_confirmation"]').click();
+ await page.locator('#prompt').fill('سددت مبلغ 320 دولار اليوم');
+ await page.locator('#send').click();
+ await expect(page.locator('.bubble.ai')).toContainText('تأكيد سداد مبلغ');
+ await expect(page.locator('.bubble.ai')).toContainText('320 دولار');
 });
