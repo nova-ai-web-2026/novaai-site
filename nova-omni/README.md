@@ -250,3 +250,18 @@ The user requested a **better** interface, not merely a quieter palette. This re
 - **Clear limits:** Research requires a user-triggered source lookup to Wikimedia/Crossref. Writing and code quick modes use transparent editable starters, not a large text-generation model. Heavy on-device model downloads still require explicit consent.
 
 QA includes browser tests for actual task-category switching, writing/code/study template output, research source links, hero actions, keyboard search, responsive no-overflow checks, preservation of chats/font preferences and zero unauthorized AI downloads.
+
+## NOVA Local v3.5 — less crowded, stronger hierarchy
+
+Based on feedback that the v3.4 Studio screen felt **too crowded**, the initial experience now uses progressive disclosure instead of displaying every available action at once.
+
+- The expressive NOVA hero stays but is genuinely **shorter**, with a single central 44-template entry point and one light-weight writing shortcut. Redundant feature chips, floating decorative labels and the second full-width templates banner are gone.
+- The studio starts with **three task cards** visible (from the original six approved cards). The functional **«عرض باقي الاختصارات»** button reveals the other three, and «عرض أقل» collapses them again. Switching Writing/Code/Research/Study categories also shows the first three relevant templates and leaves additional ones accessible via that control. No templates are deleted.
+- The persistent model-status banner was moved **inside the composer toolbar**. Its genuine readiness state, manual opt-in model action, cancel-reply and send button remain available, but no separate vertical band is needed above the input.
+- Small screens display a focused launcher (featured primary card + two secondary cards), hide redundant font-size controls in the top bar (the same setting remains in Settings), and use the existing header button instead of repeating the library button inside the composer.
+- The additional privacy footnote is hidden **only at narrow widths** to free space; the consent notice, explicit model download dialog, research task's network label, sidebar privacy statement, and detailed settings disclosure remain intact.
+- Existing saved sessions, the 44 template definitions, backend behavior, optional model consent, source research and local code starters remain unchanged.
+
+Implementation: `nova-omni/local-focus.css` adds the focused skin after the Studio stylesheet; `local-studio.js` adds bounded show-more behavior; `local.html` removes redundant markup and consolidates status controls. Node tests and Playwright cover template availability, progressive card visibility, working category modes, responsive width, and model consent.
+
+**Publishing note:** Publishing GitHub Pages may require resolving a pre-existing stuck Pages deployment before the new main-branch code is visible at the public URL. Do not treat a merged commit as a deployed release without separately verifying the deployment.
