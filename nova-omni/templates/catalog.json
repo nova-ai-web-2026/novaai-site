@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": "3.1.0",
+  "catalogVersion": "3.2.0",
   "description": "Hosted static metadata for NOVA templates. All template bodies remain curated in the app; no runtime scripts or user data in this resource.",
   "templates": [
     {
@@ -274,6 +274,86 @@
       "title": "بطاقات مراجعة",
       "description": "هيكل أسئلة وأجوبة للمذاكرة",
       "prompt": "جهز بطاقات مراجعة لموضوع [الموضوع]"
+    },
+    {
+      "id": "appointment_request",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "طلب تحديد موعد",
+      "description": "رسالة مرتبة لطلب أو تغيير موعد",
+      "prompt": "جهز رسالة لطلب موعد بشأن [الموضوع]"
+    },
+    {
+      "id": "technical_support",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "رسالة للدعم الفني",
+      "description": "بلاغ واضح عن مشكلة وخطوات تكرارها",
+      "prompt": "اكتب طلب دعم فني لمشكلة [وصف المشكلة]"
+    },
+    {
+      "id": "project_proposal",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "مقترح مشروع",
+      "description": "مقترح مختصر بأهداف وفوائد وتكلفة تقديرية",
+      "prompt": "جهز مقترح مشروع عن [الفكرة]"
+    },
+    {
+      "id": "weekly_planner",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "منظم أسبوعي",
+      "description": "قالب مهام وأولويات ومواعيد",
+      "prompt": "جهز جدول أسبوعي لمهامي [المهام]"
+    },
+    {
+      "id": "python_grade_average",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "متوسط الدرجات Python",
+      "description": "حساب متوسط قائمة أرقام بعد التحقق منها",
+      "prompt": "اكتب برنامج Python لحساب متوسط الدرجات"
+    },
+    {
+      "id": "js_theme_toggle",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "زر الوضع الليلي",
+      "description": "واجهة HTML وJavaScript للتبديل بين الثيمات",
+      "prompt": "اعمل زر الوضع الليلي JavaScript"
+    },
+    {
+      "id": "html_faq",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "أسئلة شائعة تفاعلية",
+      "description": "HTML FAQ قابل للفتح بدون إضافات",
+      "prompt": "اعمل صفحة HTML للأسئلة الشائعة"
+    },
+    {
+      "id": "study_error_log",
+      "category": "study",
+      "mode": "write_fast",
+      "title": "دفتر تصحيح الأخطاء",
+      "description": "سجل السبب والتصحيح وطريقة تجنب الخطأ",
+      "prompt": "جهز دفتر أخطاء لمادة [المادة]"
+    },
+    {
+      "id": "study_exam_preparation",
+      "category": "study",
+      "mode": "write_fast",
+      "title": "خطة استعداد للامتحان",
+      "description": "خطة مراجعة مرنة مع فترات راحة",
+      "prompt": "جهز خطة استعداد لامتحان [المادة] بتاريخ [التاريخ]"
+    },
+    {
+      "id": "research_claim_sources",
+      "category": "research",
+      "mode": "research",
+      "title": "مصادر للتحقق من معلومة",
+      "description": "البحث عن مصادر داعمة أو مخالفة دون حكم آلي",
+      "prompt": "ابحث عن مصادر تخص الادعاء [اكتب الادعاء]"
     }
   ]
 }
