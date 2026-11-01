@@ -209,3 +209,19 @@ The existing 29 remain and five new ones are added:
 - **بطاقات مراجعة** — structured self-study flashcards with placeholders to verify against class notes.
 
 Counts: 14 writing, 13 coding, 4 source research, 3 study = **34 templates**. Existing local AI consent and on-device chat history are unchanged. Browser and unit tests verify loading the small hosted catalog, offline fallback, no model download on template selection, filters, mobile drawer dimensions and every new template.
+
+## NOVA Local v3.2 — ten more internal templates (44 total)
+
+This release adds **ten actual bundled, editable template bodies**, not merely ten labels or ten prompt shortcuts. The compact template shelf now shows the ten new options first while preserving the 34 existing templates and their search/category filters. All are usable without downloading a language model. Nothing in this release changes the user's saved chats, model consent or paid cloud backend configuration.
+
+**New templates:**
+- Writing (4): **طلب تحديد موعد** (appointment request), **رسالة للدعم الفني** (technical support report with steps to reproduce), **مقترح مشروع** (project proposal with deliverables, risks and budget placeholders), and **منظم أسبوعي** (weekly priorities and tasks).
+- Code (3): **متوسط الدرجات Python** (input validation and arithmetic mean), **زر الوضع الليلي** (HTML/CSS/JavaScript theme toggle with local preference), and **أسئلة شائعة تفاعلية** (HTML `details`/ `summary` FAQ layout). Code examples are editable starters, not automatically executed or guaranteed to meet a user's unspecified requirements.
+- Study (2): **دفتر تصحيح الأخطاء** (track mistakes and corrections) and **خطة استعداد للامتحان** (review, practice and balanced rest).
+- Research (1): **مصادر للتحقق من معلومة**, which finds relevant sources for a claim. Source discovery is **not a claim that NOVA verified or refuted the claim**.
+
+Category totals: **18 writing, 16 coding, 5 research and 5 study = 44 templates**.
+
+The mirrored public static metadata at `nova-omni/templates/catalog.json` now also lists all 44 IDs, with schema validation ensuring that remote metadata cannot introduce executable template bodies or alter task modes. The live panel uses the bundled versions immediately; opening it optionally refreshes descriptions/prompts from the small same-origin GitHub Pages JSON file. If that request fails, the internal templates remain usable. This architecture requires **no new paid dynamic server**.
+
+Regression tests cover all ten IDs, bilingual writing structures, editable coding examples, the manifest/library parity, template rendering on a simulated offline browser, and new-first ordering.
