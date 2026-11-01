@@ -225,3 +225,15 @@ Category totals: **18 writing, 16 coding, 5 research and 5 study = 44 templates*
 The mirrored public static metadata at `nova-omni/templates/catalog.json` now also lists all 44 IDs, with schema validation ensuring that remote metadata cannot introduce executable template bodies or alter task modes. The live panel uses the bundled versions immediately; opening it optionally refreshes descriptions/prompts from the small same-origin GitHub Pages JSON file. If that request fails, the internal templates remain usable. This architecture requires **no new paid dynamic server**.
 
 Regression tests cover all ten IDs, bilingual writing structures, editable coding examples, the manifest/library parity, template rendering on a simulated offline browser, and new-first ordering.
+
+## NOVA Local v3.3 — calmer visual design and honest quiet startup
+
+The responsive workspace gets a more coherent deep-blue/indigo visual system. The header, cards, composer, conversation bubbles, sidebar and compact 44-template shelf now use consistent spacing, typography, borders, accents and focus states. The design adapts to 320px–1440px viewports and retains readable controls, keyboard access and reduced-motion support. The updates live in `nova-omni/local-polish.css`, loaded after the existing CSS to preserve a functional fallback.
+
+**Less repetitive loading messaging, no concealed downloads:** The main composer shows only a small, factual state cue (e.g. "الأدوات متاحة", "نوفا بيستعد", or "المساعد جاهز") with a restrained pulsing dot while a model is actually initializing. Repeated progress events no longer rewrite identical aria-live text. Technical details and large-download explanations remain in the model Settings area. Status warnings surface in the main UI only when user intervention or a genuine failure is necessary.
+
+No model is downloaded before the visitor's explicit initial approval. The welcome screen still states that model downloads can involve **hundreds of megabytes** and may consume mobile data. Existing opt-in model downloads can continue in the browser while other available local tasks remain usable. Revisit behavior preserves the previous consent policy: a recognized Wi-Fi connection may auto-start a previously approved model; mobile/metered/Save-Data connections never silently start another model download. Instead of a long intrusive mobile-data banner, users see a compact manual "تشغيل المساعد" action and clear Settings details, and still get a confirmation dialog before any manually requested metered download.
+
+The changes do **not** make the large local model download instant, grant new device permissions, provide hidden paid inference or imply that a model is ready before its worker confirms readiness. Existing 44 templates, optional research source fetches, math tools, saved conversation data, load failure recovery and stop controls are preserved.
+
+Verification includes dedicated browser checks for no-download onboarding, Wi-Fi startup state, mobile-network safeguards and consent, quiet live-region updates, reduced-motion animation, responsive layout and unchanged template access.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="3.2.0">
+<meta name="nova-local-version" content="3.3.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -470,6 +470,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
 }
 
 </style>
+<link rel="stylesheet" href="./local-polish.css?v=3.3.0">
 </head>
 <body>
 <div id="introOverlay" class="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle" hidden>
@@ -477,13 +478,13 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
   <div class="introLogo" aria-hidden="true">✦</div>
   <div class="introEyebrow">NOVA OMNI · PRIVATE BY DESIGN</div>
   <h2 id="introTitle">أهلاً بيك في <span>NOVA</span></h2>
-  <p class="introLead">ابدأ فورًا ببحث فعلي من مصادر خارجية وقوالب كتابة وكود. نموذج الذكاء الاصطناعي المحلي اختياري وبيحتاج تحميل.</p>
-  <div class="introFeatures"><span>✧ خصوصية محلية</span><span>◉ لغات متعددة</span><span>◇ ذاكرة متوسطة</span></div>
-  <button id="introInstant" class="introEnter" type="button">⚡ ابدأ فورًا بدون تحميل · بحث وكتابة وبرمجة</button>
-   <button id="introEnter" class="introQuick" type="button">شغّل نموذج AI (تنزيل كبير) · ابدأ NOVA <span aria-hidden="true">↗</span></button>
-  <button id="introQuick" class="introQuick" type="button">⚡ تجربة أخف على الجهاز · Lite (حوالي 136MB على CPU)</button>
+  <p class="introLead">مساحة هادية للبحث والكتابة والبرمجة. اختار أدواتك وابدأ.</p>
+  <div class="introFeatures"><span>✧ محادثات خاصة</span><span>◉ 44 قالبًا</span><span>◇ أدوات فورية</span></div>
+  <button id="introInstant" class="introEnter" type="button">ابدأ NOVA · بدون تنزيل نموذج <span aria-hidden="true">↗</span></button>
+   <button id="introEnter" class="introQuick" type="button">تشغيل المساعد الذكي · تنزيل كبير اختياري</button>
+  <button id="introQuick" class="introQuick" type="button">اختيار نسخة Lite · حوالي 136MB على CPU</button>
   <button id="introSkip" class="introSkip" type="button">الدخول بدون تشغيل النموذج</button>
-  <p class="introData"><strong>«ابدأ فورًا» لا يحمّل أي نموذج.</strong> بالضغط على تشغيل AI أو Lite بتوافق على تنزيل النموذج المختار على جهازك. أول تحميل قد يكون مئات الميجابايت، وقد يُحسب استهلاك بيانات الإنترنت من باقتك. الموافقة دي للتحميل فقط، وهنفتكرها على نفس المتصفح للزيارات الجاية بشبكة مناسبة. تقدر تلغيها من الإعدادات.</p>
+  <p class="introData"><strong>بالضغط على «تشغيل المساعد» أو «Lite» بتوافق على تنزيل النموذج المختار لجهازك.</strong> أول تنزيل قد يستهلك مئات الميجابايت من الإنترنت. الدخول العادي لا يبدأ تنزيل نموذج، وتقدر توقف التشغيل من الإعدادات.</p>
   <div id="introWarmStatus" aria-live="polite"></div>
  </div>
 </div>
@@ -519,7 +520,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>محادثاتك بتفضل في المتصفح. البحث الاختياري بس بيرسل كلمات الموضوع إلى ويكيبيديا وCrossref، من غير إرسال تاريخ المحادثة.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v3.2 · PRIVATE WORKSPACE</div>
+    <div class="railFoot">NOVA LOCAL v3.3 · PRIVATE WORKSPACE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -542,19 +543,19 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
         <div class="feed" id="chat" aria-live="polite" aria-label="Conversation">
           <section class="welcome" id="welcome">
             <div class="welcomeMark" aria-hidden="true"><span>✦</span></div>
-            <div class="eyebrow">✦ &nbsp; NOVA WORKSPACE · أدوات سريعة وذكاء محلي اختياري</div>
+            <div class="eyebrow">✦ &nbsp; NOVA · مساحتك الإبداعية</div>
             <h1>فكرتك تبدأ هنا.<br><span>ونوفا يساعدك تنفذها.</span></h1>
-            <p class="welcomeDesc">بحث بروابط لمصادر حقيقية، وقوالب للكتابة والبرمجة والمذاكرة. اختار قالبًا وعدّله بطريقتك، من غير ما تنزّل نموذج AI.</p>
+            <p class="welcomeDesc">من فكرة صغيرة إلى مسودة أو كود أو بحث بمصادر. كل أدواتك في مساحة واحدة.</p>
             <div class="suggestions">
-              <button class="suggestion" type="button" data-task="research" data-prompt="ابحث عن الطاقة الشمسية وفوائدها"><span class="tileIcon">⌕</span><span><strong>بحث بالمصادر</strong><small>ويكيبيديا وأبحاث · بدون نموذج</small></span></button>
-              <button class="suggestion" type="button" data-task="write_fast" data-prompt="اكتب إيميل رسمي للاستفسار عن حالة طلبي"><span class="tileIcon">✎</span><span><strong>قالب كتابة فوري</strong><small>بدون تنزيل نموذج</small></span></button>
-               <button class="suggestion" type="button" data-task="code_fast" data-prompt="اعمل آلة حاسبة Python"><span class="tileIcon">⌘</span><span><strong>قالب برمجة</strong><small>Python وHTML وJavaScript</small></span></button>
-               <button class="suggestion" type="button" data-task="explain" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>شرح بالذكاء الاصطناعي</strong><small>يتطلب تشغيل النموذج</small></span></button>
-              <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>جرّب حساب سريع</strong><small>حاسبة دقيقة محليًا</small></span></button>
-              <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص سريع</strong><small>من نصك · بدون تحميل</small></span></button>
+              <button class="suggestion" type="button" data-task="research" data-prompt="ابحث عن الطاقة الشمسية وفوائدها"><span class="tileIcon">⌕</span><span><strong>بحث بالمصادر</strong><small>روابط واضحة ونتائج فعلية</small></span></button>
+              <button class="suggestion" type="button" data-task="write_fast" data-prompt="اكتب إيميل رسمي للاستفسار عن حالة طلبي"><span class="tileIcon">✎</span><span><strong>اكتب مسودة</strong><small>ابدأ من قالب جاهز</small></span></button>
+               <button class="suggestion" type="button" data-task="code_fast" data-prompt="اعمل آلة حاسبة Python"><span class="tileIcon">⌘</span><span><strong>برمجة وكود</strong><small>أمثلة قابلة للتعديل</small></span></button>
+               <button class="suggestion" type="button" data-task="explain" data-prompt="اشرح لي الذكاء الاصطناعي بطريقة بسيطة مع مثال."><span class="tileIcon">✦</span><span><strong>شرح بالأفكار</strong><small>بالمساعد المحلي الاختياري</small></span></button>
+              <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>حساب سريع</strong><small>نتيجة دقيقة وفورية</small></span></button>
+              <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص النصوص</strong><small>أهم الجمل من نصك</small></span></button>
             </div>
             <div class="templateTeaser">
-               <div><strong>مكتبة القوالب الجديدة</strong><span>44 قالبًا · منها 10 قوالب داخلية جديدة</span></div>
+               <div><strong>مكتبة القوالب</strong><span>44 بداية مختلفة لأفكارك</span></div>
                <button id="browseTemplatesWelcome" type="button">استعرض القوالب <span aria-hidden="true">↗</span></button>
              </div>
            </section>
@@ -562,9 +563,9 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
          <div class="composerDock">
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
-             <div id="instantBanner" class="instantBanner" role="status"><span id="instantStatus">⚡ البحث والقوالب متاحة حتى لو نموذج AI ما اتحمّلش.</span><button id="quickStartAi" type="button">تشغيل نموذج AI</button></div>
+             <div id="instantBanner" class="instantBanner" role="status" aria-live="polite" data-stage="instant"><span class="quietPulse" aria-hidden="true"></span><span id="instantStatus">الأدوات متاحة</span><button id="quickStartAi" type="button" title="تشغيل النموذج المحلي اختياري وقد يتطلب تنزيل ملفات كبيرة">تشغيل المساعد</button></div>
             <div id="loadAssist" class="loadAssist" hidden aria-live="polite">
-              <span>أول تجهيز للنموذج ممكن ياخد وقت. لو جهازك بطيء، جرّب وضع أسرع:</span>
+              <span>محتاج نسخة أخف؟</span>
               <button id="loadAssistFast" type="button">Fast · عربي</button>
               <button id="loadAssistLite" type="button">Lite · أخف</button>
             </div>
@@ -595,7 +596,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
                 <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
               </div>
             </div>
-            <div class="underComposer">البحث يرسل كلمات البحث فقط إلى ويكيبيديا وCrossref لما تضغط إرسال. الحساب والتلخيص والقوالب محلية وفورية؛ الردود المفتوحة تحتاج نموذج AI.</div>
+            <div class="underComposer">بحث المصادر يرسل كلمات البحث فقط إلى ويكيبيديا وCrossref. المحادثات والقوالب على جهازك.</div>
           </div>
         </div>
       </main>
@@ -603,7 +604,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
         <div class="panelTop">
           <div class="panelTitle">
             <span class="panelIcon"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span>
-            <span><strong>إعدادات النموذج</strong><small>تتحكم في كل حاجة</small></span>
+            <span><strong>إعدادات NOVA</strong><small>التفضيلات والتشغيل</small></span>
           </div>
           <button class="topButton mobileOnly" id="closeSettings" type="button" aria-label="إغلاق الإعدادات"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
@@ -660,10 +661,10 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
         </div>
         <hr class="divider">
         <div class="sectionHead" style="margin-top:0"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg>تشغيل النموذج</div>
-        <button class="startButton" id="start" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg><span>تشغيل NOVA Local</span></button>
+        <button class="startButton" id="start" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg><span>تشغيل المساعد المحلي</span></button>
         <button class="stopButton" id="stop" type="button" disabled>إيقاف النموذج</button>
         <div id="modelHelp" class="modelHelp" hidden role="status">
-         <strong>لو NOVA طول في التجهيز</strong>
+         <strong>اختيارات إضافية</strong>
          <p id="modelHelpText">موديلات AI المحلية كبيرة؛ أول تحميل ممكن يستغرق وقتًا ويحتاج مساحة وذاكرة كافيتين.</p>
          <div class="modelHelpActions">
           <button id="tryFast" type="button">جرّب Fast</button>
@@ -671,11 +672,12 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
           <button id="retryModel" type="button">إعادة المحاولة</button>
          </div>
         </div>
+        <p id="modelStatusDetails" class="modelStatusInfo" data-stage="instant" role="status">المساعد المحلي اختياري. الأدوات الفورية متاحة.</p>
         <div class="progressWrap">
           <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
           <p id="state" role="status">Not started · لم يبدأ التحميل</p>
         </div>
-        <p class="note" id="statusNote">التشغيل بيتم على جهازك بعد موافقة واضحة على تنزيل النموذج. تفاصيل التحميل مش هتظهر أثناء المحادثة، وتقدر توقفه في أي وقت.</p>
+        <p class="note" id="statusNote">المساعد المحلي اختياري ويعمل بعد موافقتك على تنزيل الملفات المطلوبة. أول تشغيل ممكن يستهلك بيانات ومساحة كبيرة، وتقدر توقفه هنا في أي وقت.</p>
         <div class="privacyCard"><strong><svg class="icon" style="width:16px" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>بدون اشتراك أو بطاقة</strong><p>لا تُرسل الأسئلة لـAI Gateway. سجل المحادثات بيتحفظ في متصفحك فقط، وتقدر تمسحه في أي وقت.</p></div>
         <button class="textButton" id="exportChat" type="button" disabled>
           <svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
@@ -763,7 +765,7 @@ function skipIntro(){
  closeIntro();$('prompt').focus();
 }
 $('introEnter').addEventListener('click',()=>enterIntro());
-$('introInstant').addEventListener('click',()=>{skipIntro();notice('⚡ اختار البحث أو قالب كتابة أو كود من الأمثلة، من غير تحميل نموذج.');});
+$('introInstant').addEventListener('click',skipIntro);
 $('introQuick').addEventListener('click',()=>enterIntro('lite'));
 $('introSkip').addEventListener('click',skipIntro);
 function beginBackgroundWarmup(){
@@ -775,7 +777,11 @@ function beginBackgroundWarmup(){
   if(connectionPolicy().auto){
     requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('remembered')));
    }else{
-    notice('التشغيل التلقائي متوقف على الشبكة دي لحماية باقة الإنترنت. تقدر تشغّل NOVA يدويًا من إعدادات النموذج.');
+    // No prominent banner on metered revisits: the choice is visible in Settings.
+    $('statusNote').textContent='للحفاظ على بيانات الموبايل، التشغيل التلقائي متوقف. اضغط تشغيل المساعد لو حابب تختاره بنفسك، وقد يستهلك تنزيلًا كبيرًا.';
+    $('quickStartAi').title='التشغيل اليدوي قد يتطلب تنزيل ملفات كبيرة؛ هتظهر موافقة قبل البدء.';
+    $('modelStatusDetails').textContent='التشغيل التلقائي متوقف حفاظًا على بياناتك. تقدر تختار تشغيل المساعد يدويًا بعد الموافقة.';
+    notice('');
    }
    return;
  }
@@ -953,13 +959,31 @@ function updateMemoryInfo(){
  const depth=MEMORY_LABELS[$('memory').value]||'14';
  $('memoryInfo').textContent='ذاكرة المحادثة: لغاية '+depth+' رسالة للسياق · محفوظ محليًا حتى 60 رسالة لكل محادثة.';
 }
+function setQuietText(element,value){
+ const text=String(value??'');
+ if(element.textContent!==text)element.textContent=text;
+}
 function state(text,mode){
- $('state').textContent=String(text||'');
- $('statusPill').classList.toggle('live',mode==='ready');
- $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':mode==='instant'?'أدوات فورية':'NOVA Local';
- $('instantStatus').textContent=loading?'نموذج AI بيتجهز في الخلفية. البحث والقوالب شغّالين من غير ما تستناه.':ready?'النموذج المحلي جاهز. الأدوات الفورية متاحة كمان.':'⚡ البحث والقوالب متاحة فورًا من غير تنزيل نموذج.';
+ // Diagnostics remain in Settings; the conversation gets a quiet, truthful cue.
+ setQuietText($('state'),text||'');
+ const stage=mode==='error'?'error':loading?'loading':mode==='working'?'working':ready?'ready':'instant';
+ $('statusPill').classList.toggle('live',stage==='ready'||stage==='working');
+ $('statusPill').dataset.stage=stage;
+ setQuietText($('statusLabel'),mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':mode==='instant'?'أدوات فورية':'NOVA Local');
+ $('instantBanner').dataset.stage=stage;
+ setQuietText($('instantStatus'),stage==='loading'?'نوفا بيستعد':stage==='working'?'نوفا بيجاوب':stage==='ready'?'المساعد جاهز':stage==='error'?'محتاج مراجعة':'الأدوات متاحة');
  $('quickStartAi').disabled=loading||ready;
- $('quickStartAi').textContent=ready?'نموذج AI جاهز':loading?'جاري تجهيز AI…':'تشغيل نموذج AI';
+ setQuietText($('quickStartAi'),loading?'جارٍ التحضير':ready?'جاهز':'تشغيل المساعد');
+ const details=$('modelStatusDetails');
+ details.dataset.stage=stage;
+ if(stage==='loading')setQuietText(details,'المساعد المحلي قيد التحضير على جهازك. أول مرة قد يحتاج تنزيل ملفات كبيرة؛ القوالب والبحث متاحين الآن.');
+ else if(stage==='ready')setQuietText(details,'المساعد المحلي جاهز. تقدر تستخدمه في الشرح والكتابة والبرمجة.');
+ else if(stage==='working')setQuietText(details,'المساعد بيجهّز ردك على جهازك. تقدر تلغي الرد من المحادثة.');
+ else if(stage==='error')setQuietText(details,'التشغيل واجه مشكلة. تفاصيل الحالة وخيارات المحاولة موجودة هنا في الإعدادات.');
+ else if(consentValue()==='granted'&&!connectionPolicy().auto)
+  setQuietText(details,'التشغيل التلقائي متوقف حفاظًا على بياناتك. تقدر تطلب تشغيل المساعد يدويًا؛ قد يحتاج تنزيلًا كبيرًا.');
+ else setQuietText(details,'المساعد المحلي اختياري. القوالب والبحث والحسابات متاحة بدون تشغيله.');
+ $('statusPill').title=stage==='loading'?'المساعد المحلي قيد التحضير':stage==='ready'?'المساعد المحلي جاهز':stage==='working'?'المساعد يولّد ردًا الآن':stage==='error'?'افتح الإعدادات لمراجعة المشكلة':'أدوات NOVA الفورية متاحة';
 }
 function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
@@ -1039,7 +1063,7 @@ function scheduleModelHelp(){
  if(loadDeadlineTimer)clearInterval(loadDeadlineTimer);
  loadHelpTimer=setTimeout(()=>{
   loadHelpTimer=null;
-  if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز على جهازك. لو عايز تجربة أخف، اختار Lite؛ التحويل ممكن يحتاج تحميل جديد.');
+  if(loading&&!ready)showModelHelp('لو التحضير طول، نسخة Lite ممكن تكون أنسب لجهازك. التبديل ليها قد يحتاج تنزيل ملفات إضافية.');
  },18000);
  // Allow downloads longer than 150 seconds if real model progress continues.
  loadDeadlineTimer=setInterval(()=>{
@@ -1063,7 +1087,7 @@ function pickFallback(profile){
   if(previousQueuedQuestion&&loading){
    queuedQuestion=previousQueuedQuestion;
    refreshSend();
-   notice('السؤال محفوظ وهيتبعت تلقائيًا بعد تجهيز النموذج الجديد.');
+   notice('سؤالك محفوظ. هيظهر الرد هنا لما المساعد يبقى جاهز.');
   }
  }
 $('tryFast').addEventListener('click',()=>pickFallback('fast'));
@@ -1277,7 +1301,7 @@ function send(){
  if(loading&&!ready){
   queuedQuestion=message;refreshSend();
   $('cancelReply').hidden=false;
-  notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');
+  notice('وصل سؤالك. هتلاقي الرد هنا أول ما المساعد يبقى جاهز.');
   return;
  }
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
@@ -1304,7 +1328,7 @@ $('cancelReply').addEventListener('click',()=>{
  if(loading&&!ready&&queuedQuestion){
   queuedQuestion=null;$('cancelReply').hidden=true;
   refreshSend();
-  notice('اتلغى إرسال السؤال، لكن تحميل النموذج لسه شغال. تقدر توقفه من الإعدادات.');
+  notice('السؤال اتلغى. تقدر تتحكم في تشغيل المساعد من الإعدادات.');
   return;
  }
  if(generating){

@@ -75,7 +75,9 @@ test('one welcome click explicitly authorizes downloading over cellular without 
  await page.reload({waitUntil:'domcontentloaded'});
  await expect(page.locator('#introOverlay')).toBeHidden();
  expect(await page.evaluate(()=>window.__created)).toBe(0); // no automatic cellular redownload
- await expect(page.locator('#notice')).toContainText('تقدر تشغّل NOVA يدويًا');
+ await expect(page.locator('#notice')).toBeHidden();
+ await expect(page.locator('#modelStatusDetails')).toContainText('التشغيل التلقائي متوقف');
+ await expect(page.locator('#quickStartAi')).toBeEnabled();
 });
 test('Save-Data users can explicitly opt in once but are never auto-downloaded after reload',async({page})=>{
  await page.addInitScript(()=>{
