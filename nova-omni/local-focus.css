@@ -1,0 +1,366 @@
+/* NOVA v3.5 — Focused workspace: stronger hierarchy, fewer simultaneous choices. */
+/* The previous Studio visual identity stays; the duplicated panels and large
+   default launcher are replaced by a clear composer-first experience. */
+
+.welcome{
+  max-width:990px;
+  width:100%;
+  padding:7px 0 13px;
+  gap:0;
+}
+.studioHero{
+  min-height:190px;
+  padding:20px 25px;
+  grid-template-columns:minmax(0,1fr) 155px;
+  gap:15px;
+  border-radius:20px;
+  box-shadow:0 16px 44px #04071b54,inset 0 1px #f9f6ff1c;
+}
+.studioHero:before{width:300px;height:300px;top:-230px;right:-80px}
+.studioHeroCopy{padding:0;align-self:center}
+.studioTopline{
+  padding:4px 8px 4px 5px;
+  font-size:calc(10px * var(--nova-copy-scale));
+  margin-bottom:8px;
+}
+.studioBrandDot{width:21px;height:21px;font-size:12px}
+.studioHero h1{
+  font-size:clamp(29px,3vw,39px);
+  line-height:1.3;
+  letter-spacing:-.026em;
+  max-width:580px;
+}
+.studioHero .welcomeDesc{
+  font-size:calc(12.5px * var(--nova-copy-scale));
+  line-height:1.65;
+  margin:9px 0 13px;
+}
+.studioHeroActions{gap:8px;margin:0}
+.studioHeroActions button{
+  min-height:38px;
+  padding:7px 12px;
+  font-size:calc(12px * var(--nova-copy-scale));
+  border-radius:10px;
+}
+.studioSecondaryCta{
+  background:transparent;
+  border-color:transparent!important;
+  color:#d9d3ff;
+  box-shadow:none;
+}
+.studioSecondaryCta:hover{background:#ffffff0d;border-color:#9280c96b!important}
+.studioVisual{
+  min-height:136px;
+  align-self:center;
+  height:142px;
+  width:150px;
+  justify-self:center;
+  overflow:visible;
+  background:none;
+}
+.studioOrbitInner{width:122px;height:122px;border-color:#baa9ff70}
+.studioOrbCore{
+  width:84px;height:84px;
+  border-radius:26px;
+  box-shadow:0 12px 34px #15174488,inset 0 2px #ffffff43,0 0 0 7px #ada3ff14;
+}
+.studioOrbCore span{font-size:30px}
+.studioOrbCore strong{font-size:10px}
+.studioTools{
+  padding:13px 14px 11px;
+  margin:11px 0 0;
+  border-radius:16px;
+  background:linear-gradient(154deg,#1a2541,#141f34);
+  box-shadow:inset 0 1px #ffffff07;
+}
+.studioToolsTop{
+  align-items:center;
+  margin-bottom:9px;
+  gap:12px;
+}
+.studioToolsTop h2{
+  font-size:calc(16px * var(--nova-copy-scale));
+  margin:0;
+  color:#f4f0ff;
+}
+.studioToolsCounter{
+  background:transparent;
+  border:none;
+  padding:0;
+  color:#a7b5d0;
+  font-size:calc(10.5px * var(--nova-copy-scale));
+  font-weight:550;
+}
+.studioModes{
+  gap:6px;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  padding:0 0 12px;
+  scrollbar-width:thin;
+  overscroll-behavior-x:contain;
+}
+.studioModes button{
+  flex:none;
+  min-height:31px;
+  padding:6px 11px;
+  font-size:calc(11.5px * var(--nova-copy-scale));
+  border-radius:9px;
+}
+.studioTools .suggestions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+.studioTools .suggestion{
+  flex-direction:row;
+  align-items:center;
+  min-height:74px;
+  gap:10px;
+  padding:11px 12px;
+  border-radius:12px;
+  box-shadow:inset 0 1px #ffffff0c;
+}
+.studioTools .suggestion .tileIcon{
+  width:34px;
+  height:34px;
+  font-size:16px;
+  flex:none;
+}
+.studioTools .suggestion strong{
+  font-size:calc(12.5px * var(--nova-copy-scale));
+  line-height:1.42;
+}
+.studioTools .suggestion small{
+  font-size:calc(10.7px * var(--nova-copy-scale));
+  line-height:1.43;
+}
+.studioTools .suggestion[hidden]{display:none!important}
+.studioShowMore{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:31px;
+  border:0;
+  background:transparent;
+  color:#c4b9fa;
+  font-size:calc(11.5px * var(--nova-copy-scale));
+  font-weight:750;
+  border-radius:9px;
+  margin-top:5px;
+  padding:6px 10px;
+}
+.studioShowMore[hidden]{display:none!important}
+.studioShowMore:hover{background:#a59bff12;color:#f3edff}
+.studioShowMore[aria-expanded="true"] span{transform:rotate(180deg)}
+.templateTeaser{display:none!important}
+.privacyMini{display:none}
+.sidebar{gap:16px}
+.railSpacer{min-height:8px}
+.feed{padding:13px max(16px,calc((100% - 990px)/2)) 15px}
+.composerDock{
+  padding:8px 20px 12px;
+  border-top:1px solid #7470a51c;
+}
+.composerInner{max-width:800px}
+.composerBox{border-radius:17px;padding:10px 13px 9px}
+.composerBox textarea{min-height:53px;padding:3px 4px 8px;line-height:1.58}
+.taskLine{gap:7px;min-height:33px;margin-bottom:5px}
+.taskLine select,.attachTask{min-height:32px}
+.composerTools{
+  justify-content:flex-end;
+  padding-top:7px;
+  gap:9px;
+  min-height:37px;
+}
+.composerHint{display:none}
+.instantBanner{
+  width:auto;
+  min-height:28px;
+  display:flex;
+  gap:7px;
+  padding:0;
+  margin:0 auto 0 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  color:#b8c3e1;
+}
+.instantBanner .quietPulse{
+  width:7px;height:7px;
+  background:#87dcca;
+  flex:none;
+}
+.instantBanner>span#instantStatus{
+  font-size:calc(10.6px * var(--nova-copy-scale));
+  white-space:nowrap;
+  min-width:0;
+  flex:0 1 auto;
+}
+.instantBanner button{
+  border:1px solid #6b5c9b;
+  border-radius:8px;
+  background:#36305d;
+  color:#e7e0ff;
+  font-size:calc(10.6px * var(--nova-copy-scale));
+  min-height:28px;
+  padding:5px 9px;
+  line-height:1.4;
+  white-space:nowrap;
+}
+.instantBanner[data-stage="ready"] button,
+.instantBanner[data-stage="working"] button,
+.instantBanner[data-stage="loading"] button{display:none}
+.instantBanner button:not(:disabled):hover{background:#4a3c7d}
+.sendButton{
+  min-height:35px;
+  padding:8px 12px;
+  border-radius:9px;
+  font-size:calc(12px * var(--nova-copy-scale));
+}
+.cancelReply{font-size:calc(11px * var(--nova-copy-scale))}
+.underComposer{
+  margin-top:5px;
+  font-size:calc(9.8px * var(--nova-copy-scale));
+  line-height:1.5;
+}
+.notice{margin-bottom:7px}
+.textSizeControls{border-radius:9px}
+.panel{padding:17px 14px}
+.panelTop{margin-bottom:14px}
+@media(max-width:1170px){
+  .feed{padding-inline:16px}
+  .studioHero{padding:18px 20px}
+  .studioTools .suggestion{gap:8px;padding:10px}
+}
+@media(max-width:920px){
+  .studioTools .suggestions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .studioHero{grid-template-columns:minmax(0,1fr) 140px}
+}
+@media(max-width:730px){
+  .studioHero{
+    grid-template-columns:1fr;
+    min-height:0;
+    padding:17px 18px;
+    gap:0;
+  }
+  .studioVisual{display:none}
+  .studioHero h1{font-size:clamp(29px,5.4vw,36px)}
+  .studioTools .suggestions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+  .welcome{padding:4px 0 11px}
+  .feed{padding:10px 10px 12px}
+  .studioHero{
+    padding:16px 15px;
+    border-radius:16px;
+  }
+  .studioTopline{margin-bottom:7px}
+  .studioHero h1{
+    font-size:clamp(28px,7vw,33px);
+    line-height:1.33;
+  }
+  .studioHero .welcomeDesc{
+    font-size:calc(12px * var(--nova-copy-scale));
+    line-height:1.58;
+    margin:7px 0 12px;
+  }
+  .studioHeroActions{gap:5px}
+  .studioHeroActions button{
+    font-size:calc(11px * var(--nova-copy-scale));
+    min-height:36px;
+    padding:7px 10px;
+  }
+  .studioTools{
+    margin-top:9px;
+    padding:11px;
+    border-radius:14px;
+  }
+  .studioToolsTop{margin-bottom:8px}
+  .studioToolsTop h2{font-size:calc(15px * var(--nova-copy-scale))}
+  .studioToolsCounter{font-size:calc(9.5px * var(--nova-copy-scale))}
+  .studioModes{gap:5px;padding-bottom:9px}
+  .studioModes button{
+    font-size:calc(11px * var(--nova-copy-scale));
+    padding:6px 10px;
+    min-height:31px;
+  }
+  .studioTools .suggestions{gap:7px}
+  .studioTools .suggestion{
+    flex-direction:column;
+    align-items:flex-start;
+    min-height:94px;
+    padding:10px;
+    gap:5px;
+    border-radius:11px;
+  }
+  .studioTools .suggestion:first-child{
+    grid-column:span 2;
+    flex-direction:row;
+    align-items:center;
+    min-height:66px;
+    gap:11px;
+  }
+  .studioTools .suggestion .tileIcon{width:30px;height:30px;font-size:15px}
+  .studioTools .suggestion strong{font-size:calc(12.4px * var(--nova-copy-scale))}
+  .studioTools .suggestion small{font-size:calc(10.4px * var(--nova-copy-scale))}
+  .studioShowMore{margin-top:4px;min-height:30px;font-size:calc(11px * var(--nova-copy-scale))}
+  .composerDock{padding:6px 9px max(9px,env(safe-area-inset-bottom))}
+  .composerBox{padding:9px 10px;border-radius:14px}
+  .composerBox textarea{font-size:calc(14px * var(--nova-copy-scale));min-height:47px}
+  .taskLine{margin-bottom:3px}
+  .taskLine label{font-size:calc(10.5px * var(--nova-copy-scale))}
+  .taskLine select{font-size:calc(12px * var(--nova-copy-scale));min-height:31px}
+  .attachTask{min-height:31px}
+  .openTemplatesComposer{display:none}
+  .composerTools{gap:7px;min-height:34px;padding-top:6px}
+  .instantBanner{gap:6px;align-items:center;padding:0;margin:0 auto 0 0}
+  .instantBanner button{
+    min-height:27px;
+    padding:5px 7px;
+    font-size:calc(10px * var(--nova-copy-scale));
+  }
+  .instantBanner>span#instantStatus{
+    font-size:calc(9.8px * var(--nova-copy-scale));
+  }
+  .sendButton{min-height:34px;padding:7px 10px;font-size:calc(11.5px * var(--nova-copy-scale))}
+  .underComposer{display:none}
+  .textSizeControls{display:none}
+  .statusPill{
+    max-width:none!important;
+    width:27px;
+    min-width:27px;
+    min-height:27px;
+    justify-content:center;
+    padding:6px!important;
+  }
+  .statusPill #statusLabel{
+    position:absolute!important;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip-path:inset(50%);
+    white-space:nowrap;
+  }
+}
+@media(max-width:380px){
+  .studioHero{padding:14px 12px}
+  .studioHero h1{font-size:28px}
+  .studioHeroActions button{padding:7px 9px;font-size:calc(10.5px * var(--nova-copy-scale))}
+  .studioTools{padding:10px}
+  .studioTools .suggestion strong{font-size:calc(12px * var(--nova-copy-scale))}
+  .studioTools .suggestion small{font-size:calc(10px * var(--nova-copy-scale))}
+  .instantBanner>span#instantStatus{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;clip-path:inset(50%);
+    white-space:nowrap;
+  }
+  .taskLine select{max-width:165px}
+}
+@media(prefers-reduced-motion:reduce){
+  .studioShowMore span{transition:none}
+}
