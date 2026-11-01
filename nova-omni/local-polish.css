@@ -519,7 +519,7 @@ body{letter-spacing:.002em}
  .composerBox textarea{min-height:53px;font-size:calc(14px * var(--nova-copy-scale))}
  .taskLine{gap:6px}
  .taskLine label{font-size:calc(11px * var(--nova-copy-scale))}
- .taskLine select{min-height:33px;max-width:150px;font-size:calc(11px * var(--nova-copy-scale))}
+ .taskLine select{min-height:33px;max-width:150px;font-size:calc(12px * var(--nova-copy-scale))}
  .attachTask{font-size:calc(10.8px * var(--nova-copy-scale));min-height:33px;padding:6px 8px}
  .composerHint{font-size:9.8px}
  .underComposer{font-size:calc(9.7px * var(--nova-copy-scale));margin-top:7px}
@@ -535,7 +535,7 @@ body{letter-spacing:.002em}
  .welcome h1{font-size:27px}
  .suggestions{grid-template-columns:repeat(2,minmax(0,1fr))}
  .suggestion{min-height:87px;flex-direction:column;padding:10px}
- .suggestion strong{font-size:calc(11.6px * var(--nova-copy-scale))}
+ .suggestion strong{font-size:calc(12.3px * var(--nova-copy-scale))}
  .suggestion small{font-size:calc(10px * var(--nova-copy-scale))}
  .statusPill{max-width:75px}
  .taskLine select{max-width:140px}
