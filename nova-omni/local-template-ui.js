@@ -1,4 +1,4 @@
-/* NOVA v3.0 accessible template picker & adjustable typography. No network calls. */
+/* NOVA v3.1 compact template shelf; fetches only same-origin metadata on user open. */
 (function(root){
  'use strict';
  const doc=root.document;
@@ -15,6 +15,34 @@
  ]);
  const FONT_STORAGE='nova_local_text_size';
  let fontMode='normal',filter='all',priorFocus=null;
+ let hostedRequest=null;
+ async function refreshHostedCatalog(){
+  if(hostedRequest)return hostedRequest;
+  // Render the bundled catalog immediately; this small same-site metadata fetch
+  // must never block opening, selecting or using a template.
+  const status=$('templateHostStatus');
+  if(status)status.textContent='القوالب جاهزة · جاري تحديث الفهرس من الاستضافة…';
+  hostedRequest=(async()=>{
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),6500);
+   try{
+    const url=new URL('./templates/catalog.json?v=3.1.0',root.location.href);
+    if(url.origin!==root.location.origin)throw Error('Catalog origin must match site');
+    const response=await root.fetch(url.href,{method:'GET',credentials:'same-origin',
+     cache:'no-cache',signal:controller.signal});
+    if(!response.ok)throw Error('Hosted catalog unavailable');
+    const data=await response.json();
+    if(!lib.applyHostedCatalog(data))throw Error('Invalid hosted catalog metadata');
+    if(status)status.textContent='الفهرس محمّل من استضافة NOVA · '+lib.getTemplates().length+' قالب';
+    if(!modal.hidden)render();
+    return true;
+   }catch(error){
+    if(status)status.textContent='القوالب المحلية جاهزة · تعذّر تحديث الفهرس، بدون تعطيل الاستخدام';
+    return false;
+   }finally{clearTimeout(timeout);}
+  })();
+  return hostedRequest;
+ }
  root.NovaSelectedTemplateId=null;
 
  function changeFont(mode,persist=true){
@@ -77,6 +105,7 @@
   modal.hidden=false;
   render();
   $('templateSearch').focus();
+  void refreshHostedCatalog();
  }
  function choose(item){
   if($('prompt').disabled){
