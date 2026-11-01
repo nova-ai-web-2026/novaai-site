@@ -52,12 +52,12 @@ test('approved Wi-Fi startup is quiet, accurately marked as preparing, then read
  await expect(page.locator('#notice')).toBeHidden();
  await expect(page.locator('#modelStatusDetails')).toContainText('قيد التحضير');
  await expect(page.locator('#progress')).toBeHidden();
- const before=await page.evaluate(()=>document.querySelector('#instantStatus').firstChild);
+ await page.evaluate(()=>{window.__statusNode=document.querySelector('#instantStatus').firstChild;});
  await page.evaluate(()=>{
    window.__worker.onmessage({data:{type:'status',text:'Downloading files 44%'}});
    window.__worker.onmessage({data:{type:'progress',progress:44,file:'large-model.onnx'}});
  });
- expect(await page.evaluate(node=>document.querySelector('#instantStatus').firstChild===node,before)).toBe(true);
+ expect(await page.evaluate(()=>document.querySelector('#instantStatus').firstChild===window.__statusNode)).toBe(true);
  await expect(page.locator('#instantStatus')).toHaveText('نوفا بيستعد');
  expect(await page.locator('body').innerText()).not.toContain('Downloading files 44%');
  await page.evaluate(()=>window.__worker.onmessage({data:{type:'ready',device:'wasm'}}));
