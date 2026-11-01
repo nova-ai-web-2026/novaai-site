@@ -14,6 +14,7 @@
   {id:'large',scale:1.13}
  ]);
  const FONT_STORAGE='nova_local_text_size';
+ const RECENT_TEMPLATES=new Set(["appointment_request","technical_support","project_proposal","weekly_planner","python_grade_average","js_theme_toggle","html_faq","study_error_log","study_exam_preparation","research_claim_sources"]);
  let fontMode='normal',filter='all',priorFocus=null;
  let hostedRequest=null;
  async function refreshHostedCatalog(){
@@ -26,7 +27,7 @@
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),6500);
    try{
-    const url=new URL('./templates/catalog.json?v=3.1.0',root.location.href);
+    const url=new URL('./templates/catalog.json?v=3.2.0',root.location.href);
     if(url.origin!==root.location.origin)throw Error('Catalog origin must match site');
     const response=await root.fetch(url.href,{method:'GET',credentials:'same-origin',
      cache:'no-cache',signal:controller.signal});
@@ -61,7 +62,8 @@
   changeFont(next.id);
  }
  function render(){
-  const data=lib.filterTemplates(filter,$('templateSearch').value);
+  const data=lib.filterTemplates(filter,$('templateSearch').value)
+   .sort((a,b)=>Number(RECENT_TEMPLATES.has(b.id))-Number(RECENT_TEMPLATES.has(a.id)));
   const grid=$('templateGrid');
   grid.replaceChildren();
   $('templateCount').textContent='عرض '+data.length+' من '+lib.getTemplates().length+' قالبًا';
