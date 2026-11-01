@@ -765,7 +765,7 @@ function skipIntro(){
  closeIntro();$('prompt').focus();
 }
 $('introEnter').addEventListener('click',()=>enterIntro());
-$('introInstant').addEventListener('click',()=>{skipIntro();notice('⚡ اختار البحث أو قالب كتابة أو كود من الأمثلة، من غير تحميل نموذج.');});
+$('introInstant').addEventListener('click',skipIntro);
 $('introQuick').addEventListener('click',()=>enterIntro('lite'));
 $('introSkip').addEventListener('click',skipIntro);
 function beginBackgroundWarmup(){
@@ -777,7 +777,11 @@ function beginBackgroundWarmup(){
   if(connectionPolicy().auto){
     requestAnimationFrame(()=>requestAnimationFrame(()=>startModel('remembered')));
    }else{
-    notice('التشغيل التلقائي متوقف على الشبكة دي لحماية باقة الإنترنت. تقدر تشغّل NOVA يدويًا من إعدادات النموذج.');
+    // No prominent banner on metered revisits: the choice is visible in Settings.
+    $('statusNote').textContent='للحفاظ على بيانات الموبايل، التشغيل التلقائي متوقف. اضغط تشغيل المساعد لو حابب تختاره بنفسك، وقد يستهلك تنزيلًا كبيرًا.';
+    $('quickStartAi').title='التشغيل اليدوي قد يتطلب تنزيل ملفات كبيرة؛ هتظهر موافقة قبل البدء.';
+    $('modelStatusDetails').textContent='التشغيل التلقائي متوقف حفاظًا على بياناتك. تقدر تختار تشغيل المساعد يدويًا بعد الموافقة.';
+    notice('');
    }
    return;
  }
@@ -956,12 +960,26 @@ function updateMemoryInfo(){
  $('memoryInfo').textContent='ذاكرة المحادثة: لغاية '+depth+' رسالة للسياق · محفوظ محليًا حتى 60 رسالة لكل محادثة.';
 }
 function state(text,mode){
+ // Diagnostics remain in Settings; the conversation gets a quiet, truthful cue.
  $('state').textContent=String(text||'');
- $('statusPill').classList.toggle('live',mode==='ready');
+ const stage=mode==='error'?'error':loading?'loading':mode==='working'?'working':ready?'ready':'instant';
+ $('statusPill').classList.toggle('live',stage==='ready'||stage==='working');
+ $('statusPill').dataset.stage=stage;
  $('statusLabel').textContent=mode==='ready'?'جاهز':mode==='working'?'بيرد عليك':mode==='error'?'مساعدة مطلوبة':mode==='instant'?'أدوات فورية':'NOVA Local';
- $('instantStatus').textContent=loading?'نموذج AI بيتجهز في الخلفية. البحث والقوالب شغّالين من غير ما تستناه.':ready?'النموذج المحلي جاهز. الأدوات الفورية متاحة كمان.':'⚡ البحث والقوالب متاحة فورًا من غير تنزيل نموذج.';
+ $('instantBanner').dataset.stage=stage;
+ $('instantStatus').textContent=stage==='loading'?'نوفا بيستعد':stage==='working'?'نوفا بيجاوب':stage==='ready'?'المساعد جاهز':stage==='error'?'محتاج مراجعة':'الأدوات متاحة';
  $('quickStartAi').disabled=loading||ready;
- $('quickStartAi').textContent=ready?'نموذج AI جاهز':loading?'جاري تجهيز AI…':'تشغيل نموذج AI';
+ $('quickStartAi').textContent=loading?'جارٍ التحضير':ready?'جاهز':'تشغيل المساعد';
+ const details=$('modelStatusDetails');
+ details.dataset.stage=stage;
+ if(stage==='loading')details.textContent='المساعد المحلي قيد التحضير على جهازك. أول مرة قد يحتاج تنزيل ملفات كبيرة؛ القوالب والبحث متاحين الآن.';
+ else if(stage==='ready')details.textContent='المساعد المحلي جاهز. تقدر تستخدمه في الشرح والكتابة والبرمجة.';
+ else if(stage==='working')details.textContent='المساعد بيجهّز ردك على جهازك. تقدر تلغي الرد من المحادثة.';
+ else if(stage==='error')details.textContent='التشغيل واجه مشكلة. تفاصيل الحالة وخيارات المحاولة موجودة هنا في الإعدادات.';
+ else if(consentValue()==='granted'&&!connectionPolicy().auto)
+  details.textContent='التشغيل التلقائي متوقف حفاظًا على بياناتك. تقدر تطلب تشغيل المساعد يدويًا؛ قد يحتاج تنزيلًا كبيرًا.';
+ else details.textContent='المساعد المحلي اختياري. القوالب والبحث والحسابات متاحة بدون تشغيله.';
+ $('statusPill').title=stage==='loading'?'المساعد المحلي قيد التحضير':stage==='ready'?'المساعد المحلي جاهز':stage==='working'?'المساعد يولّد ردًا الآن':stage==='error'?'افتح الإعدادات لمراجعة المشكلة':'أدوات NOVA الفورية متاحة';
 }
 function notice(text){$('notice').textContent=String(text||'');$('notice').hidden=!text;}
 function closePanels(){
