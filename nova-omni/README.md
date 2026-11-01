@@ -190,3 +190,22 @@ Accessible from the header, sidebar, composer and initial welcome screen. Search
 
 ### Verification
 Node tests check catalog size, unique identifiers, filters, safe writing structures and code starters. Browser tests exercise the picker and filters, real rendering in the existing chat, persistence of font preferences, keyboard close behavior, mobile navigation and display overflow at the viewport sizes above. Existing arithmetic, model consent, local history and local worker tests remain in the test suite.
+
+## NOVA Local v3.1 — compact hosted template shelf (34 templates)
+
+The templates now open in a narrow right-side drawer (up to ~420px wide on desktop, ~94vw on compact phones) rather than a nearly full-screen gallery. Existing entry points remain: header, sidebar, message composer and the welcome prompt. The shelf remains searchable, category-filtered and keyboard accessible; selecting a template fills the existing composer without interrupting stored conversations.
+
+### Small hosted catalog, no new paid backend
+All 34 template descriptions and prompts are mirrored in a small, versioned static JSON file: `nova-omni/templates/catalog.json`, served from the same **GitHub Pages** host as NOVA. The browser shows the bundled list immediately and checks this hosted JSON **only after the template drawer is opened**; loading the catalog never blocks the interface. If the request fails, takes too long, or the JSON is malformed, the full bundled set remains usable offline. The drawer clearly labels the hosted/fallback state.
+
+This is a lightweight **static hosted resource, not a dynamic application server**. It adds no database, password, paid service, remote model inference, or user-data uploads. The JSON contains only curated public template metadata. For safety, hosted entries must match existing approved identifiers, categories and execution modes; arbitrary remote scripts or new execution modes cannot be injected. Prompt/body rendering remains in the reviewed application code.
+
+### Exactly five added templates
+The existing 29 remain and five new ones are added:
+- **تأكيد دفع** — payment confirmation email with amount, date and reference placeholders.
+- **شكر بعد مقابلة** — short post-interview follow-up message.
+- **التحقق من نموذج** — editable browser-based HTML/JavaScript form validation starter, without sending submitted data.
+- **مقارنة مصادر** — research-source discovery for comparing subjects; returns citations, not a fabricated synthesis.
+- **بطاقات مراجعة** — structured self-study flashcards with placeholders to verify against class notes.
+
+Counts: 14 writing, 13 coding, 4 source research, 3 study = **34 templates**. Existing local AI consent and on-device chat history are unchanged. Browser and unit tests verify loading the small hosted catalog, offline fallback, no model download on template selection, filters, mobile drawer dimensions and every new template.
