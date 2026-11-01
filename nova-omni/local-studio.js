@@ -1,4 +1,4 @@
-/* NOVA Studio v3.4 — actual task navigation, not a visual-only filter.
+/* NOVA Studio v3.5 — focused progressive task navigation, not a visual-only filter.
    Works with the existing offline templates, prompt editor and source search. */
 (function(root){
  'use strict';
@@ -30,7 +30,27 @@
   research:'مصادر البحث',
   study:'أدوات المذاكرة'
  });
- let current='all';
+ const more=$('studioShowMore');
+ const FIRST_ROW=3;
+ let current='all',expanded=false,total=6;
+ function showAvailable(){
+  const shown=expanded?total:Math.min(FIRST_ROW,total);
+  buttons.forEach((button,index)=>{
+   button.hidden=index>=total||index>=shown;
+  });
+  const counter=$('studioToolsCounter');
+  if(counter)counter.textContent=shown+' من '+total+' · '+labels[current];
+  if(more){
+   more.hidden=total<=FIRST_ROW;
+   more.setAttribute('aria-expanded',String(expanded));
+   more.firstChild.textContent=expanded?'عرض أقل ':'عرض باقي الاختصارات ';
+   more.setAttribute('aria-label',expanded?'عرض 3 اختصارات فقط':'عرض كل '+total+' اختصارات');
+  }
+ }
+ more?.addEventListener('click',()=>{
+  expanded=!expanded;
+  showAvailable();
+ });
  function applyCard(button,info){
   const title=button.querySelector('strong');
   const description=button.querySelector('small');
@@ -72,8 +92,9 @@
     button.setAttribute('aria-label','');
    }
   });
-  const counter=$('studioToolsCounter');
-  if(counter)counter.textContent=items.length+' اختصارات · '+labels[next];
+  total=items.length;
+  expanded=false;
+  showAvailable();
   panel.dataset.selectedMode=next;
   if(opts.focus){
    const first=buttons.find(b=>!b.hidden);
@@ -89,11 +110,7 @@
  buttons.forEach(button=>button.addEventListener('click',()=>{
   root.NovaSelectedTemplateId=button.dataset.templateId||null;
  }));
- $('studioOpenLibrary')?.addEventListener('click',()=>{
-  const open=$('openTemplatesTop');
-  if(open&&!open.disabled)open.click();
- });
- $('studioStartWriting')?.addEventListener('click',()=>{
+$('studioStartWriting')?.addEventListener('click',()=>{
   selectMode('writing');
   panel.scrollIntoView({block:'nearest',behavior:root.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
  });
@@ -109,5 +126,5 @@
  });
  // Leave the original six verified actions and focus defaults unchanged.
  selectMode('all');
- root.NovaStudio=Object.freeze({selectMode,getMode:()=>current});
+ root.NovaStudio=Object.freeze({selectMode,getMode:()=>current,getVisibleCount:()=>expanded?total:Math.min(FIRST_ROW,total),isExpanded:()=>expanded});
 })(typeof globalThis!=='undefined'?globalThis:this);

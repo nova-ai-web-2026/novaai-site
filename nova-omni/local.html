@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="3.4.0">
+<meta name="nova-local-version" content="3.5.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -472,6 +472,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
 </style>
 <link rel="stylesheet" href="./local-polish.css?v=3.3.0">
 <link rel="stylesheet" href="./local-studio.css?v=3.4.0">
+<link rel="stylesheet" href="./local-focus.css?v=3.5.0">
 </head>
 <body>
 <div id="introOverlay" class="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle" hidden>
@@ -521,7 +522,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>محادثاتك بتفضل في المتصفح. البحث الاختياري بس بيرسل كلمات الموضوع إلى ويكيبيديا وCrossref، من غير إرسال تاريخ المحادثة.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v3.4 · PRIVATE WORKSPACE</div>
+    <div class="railFoot">NOVA LOCAL v3.5 · PRIVATE WORKSPACE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -543,42 +544,34 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
       <main class="conversation" aria-label="NOVA Local conversation">
         <div class="feed" id="chat" aria-live="polite" aria-label="Conversation">
           <section class="welcome" id="welcome">
-           <div class="studioHero">
-             <div class="studioHeroCopy">
-               <div class="studioTopline"><span class="studioBrandDot" aria-hidden="true">✦</span><span>NOVA STUDIO</span><span class="studioToplineSep" aria-hidden="true"></span><span>مساحة لإبداعك</span></div>
-               <h1>فكرتك تبدأ هنا.<br><span>ونوفا يساعدك تنفذها.</span></h1>
-               <p class="welcomeDesc">من سؤال أو فكرة بسيطة إلى مسودة، كود، أو بحث بمصادر. اختار الأداة المناسبة وابدأ على طول.</p>
-               <div class="studioHeroActions">
-                 <button class="studioPrimaryCta" id="studioOpenLibrary" type="button">استكشف القوالب <span class="studioCtaCount">44</span><span aria-hidden="true">↗</span></button>
-                 <button class="studioSecondaryCta" id="studioStartWriting" type="button">ابدأ بالكتابة <span aria-hidden="true">←</span></button>
-               </div>
-               <div class="studioCapabilities"><span><span class="studioCapabilityDot" aria-hidden="true"></span>قوالب جاهزة</span><span><span class="studioCapabilityDot" aria-hidden="true"></span>بحث بمصادر</span><span><span class="studioCapabilityDot" aria-hidden="true"></span>مساعد محلي اختياري</span></div>
-             </div>
-             <div class="studioVisual" aria-hidden="true">
-               <div class="studioVisualGlow"></div>
-               <div class="studioOrbit studioOrbitOuter"></div>
-               <div class="studioOrbit studioOrbitInner"></div>
-               <div class="studioOrbCore"><span>✦</span><strong>NOVA</strong></div>
-               <div class="studioOrbitDot studioOrbitDotA"></div>
-               <div class="studioOrbitDot studioOrbitDotB"></div>
-               <div class="studioFloat studioFloatTop"><span>⌘</span><div><strong>BUILD</strong><small>Code & ideas</small></div></div>
-               <div class="studioFloat studioFloatBottom"><span>✎</span><div><strong>CREATE</strong><small>Write & design</small></div></div>
-               <div class="studioVisualBottom">YOUR IDEAS, IN MOTION <span>✳</span></div>
-             </div>
-           </div>
-           <div class="studioTools" id="studioTools">
-             <div class="studioToolsTop">
-               <div><span class="studioToolsKicker">PICK YOUR WORKFLOW</span><h2>اختار اللي عايز تعمله</h2></div>
-               <span class="studioToolsCounter" id="studioToolsCounter">6 اختصارات جاهزة</span>
-             </div>
-             <div class="studioModes" id="studioModes" role="group" aria-label="اختار نوع الأداة">
-               <button type="button" data-studio-mode="all" aria-pressed="true">✦ الكل</button>
-               <button type="button" data-studio-mode="writing" aria-pressed="false">✎ كتابة</button>
-               <button type="button" data-studio-mode="code" aria-pressed="false">⌘ برمجة</button>
-               <button type="button" data-studio-mode="research" aria-pressed="false">⌕ بحث</button>
-               <button type="button" data-studio-mode="study" aria-pressed="false">▤ مذاكرة</button>
-             </div>
-             <div class="suggestions" id="studioSuggestions">
+            <div class="studioHero">
+              <div class="studioHeroCopy">
+                <div class="studioTopline"><span class="studioBrandDot" aria-hidden="true">✦</span><span>NOVA STUDIO</span></div>
+                <h1>فكرتك تبدأ هنا.<br><span>ونوفا يساعدك تنفذها.</span></h1>
+                <p class="welcomeDesc">اكتب، برمج، ابحث أو ذاكر — من مكان واحد.</p>
+                <div class="studioHeroActions">
+                  <button class="studioPrimaryCta" id="browseTemplatesWelcome" type="button">استكشف 44 قالبًا <span aria-hidden="true">↗</span></button>
+                  <button class="studioSecondaryCta" id="studioStartWriting" type="button">ابدأ بالكتابة <span aria-hidden="true">←</span></button>
+                </div>
+              </div>
+              <div class="studioVisual" aria-hidden="true">
+                <div class="studioOrbit studioOrbitInner"></div>
+                <div class="studioOrbCore"><span>✦</span><strong>NOVA</strong></div>
+              </div>
+            </div>
+            <div class="studioTools" id="studioTools">
+              <div class="studioToolsTop">
+                <h2>اختار اللي عايز تعمله</h2>
+                <span class="studioToolsCounter" id="studioToolsCounter" aria-live="polite">3 من 6 اختصارات</span>
+              </div>
+              <div class="studioModes" id="studioModes" role="group" aria-label="اختار نوع الأداة">
+                <button type="button" data-studio-mode="all" aria-pressed="true">✦ الكل</button>
+                <button type="button" data-studio-mode="writing" aria-pressed="false">✎ كتابة</button>
+                <button type="button" data-studio-mode="code" aria-pressed="false">⌘ برمجة</button>
+                <button type="button" data-studio-mode="research" aria-pressed="false">⌕ بحث</button>
+                <button type="button" data-studio-mode="study" aria-pressed="false">▤ مذاكرة</button>
+              </div>
+              <div class="suggestions" id="studioSuggestions">
               <button class="suggestion" type="button" data-task="research" data-prompt="ابحث عن الطاقة الشمسية وفوائدها"><span class="tileIcon">⌕</span><span><strong>بحث بالمصادر</strong><small>روابط واضحة ونتائج فعلية</small></span></button>
               <button class="suggestion" type="button" data-task="write_fast" data-prompt="اكتب إيميل رسمي للاستفسار عن حالة طلبي"><span class="tileIcon">✎</span><span><strong>اكتب مسودة</strong><small>ابدأ من قالب جاهز</small></span></button>
                <button class="suggestion" type="button" data-task="code_fast" data-prompt="اعمل آلة حاسبة Python"><span class="tileIcon">⌘</span><span><strong>برمجة وكود</strong><small>أمثلة قابلة للتعديل</small></span></button>
@@ -586,17 +579,14 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
               <button class="suggestion" type="button" data-prompt="احسب ٣ + ٤؟"><span class="tileIcon">∑</span><span><strong>حساب سريع</strong><small>نتيجة دقيقة وفورية</small></span></button>
               <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص النصوص</strong><small>أهم الجمل من نصك</small></span></button>
             </div>
-           </div>
-           <div class="templateTeaser">
-             <div><strong>مكتبة القوالب</strong><span>44 قالبًا في الكتابة والبرمجة والبحث والمذاكرة</span></div>
-             <button id="browseTemplatesWelcome" type="button">شوف كل القوالب <span aria-hidden="true">↗</span></button>
-           </div>
-         </section>
+              <button class="studioShowMore" id="studioShowMore" type="button" aria-controls="studioSuggestions" aria-expanded="false">عرض باقي الاختصارات <span aria-hidden="true">⌄</span></button>
+            </div>
+          </section>
          </div>
          <div class="composerDock">
           <div class="composerInner">
             <div id="notice" class="notice" role="status" hidden></div>
-             <div id="instantBanner" class="instantBanner" role="status" aria-live="polite" data-stage="instant"><span class="quietPulse" aria-hidden="true"></span><span id="instantStatus">الأدوات متاحة</span><button id="quickStartAi" type="button" title="تشغيل النموذج المحلي اختياري وقد يتطلب تنزيل ملفات كبيرة">تشغيل المساعد</button></div>
+             
             <div id="loadAssist" class="loadAssist" hidden aria-live="polite">
               <span>محتاج نسخة أخف؟</span>
               <button id="loadAssistFast" type="button">Fast · عربي</button>
@@ -624,6 +614,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
  </div>
  <textarea id="prompt" rows="2" maxlength="7000" aria-label="الرسالة" placeholder="اسأل NOVA أي حاجة…"></textarea>
               <div class="composerTools">
+                <div id="instantBanner" class="instantBanner" role="status" aria-live="polite" data-stage="instant"><span class="quietPulse" aria-hidden="true"></span><span id="instantStatus">الأدوات متاحة</span><button id="quickStartAi" type="button" title="تشغيل النموذج المحلي اختياري وقد يتطلب تنزيل ملفات كبيرة">تشغيل المساعد</button></div>
                 <div class="composerHint"><svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M12 2v8M8 7l4 4 4-4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>Enter للإرسال · Shift + Enter لسطر جديد</span></div>
                 <button class="cancelReply" id="cancelReply" type="button" hidden>إلغاء الرد</button>
                 <button class="sendButton" id="send" type="button" disabled>إرسال <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4M8 4h12v12"/></svg></button>
@@ -1408,6 +1399,6 @@ loadSaved();updateMemoryInfo();display();renderSessions();syncActions();state('�
 })();
 </script>
 <script src="./local-template-ui.js?v=3.2.0"></script>
-<script src="./local-studio.js?v=3.4.0"></script>
+<script src="./local-studio.js?v=3.5.0"></script>
 </body>
 </html>
