@@ -664,7 +664,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
         <button class="startButton" id="start" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 10 7-10 7V5Z"/></svg><span>تشغيل المساعد المحلي</span></button>
         <button class="stopButton" id="stop" type="button" disabled>إيقاف النموذج</button>
         <div id="modelHelp" class="modelHelp" hidden role="status">
-         <strong>لو NOVA طول في التجهيز</strong>
+         <strong>اختيارات إضافية</strong>
          <p id="modelHelpText">موديلات AI المحلية كبيرة؛ أول تحميل ممكن يستغرق وقتًا ويحتاج مساحة وذاكرة كافيتين.</p>
          <div class="modelHelpActions">
           <button id="tryFast" type="button">جرّب Fast</button>
@@ -677,7 +677,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
           <progress id="progress" max="100" value="0" aria-label="Model download progress"></progress>
           <p id="state" role="status">Not started · لم يبدأ التحميل</p>
         </div>
-        <p class="note" id="statusNote">التشغيل بيتم على جهازك بعد موافقة واضحة على تنزيل النموذج. تفاصيل التحميل مش هتظهر أثناء المحادثة، وتقدر توقفه في أي وقت.</p>
+        <p class="note" id="statusNote">المساعد المحلي اختياري ويعمل بعد موافقتك على تنزيل الملفات المطلوبة. أول تشغيل ممكن يستهلك بيانات ومساحة كبيرة، وتقدر توقفه هنا في أي وقت.</p>
         <div class="privacyCard"><strong><svg class="icon" style="width:16px" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>بدون اشتراك أو بطاقة</strong><p>لا تُرسل الأسئلة لـAI Gateway. سجل المحادثات بيتحفظ في متصفحك فقط، وتقدر تمسحه في أي وقت.</p></div>
         <button class="textButton" id="exportChat" type="button" disabled>
           <svg class="icon" style="width:16px" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg>
@@ -1059,7 +1059,7 @@ function scheduleModelHelp(){
  if(loadDeadlineTimer)clearInterval(loadDeadlineTimer);
  loadHelpTimer=setTimeout(()=>{
   loadHelpTimer=null;
-  if(loading&&!ready)showModelHelp('NOVA لسه بيتجهّز على جهازك. لو عايز تجربة أخف، اختار Lite؛ التحويل ممكن يحتاج تحميل جديد.');
+  if(loading&&!ready)showModelHelp('لو التحضير طول، نسخة Lite ممكن تكون أنسب لجهازك. التبديل ليها قد يحتاج تنزيل ملفات إضافية.');
  },18000);
  // Allow downloads longer than 150 seconds if real model progress continues.
  loadDeadlineTimer=setInterval(()=>{
@@ -1083,7 +1083,7 @@ function pickFallback(profile){
   if(previousQueuedQuestion&&loading){
    queuedQuestion=previousQueuedQuestion;
    refreshSend();
-   notice('السؤال محفوظ وهيتبعت تلقائيًا بعد تجهيز النموذج الجديد.');
+   notice('سؤالك محفوظ. هيظهر الرد هنا لما المساعد يبقى جاهز.');
   }
  }
 $('tryFast').addEventListener('click',()=>pickFallback('fast'));
@@ -1297,7 +1297,7 @@ function send(){
  if(loading&&!ready){
   queuedQuestion=message;refreshSend();
   $('cancelReply').hidden=false;
-  notice('وصل سؤالك. أول إجابة ممكن تستغرق شوية وقت وهتظهر هنا تلقائيًا.');
+  notice('وصل سؤالك. هتلاقي الرد هنا أول ما المساعد يبقى جاهز.');
   return;
  }
  if(!worker||!ready){notice('شغّل النموذج المحلي من الإعدادات الأول؛ الحسابات البسيطة متاحة من غير تحميل.');return;}
@@ -1324,7 +1324,7 @@ $('cancelReply').addEventListener('click',()=>{
  if(loading&&!ready&&queuedQuestion){
   queuedQuestion=null;$('cancelReply').hidden=true;
   refreshSend();
-  notice('اتلغى إرسال السؤال، لكن تحميل النموذج لسه شغال. تقدر توقفه من الإعدادات.');
+  notice('السؤال اتلغى. تقدر تتحكم في تشغيل المساعد من الإعدادات.');
   return;
  }
  if(generating){
