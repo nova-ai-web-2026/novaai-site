@@ -8,7 +8,7 @@ async function enter(page){
   await page.locator('#introInstant').click();
  await expect(page.locator('#introOverlay')).toBeHidden();
 }
-test('premium studio has a functional hero, six initial shortcuts and no model download',async({page})=>{
+test('focused studio keeps six approved shortcuts but shows only three initially',async({page})=>{
  await page.addInitScript(()=>{
   window.__workers=0;
   window.Worker=class{constructor(){window.__workers++}postMessage(){}terminate(){}};
@@ -20,9 +20,11 @@ test('premium studio has a functional hero, six initial shortcuts and no model d
  await expect(page.locator('#studioModes [aria-pressed="true"]')).toHaveCount(1);
  await expect(page.locator('#studioModes [data-studio-mode="all"]')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.studioTools .suggestion').first()).toHaveAttribute('data-task','research');
- await expect(page.locator('#studioToolsCounter')).toContainText('6 اختصارات');
+ await expect(page.locator('#studioToolsCounter')).toContainText('3 من 6');
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
+ await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','false');
  await expect(page.locator('#studioStartWriting')).toBeEnabled();
- await expect(page.locator('#studioOpenLibrary')).toBeEnabled();
+ await expect(page.locator('#browseTemplatesWelcome')).toBeEnabled();
  expect(await page.evaluate(()=>window.__workers)).toBe(0);
  expect(await page.evaluate(()=>window.NovaStudio.getMode())).toBe('all');
  await expect(page.locator('#instantStatus')).toHaveText('الأدوات متاحة');
@@ -31,7 +33,7 @@ test('writing studio mode gives working editable email and job templates without
  await enter(page);
  await page.locator('#studioModes [data-studio-mode="writing"]').click();
  await expect(page.locator('#studioModes [data-studio-mode="writing"]')).toHaveAttribute('aria-pressed','true');
- await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(6);
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
  await expect(page.locator('.studioTools .suggestion').first()).toContainText('إيميل رسمي');
  await page.locator('.studioTools .suggestion').first().click();
  await expect(page.locator('#taskMode')).toHaveValue('write_fast');
@@ -47,6 +49,8 @@ test('writing studio mode gives working editable email and job templates without
 test('code and study mode cards run different real bundled templates',async({page})=>{
  await enter(page);
  await page.locator('#studioModes [data-studio-mode="code"]').click();
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
+ await page.locator('#studioShowMore').click();
  await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(6);
  await expect(page.locator('.studioTools .suggestion').nth(4)).toContainText('زر الوضع الليلي');
  await page.locator('.studioTools .suggestion').nth(4).click();
@@ -55,6 +59,8 @@ test('code and study mode cards run different real bundled templates',async({pag
  await expect(page.locator('.bubble.ai')).toContainText('localStorage.setItem');
  await page.locator('#newChat').click();
  await page.locator('#studioModes [data-studio-mode="study"]').click();
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
+ await page.locator('#studioShowMore').click();
  await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(5);
  await expect(page.locator('.studioTools .suggestion[hidden]')).toHaveCount(1);
  await page.locator('.studioTools .suggestion').first().click();
@@ -73,7 +79,7 @@ test('research mode shows five source-based choices, not fabricated summaries',a
  }));
  await enter(page);
  await page.locator('#studioModes [data-studio-mode="research"]').click();
- await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(5);
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
  await page.locator('.studioTools .suggestion').first().click();
  await expect(page.locator('#taskMode')).toHaveValue('research');
  await page.locator('#send').click();
@@ -82,7 +88,7 @@ test('research mode shows five source-based choices, not fabricated summaries',a
 });
 test('hero shortcuts open existing library and writing tools instead of inert decoration',async({page})=>{
  await enter(page);
- await page.locator('#studioOpenLibrary').click();
+ await page.locator('#browseTemplatesWelcome').click();
  await expect(page.locator('#templateOverlay')).toBeVisible();
  await expect(page.locator('.templateCard')).toHaveCount(44);
  await page.locator('#closeTemplates').click();
@@ -125,12 +131,14 @@ for(const width of [320,390,768,1440]){
   expect(result.hero.right).toBeLessThanOrEqual(width+2);
   expect(result.title).toBeGreaterThanOrEqual(28);
   expect(result.card).toBeGreaterThanOrEqual(12);
-  expect(result.cards).toBe(6);
+  expect(result.cards).toBe(3);
   expect(result.composer.right).toBeLessThanOrEqual(width+2);
   expect(result.modes.length).toBe(5);
   if(width<=730)expect(result.art).toBe('none');
   else expect(result.art).not.toBe('none');
   await page.locator('#studioModes [data-studio-mode="code"]').click();
+  await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
+  await page.locator('#studioShowMore').click();
   await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(6);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+2);
  });
@@ -148,4 +156,55 @@ test('studio keeps last chat, font settings, model consent and stored templates 
  await expect(page.locator('.bubble.ai')).toContainText('5');
  await expect(page.locator('#textSizeSetting')).toHaveValue('large');
  expect(await page.evaluate(()=>localStorage.getItem('nova_local_download_consent_v1'))).toBe('declined');
+});
+
+test('show-more and show-less reveal the same real templates without duplicate controls',async({page})=>{
+ await enter(page);
+ const cards=page.locator('.studioTools .suggestion');
+ await expect(cards).toHaveCount(6);
+ await expect(cards.filter({visible:true})).toHaveCount(3);
+ await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','false');
+ await page.locator('#studioShowMore').click();
+ await expect(cards.filter({visible:true})).toHaveCount(6);
+ await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','true');
+ await page.locator('.studioTools .suggestion').nth(5).click();
+ await expect(page.locator('#prompt')).toHaveValue(/لخص النص/);
+ await page.locator('#studioShowMore').click();
+ await expect(cards.filter({visible:true})).toHaveCount(3);
+ await expect(page.locator('#prompt')).toHaveValue(/لخص النص/);
+ await page.locator('#studioModes [data-studio-mode="study"]').click();
+ await expect(cards.filter({visible:true})).toHaveCount(3);
+ await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','false');
+});
+test('all template entry points remain functional with no duplicate welcome teaser',async({page})=>{
+ await enter(page);
+ await expect(page.locator('.templateTeaser')).toHaveCount(0);
+ await expect(page.locator('#studioOpenLibrary')).toHaveCount(0);
+ await expect(page.locator('#browseTemplatesWelcome')).toBeVisible();
+ await page.locator('#browseTemplatesWelcome').click();
+ await expect(page.locator('#templateOverlay')).toBeVisible();
+ await expect(page.locator('.templateCard')).toHaveCount(44);
+ await page.locator('#closeTemplates').click();
+ await page.locator('#openTemplatesTop').click();
+ await expect(page.locator('#templateOverlay')).toBeVisible();
+});
+test('inline model status keeps manual consent choice while reducing composer rows',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__workers=0;
+  window.Worker=class{constructor(){window.__workers++;}postMessage(){}terminate(){}};
+ });
+ await enter(page);
+ await expect(page.locator('#instantBanner')).toBeVisible();
+ const metrics=await page.evaluate(()=>{
+  const banner=document.querySelector('#instantBanner').getBoundingClientRect();
+  const tool=document.querySelector('.composerTools').getBoundingClientRect();
+  const box=document.querySelector('.composerBox').getBoundingClientRect();
+  const input=document.querySelector('#prompt').getBoundingClientRect();
+  return {bannerY:banner.y,toolsY:tool.y,toolsBottom:tool.bottom,boxBottom:box.bottom,inputBottom:input.bottom};
+ });
+ expect(metrics.bannerY).toBeGreaterThanOrEqual(metrics.toolsY-2);
+ expect(metrics.toolsBottom).toBeLessThanOrEqual(metrics.boxBottom+2);
+ expect(metrics.inputBottom).toBeLessThan(metrics.bannerY+6);
+ await expect(page.locator('#quickStartAi')).toBeVisible();
+ expect(await page.evaluate(()=>window.__workers)).toBe(0);
 });
