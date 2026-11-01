@@ -505,7 +505,7 @@ body{letter-spacing:.002em}
  .suggestions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  .suggestion{min-height:82px;padding:10px 9px;gap:8px;border-radius:13px}
  .suggestion .tileIcon{width:30px;height:30px;font-size:15px;border-radius:9px}
- .suggestion strong{font-size:calc(11.8px * var(--nova-copy-scale))}
+ .suggestion strong{font-size:calc(12.5px * var(--nova-copy-scale))}
  .suggestion small{font-size:calc(10.2px * var(--nova-copy-scale))}
  .templateTeaser{margin-top:10px;padding:11px 12px}
  .templateTeaser>div{gap:3px}
