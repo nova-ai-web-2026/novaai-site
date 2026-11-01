@@ -162,10 +162,10 @@ test('show-more and show-less reveal the same real templates without duplicate c
  await enter(page);
  const cards=page.locator('.studioTools .suggestion');
  await expect(cards).toHaveCount(6);
- await expect(cards.filter({visible:true})).toHaveCount(3);
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(3);
  await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','false');
  await page.locator('#studioShowMore').click();
- await expect(cards.filter({visible:true})).toHaveCount(6);
+ await expect(page.locator('.studioTools .suggestion:not([hidden])')).toHaveCount(6);
  await expect(page.locator('#studioShowMore')).toHaveAttribute('aria-expanded','true');
  await page.locator('.studioTools .suggestion').nth(5).click();
  await expect(page.locator('#prompt')).toHaveValue(/لخص النص/);
