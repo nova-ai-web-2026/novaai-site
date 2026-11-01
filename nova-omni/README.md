@@ -237,3 +237,16 @@ No model is downloaded before the visitor's explicit initial approval. The welco
 The changes do **not** make the large local model download instant, grant new device permissions, provide hidden paid inference or imply that a model is ready before its worker confirms readiness. Existing 44 templates, optional research source fetches, math tools, saved conversation data, load failure recovery and stop controls are preserved.
 
 Verification includes dedicated browser checks for no-download onboarding, Wi-Fi startup state, mobile-network safeguards and consent, quiet live-region updates, reduced-motion animation, responsive layout and unchanged template access.
+
+## NOVA Local v3.4 — expressive Studio redesign and functional workflow navigation
+
+The user requested a **better** interface, not merely a quieter palette. This release changes the interface architecture and actual navigation:
+
+- **Bold two-column Studio hero** with high-contrast typography, vibrant lilac/cyan gradients, branded CSS-drawn orbital artwork and prominent working shortcuts. Mobile hides the decorative visualization and keeps the useful actions, without downloading image or model assets.
+- **Interactive workflow navigation** with All, Writing, Coding, Research and Study categories. The six starter cards actually change based on category (six writing, six coding, five source-research, five study, or the original six initial actions). These curated cards use the existing approved `NovaTemplateLibrary` definitions; picking one fills the real composer and sends the correct task/template to the existing local runner. No fake AI answers or hidden cloud inference.
+- **Functional calls to action**: open all 44 templates in the existing compact drawer, jump to writing tools, or use Ctrl/Cmd+K to open the template search while not actively editing text.
+- Improved starter-card information density, readability, hover/focus styles, restrained responsive typography and contrast at 320/390/768/1440px. The interface remains keyboard accessible, mobile-friendly and reduced-motion aware.
+- The new CSS/JS lives in `nova-omni/local-studio.css` and `nova-omni/local-studio.js` loaded after the previous stable skin; previous local chats, model consent, AI loading behavior, privacy protections, 44 templates, existing arithmetic and source retrieval remain unchanged.
+- **Clear limits:** Research requires a user-triggered source lookup to Wikimedia/Crossref. Writing and code quick modes use transparent editable starters, not a large text-generation model. Heavy on-device model downloads still require explicit consent.
+
+QA includes browser tests for actual task-category switching, writing/code/study template output, research source links, hero actions, keyboard search, responsive no-overflow checks, preservation of chats/font preferences and zero unauthorized AI downloads.
