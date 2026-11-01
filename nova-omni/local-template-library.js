@@ -1,4 +1,4 @@
-/* NOVA Template Library v3.0: explicit, editable starters, never simulated AI. */
+/* NOVA Template Library v3.1: explicit, editable starters, never simulated AI. */
 (function(root,factory){
  const api=factory();
  if(typeof module==='object'&&module.exports)module.exports=api;
@@ -34,17 +34,50 @@
   {id:'css_cards',category:'code',mode:'code_fast',icon:'▦',title:'بطاقات متجاوبة',description:'شبكة بطاقات HTML وCSS',prompt:'اعمل CSS responsive cards'},
   {id:'js_timer',category:'code',mode:'code_fast',icon:'◴',title:'مؤقت JavaScript',description:'ابدأ وأوقف مؤقتًا على الصفحة',prompt:'اعمل JavaScript timer'},
   {id:'study_plan',category:'study',mode:'write_fast',icon:'◫',title:'خطة مذاكرة',description:'قالب تقسيم أهداف ومراجعة أسبوعية',prompt:'جهز خطة مذاكرة لمادة [المادة]'},
-  {id:'study_revision',category:'study',mode:'write_fast',icon:'☑',title:'قائمة مراجعة',description:'نقاط فحص قبل الاختبار',prompt:'جهز قائمة مراجعة لموضوع [الموضوع]'}
+  {id:'study_revision',category:'study',mode:'write_fast',icon:'☑',title:'قائمة مراجعة',description:'نقاط فحص قبل الاختبار',prompt:'جهز قائمة مراجعة لموضوع [الموضوع]'},
+  {id:'payment_confirmation',category:'writing',mode:'write_fast',icon:'✓',title:'تأكيد دفع',description:'رسالة لتأكيد المبلغ وتاريخ الدفع',prompt:'اكتب تأكيد دفع بقيمة [المبلغ] بتاريخ [التاريخ]'},
+  {id:'interview_thanks',category:'writing',mode:'write_fast',icon:'✉',title:'شكر بعد مقابلة',description:'متابعة مهذبة بعد مقابلة العمل',prompt:'اكتب رسالة شكر بعد مقابلة وظيفة [الوظيفة]'},
+  {id:'js_form_validation',category:'code',mode:'code_fast',icon:'⌘',title:'التحقق من نموذج',description:'مثال JavaScript للتحقق من البيانات',prompt:'اعمل JavaScript form validation'},
+  {id:'research_comparison',category:'research',mode:'research',icon:'≍',title:'مقارنة مصادر',description:'ابحث عن مصادر للمقارنة دون تلخيص مختلق',prompt:'ابحث عن مقارنة الطاقة الشمسية وطاقة الرياح'},
+  {id:'study_flashcards',category:'study',mode:'write_fast',icon:'▣',title:'بطاقات مراجعة',description:'هيكل أسئلة وأجوبة للمذاكرة',prompt:'جهز بطاقات مراجعة لموضوع [الموضوع]'}
  ];
  const frozen=Object.freeze(items.map(item=>Object.freeze(item)));
  const byId=new Map(frozen.map(item=>[item.id,item]));
  const validCategories=Object.freeze(['all','writing','code','research','study']);
- function getTemplates(){return frozen.slice();}
- function getById(id){return byId.get(String(id||''))||null;}
+ let catalog=frozen,catalogLookup=byId,catalogSource='local';
+ // Metadata from the same-origin hosted JSON is strictly validated. It cannot add
+ // arbitrary code, change execution modes, or introduce unknown template identifiers.
+ function applyHostedCatalog(payload){
+  if(!payload||payload.schemaVersion!==1||!Array.isArray(payload.templates)||
+    payload.templates.length!==frozen.length)return false;
+  const seen=new Set(),next=[];
+  for(const row of payload.templates){
+   if(!row||typeof row.id!=='string'||seen.has(row.id))return false;
+   const original=byId.get(row.id);
+   if(!original||row.category!==original.category||row.mode!==original.mode)return false;
+   const details={};
+   for(const key of ['title','description','prompt']){
+    if(typeof row[key]!=='string')return false;
+    const value=row[key].trim();
+    if(!value||value.length>(key==='prompt'?400:140))return false;
+    details[key]=value;
+   }
+   seen.add(row.id);
+   next.push(Object.freeze({...original,...details}));
+  }
+  if(seen.size!==frozen.length)return false;
+  catalog=Object.freeze(next);
+  catalogLookup=new Map(next.map(item=>[item.id,item]));
+  catalogSource='hosted';
+  return true;
+ }
+ function catalogOrigin(){return catalogSource;}
+ function getTemplates(){return catalog.slice();}
+ function getById(id){return catalogLookup.get(String(id||''))||null;}
  function filterTemplates(category='all',text=''){
   const selected=validCategories.includes(category)?category:'all';
   const q=String(text||'').trim().toLocaleLowerCase();
-  return frozen.filter(item=>(selected==='all'||item.category===selected)&&
+  return catalog.filter(item=>(selected==='all'||item.category===selected)&&
    (!q||[item.title,item.description,item.prompt].some(s=>s.toLocaleLowerCase().includes(q))));
  }
  const writeStructures={
@@ -61,7 +94,10 @@
   essay_outline:['عنوان المقال: [الموضوع]','المقدمة: [سياق + الفكرة الرئيسية]','الفقرة الأولى: [حجة + دليل]','الفقرة الثانية: [حجة + مثال]','وجهة نظر بديلة: [نقطة للنقاش]','الخاتمة: [تلخيص الفكرة والنتيجة]','المصادر: [أضف مراجع تحققت منها]'],
   report_structure:['عنوان التقرير: [العنوان]','الملخص التنفيذي: [المشكلة + النتيجة الرئيسية]','الهدف والنطاق: [التحديد]','الطريقة أو مصادر البيانات: [المصادر الفعلية]','النتائج: [ما تم رصده]','المناقشة والقيود: [تفسير وحدود الاستنتاج]','التوصيات: [الإجراء]'],
   study_plan:['المادة: [اسم المادة]','الهدف الأسبوعي: [الموضوعات]','الأحد: [درس + تدريب]','الإثنين: [مراجعة + أسئلة]','الثلاثاء: [درس + تطبيق]','الأربعاء: [حل أسئلة]','الخميس: [مراجعة الأخطاء]','الجمعة: [اختبار ذاتي]','السبت: [مراجعة خفيفة/راحة]','طريقة قياس التقدم: [المهام المكتملة]'],
-  study_revision:['موضوع المراجعة: [الموضوع]','☐ أفهم التعريفات والأفكار الأساسية','☐ أقدر أشرح القانون أو الفكرة بمثال','☐ حللت سؤالًا بدون النظر للحل','☐ راجعت الأخطاء الشائعة','☐ عرفت النقاط التي أحتاج سؤال المعلم عنها','☐ جهزت ملخصًا أو بطاقات مذاكرة']
+  study_revision:['موضوع المراجعة: [الموضوع]','☐ أفهم التعريفات والأفكار الأساسية','☐ أقدر أشرح القانون أو الفكرة بمثال','☐ حللت سؤالًا بدون النظر للحل','☐ راجعت الأخطاء الشائعة','☐ عرفت النقاط التي أحتاج سؤال المعلم عنها','☐ جهزت ملخصًا أو بطاقات مذاكرة'],
+  payment_confirmation:['الموضوع: تأكيد استلام / إتمام دفعة','تحية طيبة،','أود تأكيد سداد مبلغ [المبلغ] بتاريخ [التاريخ].','رقم الفاتورة أو المرجع: [إن وجد].','أرفقت إثبات الدفع [فقط إذا أُرفق بالفعل].','أرجو تأكيد وصول المبلغ إلى حسابكم.','مع خالص التحية،','[الاسم]'],
+  interview_thanks:['الموضوع: شكر بخصوص مقابلة [الوظيفة]','تحية طيبة،','شكرًا على تخصيص وقت لمقابلتي بشأن [الوظيفة].','أسعدني التعرف أكثر على [الفريق أو الدور].','ما زلت مهتمًا بالفرصة، ويسعدني تقديم أي معلومات إضافية.','مع خالص التحية،','[الاسم]'],
+  study_flashcards:['بطاقات مراجعة لموضوع: [الموضوع]','البطاقة 1 — السؤال: [تعريف أو مفهوم]','الإجابة: [اكتب الإجابة الصحيحة من المنهج]','البطاقة 2 — السؤال: [سبب أو قانون]','الإجابة: [اكتب السبب أو القانون الصحيح]','البطاقة 3 — السؤال: [مثال تطبيقي]','الإجابة: [حل المثال خطوة خطوة]','راجع كل إجابة باستخدام ملاحظاتك أو كتابك']
  };
  const englishOverrides={
   email_formal:['Subject: [Subject]','Hello,','I am writing regarding [subject].','[Relevant details]','Could you please advise on the next steps?','Kind regards,','[Your name]'],
@@ -77,7 +113,10 @@
   essay_outline:['Title: [subject]','Introduction: [context + thesis]','Paragraph 1: [claim + evidence]','Paragraph 2: [claim + example]','Alternative view: [counterpoint]','Conclusion: [synthesis]','References: [verified sources]'],
   report_structure:['Report: [title]','Summary: [purpose + findings]','Scope: [boundaries]','Methods: [actual sources/data]','Findings: [observations]','Discussion and limits: [interpretation]','Recommendations: [next steps]'],
   study_plan:['Subject: [subject]','Weekly goal: [topics]','Mon: [lesson]','Tue: [practice]','Wed: [review]','Thu: [questions]','Fri: [test]','Weekend: [review and rest]','Progress check: [completed tasks]'],
-  study_revision:['Revision topic: [topic]','[ ] Understand key ideas','[ ] Explain with an example','[ ] Solve a question independently','[ ] Review mistakes','[ ] Note what to ask a teacher']
+  study_revision:['Revision topic: [topic]','[ ] Understand key ideas','[ ] Explain with an example','[ ] Solve a question independently','[ ] Review mistakes','[ ] Note what to ask a teacher'],
+  payment_confirmation:['Subject: Payment confirmation for [reference]','Hello,','I am confirming payment of [amount] on [date].','Invoice/reference: [if applicable].','I have attached payment confirmation [only if actually attached].','Could you please acknowledge receipt?','Kind regards,','[Your name]'],
+  interview_thanks:['Subject: Thank you for the [role] interview','Hello,','Thank you for taking the time to meet with me about [role].','It was helpful learning more about [team or responsibilities].','I remain interested and would be happy to share further information.','Kind regards,','[Your name]'],
+  study_flashcards:['Flashcards for [topic]','Card 1 — Question: [key definition]','Answer: [verified definition from notes]','Card 2 — Question: [why/how question]','Answer: [correct explanation]','Card 3 — Question: [practice example]','Answer: [worked solution]','Verify each card against your notes']
  };
  const codeSnippets={
   python_quiz:"questions = [('Capital of France?', 'paris'), ('2 + 3?', '5')]\nscore = 0\nfor question, answer in questions:\n    response = input(question + ' ').strip().lower()\n    if response == answer:\n        print('Correct')\n        score += 1\n    else:\n        print('Answer:', answer)\nprint(f'Score: {score}/{len(questions)}')",
@@ -87,6 +126,7 @@
   js_filter:"const items = ['apple', 'orange', 'banana', 'pear'];\nfunction searchList(query) {\n  const q = query.toLowerCase().trim();\n  return items.filter(item => item.toLowerCase().includes(q));\n}\nconsole.log(searchList('ap'));\n// Connect the function to your own input/list UI.",
   html_form:"<!doctype html>\n<html lang=\"en\"><meta charset=\"utf-8\"><title>Contact form</title>\n<form id=\"contact\">\n  <label>Name <input name=\"name\" required></label>\n  <label>Email <input name=\"email\" type=\"email\" required></label>\n  <label>Message <textarea name=\"message\" required></textarea></label>\n  <button>Preview</button>\n</form><output id=\"message\"></output>\n<script>\ndocument.querySelector('#contact').addEventListener('submit', e => {\n  e.preventDefault();\n  document.querySelector('#message').textContent = 'Preview only — no message was sent.';\n});\n</script></html>",
   css_cards:"<!doctype html>\n<html lang=\"en\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<style>\nbody{font-family:system-ui;padding:1.5rem}\n.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:1rem}\n.card{border:1px solid #ddd;border-radius:12px;padding:1.2rem}\n</style>\n<h1>Cards</h1>\n<div class=\"cards\"><article class=\"card\">First</article><article class=\"card\">Second</article></div>\n</html>",
+  js_form_validation:"<!doctype html>\n<html lang=\"en\"><meta charset=\"utf-8\"><title>Form validation</title>\n<form id=\"registration\">\n <label>Email <input name=\"email\" type=\"email\" required></label>\n <label>Age <input name=\"age\" type=\"number\" min=\"1\" max=\"120\" required></label>\n <button type=\"submit\">Check form</button>\n</form>\n<p id=\"status\" role=\"status\"></p>\n<script>\nconst form = document.querySelector('#registration');\nform.addEventListener('submit', event => {\n event.preventDefault();\n const status = document.querySelector('#status');\n status.textContent = form.checkValidity() ? 'Inputs valid (nothing sent).' : 'Please fix the fields.';\n});\n</script></html>",
   js_timer:"<!doctype html>\n<html lang=\"en\"><meta charset=\"utf-8\"><title>Timer</title>\n<output id=\"seconds\">0</output><button id=\"start\">Start</button><button id=\"stop\">Stop</button>\n<script>\nlet seconds = 0;\nlet timer = null;\nconst output = document.querySelector('#seconds');\ndocument.querySelector('#start').addEventListener('click', () => {\n  if(timer !== null) return;\n  timer = setInterval(() => {seconds++;output.textContent = String(seconds);},1000);\n});\ndocument.querySelector('#stop').addEventListener('click',()=>{\n  if(timer!==null)clearInterval(timer);\n  timer = null;\n});\n</script></html>"
  };
  const legacyCode=new Set(['python_calc','python_todo','html_page','js_fetch']);
@@ -108,5 +148,5 @@
   return {kind:'writing-template',network:false,text:(ar?'قالب منظم قابل للتعديل (بدون نموذج AI):':'Editable structured template (no AI model):')+'\n\n'+lines.join('\n')+details+
    (ar?'\n\nراجع الخانات بين [ ] واملأها بالمعلومات الحقيقية.':'\n\nReplace [ ] placeholders with real information.')};
  }
- return Object.freeze({getTemplates,getById,filterTemplates,render});
+ return Object.freeze({getTemplates,getById,filterTemplates,render,applyHostedCatalog,catalogOrigin});
 });

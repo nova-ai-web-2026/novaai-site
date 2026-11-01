@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "3.1.0",
+  "description": "Hosted static metadata for NOVA templates. All template bodies remain curated in the app; no runtime scripts or user data in this resource.",
+  "templates": [
+    {
+      "id": "research_topic",
+      "category": "research",
+      "mode": "research",
+      "title": "بحث عن موضوع",
+      "description": "مصادر وروابط من ويكيبيديا وCrossref",
+      "prompt": "ابحث عن فوائد الطاقة الشمسية"
+    },
+    {
+      "id": "research_science",
+      "category": "research",
+      "mode": "research",
+      "title": "بحث علمي",
+      "description": "ابحث عن دراسات منشورة وراجع المصادر",
+      "prompt": "ابحث عن دراسات عن الطاقة المتجددة"
+    },
+    {
+      "id": "research_history",
+      "category": "research",
+      "mode": "research",
+      "title": "بحث تاريخي",
+      "description": "ابحث عن تواريخ وأحداث من مصادر قابلة للفتح",
+      "prompt": "ابحث عن تاريخ استكشاف الفضاء"
+    },
+    {
+      "id": "email_formal",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "إيميل رسمي",
+      "description": "قالب مراسلة مهنية واضح",
+      "prompt": "اكتب إيميل رسمي بخصوص [الموضوع]"
+    },
+    {
+      "id": "email_followup",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "متابعة طلب",
+      "description": "استفسار مهذب عن آخر المستجدات",
+      "prompt": "اكتب إيميل متابعة لطلب [نوع الطلب]"
+    },
+    {
+      "id": "complaint",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "شكوى أو اعتراض",
+      "description": "صياغة منظمة لمشكلة وطلب الحل",
+      "prompt": "اكتب شكوى بخصوص [المشكلة]"
+    },
+    {
+      "id": "leave_request",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "طلب إجازة",
+      "description": "رسالة مختصرة للعمل أو الدراسة",
+      "prompt": "اكتب طلب إجازة للفترة [التاريخ]"
+    },
+    {
+      "id": "job_application",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "طلب وظيفة",
+      "description": "رسالة تقديم مع مكان لتفاصيلك",
+      "prompt": "اكتب رسالة تقديم لوظيفة [المسمى]"
+    },
+    {
+      "id": "cover_letter",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "خطاب تقديم",
+      "description": "هيكل Cover Letter قابل للتخصيص",
+      "prompt": "اكتب خطاب تقديم لوظيفة [المسمى]"
+    },
+    {
+      "id": "cv_summary",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "نبذة سيرة ذاتية",
+      "description": "هيكل نبذة مهنية بدون اختراع خبرات",
+      "prompt": "جهز نبذة CV عن مهاراتي [المهارات]"
+    },
+    {
+      "id": "social_post",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "منشور سوشيال",
+      "description": "قالب نشر مع افتتاحية ودعوة للتفاعل",
+      "prompt": "اعمل منشور عن [الموضوع]"
+    },
+    {
+      "id": "meeting_notes",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "محضر اجتماع",
+      "description": "القرارات والمسؤوليات والمواعيد",
+      "prompt": "جهز محضر اجتماع عن [الموضوع]"
+    },
+    {
+      "id": "project_outline",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "خطة مشروع",
+      "description": "هدف ونطاق ومراحل ومخاطر",
+      "prompt": "جهز مخطط مشروع عن [الفكرة]"
+    },
+    {
+      "id": "essay_outline",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "هيكل مقال",
+      "description": "مقدمة وفقرات وحجة وخاتمة",
+      "prompt": "جهز مخطط مقال عن [الموضوع]"
+    },
+    {
+      "id": "report_structure",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "هيكل تقرير",
+      "description": "ملخص ومنهج ونتائج وتوصيات",
+      "prompt": "جهز تقرير عن [الموضوع]"
+    },
+    {
+      "id": "python_calc",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "حاسبة Python",
+      "description": "عمليات أساسية وفحص القسمة على صفر",
+      "prompt": "اعمل آلة حاسبة Python"
+    },
+    {
+      "id": "python_todo",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "مهام Python",
+      "description": "إضافة واستعراض وحذف مهام",
+      "prompt": "اعمل قائمة مهام Python"
+    },
+    {
+      "id": "html_page",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "صفحة HTML",
+      "description": "صفحة متجاوبة كنقطة بداية",
+      "prompt": "اعمل صفحة HTML"
+    },
+    {
+      "id": "js_fetch",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "جلب بيانات API",
+      "description": "fetch مع معالجة أخطاء HTTP",
+      "prompt": "اعمل JavaScript fetch API"
+    },
+    {
+      "id": "python_quiz",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "اختبار Python",
+      "description": "سؤال وجواب وحساب نتيجة",
+      "prompt": "اعمل برنامج اختبار Python"
+    },
+    {
+      "id": "python_csv",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "قراءة CSV",
+      "description": "قراءة ملف محلي باستخدام csv",
+      "prompt": "اكتب كود Python لقراءة CSV"
+    },
+    {
+      "id": "python_json",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "قراءة JSON",
+      "description": "قراءة ملف JSON مع معالجة أخطاء",
+      "prompt": "اكتب كود Python لقراءة JSON"
+    },
+    {
+      "id": "js_counter",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "عداد JavaScript",
+      "description": "عداد يزيد وينقص بأزرار",
+      "prompt": "اعمل عداد JavaScript"
+    },
+    {
+      "id": "js_filter",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "بحث داخل قائمة",
+      "description": "فلترة عناصر محليًا بجافاسكربت",
+      "prompt": "اكتب JavaScript للبحث داخل قائمة"
+    },
+    {
+      "id": "html_form",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "نموذج تواصل",
+      "description": "HTML form بلا إرسال خارجي",
+      "prompt": "اعمل نموذج تواصل HTML"
+    },
+    {
+      "id": "css_cards",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "بطاقات متجاوبة",
+      "description": "شبكة بطاقات HTML وCSS",
+      "prompt": "اعمل CSS responsive cards"
+    },
+    {
+      "id": "js_timer",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "مؤقت JavaScript",
+      "description": "ابدأ وأوقف مؤقتًا على الصفحة",
+      "prompt": "اعمل JavaScript timer"
+    },
+    {
+      "id": "study_plan",
+      "category": "study",
+      "mode": "write_fast",
+      "title": "خطة مذاكرة",
+      "description": "قالب تقسيم أهداف ومراجعة أسبوعية",
+      "prompt": "جهز خطة مذاكرة لمادة [المادة]"
+    },
+    {
+      "id": "study_revision",
+      "category": "study",
+      "mode": "write_fast",
+      "title": "قائمة مراجعة",
+      "description": "نقاط فحص قبل الاختبار",
+      "prompt": "جهز قائمة مراجعة لموضوع [الموضوع]"
+    },
+    {
+      "id": "payment_confirmation",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "تأكيد دفع",
+      "description": "رسالة لتأكيد المبلغ وتاريخ الدفع",
+      "prompt": "اكتب تأكيد دفع بقيمة [المبلغ] بتاريخ [التاريخ]"
+    },
+    {
+      "id": "interview_thanks",
+      "category": "writing",
+      "mode": "write_fast",
+      "title": "شكر بعد مقابلة",
+      "description": "متابعة مهذبة بعد مقابلة العمل",
+      "prompt": "اكتب رسالة شكر بعد مقابلة وظيفة [الوظيفة]"
+    },
+    {
+      "id": "js_form_validation",
+      "category": "code",
+      "mode": "code_fast",
+      "title": "التحقق من نموذج",
+      "description": "مثال JavaScript للتحقق من البيانات",
+      "prompt": "اعمل JavaScript form validation"
+    },
+    {
+      "id": "research_comparison",
+      "category": "research",
+      "mode": "research",
+      "title": "مقارنة مصادر",
+      "description": "ابحث عن مصادر للمقارنة دون تلخيص مختلق",
+      "prompt": "ابحث عن مقارنة الطاقة الشمسية وطاقة الرياح"
+    },
+    {
+      "id": "study_flashcards",
+      "category": "study",
+      "mode": "write_fast",
+      "title": "بطاقات مراجعة",
+      "description": "هيكل أسئلة وأجوبة للمذاكرة",
+      "prompt": "جهز بطاقات مراجعة لموضوع [الموضوع]"
+    }
+  ]
+}
