@@ -31,4 +31,4 @@ jobs:
             if curl -fsSL --max-time 2 http://127.0.0.1:4173/local.html -o /dev/null; then break; fi
             sleep 1
           done
-          npx playwright test tests/instant-browser.spec.js tests/local-autowarm.spec.js tests/template-design.spec.js --reporter=line --workers=1 --timeout=30000
+          npx playwright test tests/instant-browser.spec.js tests/local-autowarm.spec.js tests/template-design.spec.js tests/calm-ui.spec.js --reporter=line --workers=1 --timeout=30000
