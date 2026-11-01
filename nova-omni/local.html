@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c0f15">
-<meta name="nova-local-version" content="3.1.0">
+<meta name="nova-local-version" content="3.2.0">
 <meta name="description" content="NOVA OMNI Local, a free private AI workspace that runs on your device.">
 <title>NOVA OMNI Local — Your private AI space</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -519,7 +519,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
       <strong><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>خصوصيتك أولًا</strong>
       <p>محادثاتك بتفضل في المتصفح. البحث الاختياري بس بيرسل كلمات الموضوع إلى ويكيبيديا وCrossref، من غير إرسال تاريخ المحادثة.</p>
     </div>
-    <div class="railFoot">NOVA LOCAL v3.1 · PRIVATE WORKSPACE</div>
+    <div class="railFoot">NOVA LOCAL v3.2 · PRIVATE WORKSPACE</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -554,7 +554,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
               <button class="suggestion" type="button" data-prompt="لخص النص التالي: تعمل الألواح الشمسية على تحويل ضوء الشمس إلى طاقة كهربائية. تساعد هذه التقنية على تقليل الاعتماد على الوقود الأحفوري. تحتاج الألواح إلى ضوء كاف لكي تعمل بكفاءة عالية. ويمكن تخزين الطاقة الناتجة في بطاريات لاستخدامها وقت الليل. تؤثر درجات الحرارة والظلال على مستوى إنتاج الطاقة."><span class="tileIcon">≡</span><span><strong>تلخيص سريع</strong><small>من نصك · بدون تحميل</small></span></button>
             </div>
             <div class="templateTeaser">
-               <div><strong>مكتبة القوالب الجديدة</strong><span>34 قالبًا للكتابة والبرمجة والبحث والمذاكرة</span></div>
+               <div><strong>مكتبة القوالب الجديدة</strong><span>44 قالبًا · منها 10 قوالب داخلية جديدة</span></div>
                <button id="browseTemplatesWelcome" type="button">استعرض القوالب <span aria-hidden="true">↗</span></button>
              </div>
            </section>
@@ -693,7 +693,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
       <div class="templateHeading">
         <span class="templateKicker">NOVA · TEMPLATE LIBRARY</span>
         <h2 id="templateDialogTitle">رف القوالب</h2>
-        <p>34 قالبًا في مساحة صغيرة داخل NOVA. اختار النوع، ثم عدّل القالب قبل الإرسال.</p>
+        <p>44 قالبًا داخل NOVA، بينهم 10 قوالب جديدة. اختار النوع وعدّل القالب قبل الإرسال.</p>
       </div>
       <button id="closeTemplates" class="templateClose" type="button" aria-label="إغلاق مكتبة القوالب">×</button>
     </header>
@@ -706,7 +706,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
         <button type="button" data-filter="research" aria-pressed="false">⌕ بحث</button>
         <button type="button" data-filter="study" aria-pressed="false">▤ مذاكرة</button>
       </div>
-      <p id="templateCount" class="templateCount" aria-live="polite">34 قالبًا متاحًا</p>
+      <p id="templateCount" class="templateCount" aria-live="polite">44 قالبًا متاحًا</p>
       <p id="templateHostStatus" class="templateHostStatus" role="status">القوالب محفوظة محليًا وتُحدَّث من استضافة NOVA عند الفتح</p>
     </div>
     <div id="templateGrid" class="templateGrid"></div>
@@ -715,7 +715,7 @@ body{font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,system-ui,sans-serif
 <script src="./local-math.js?v=2.7.0"></script>
 <script src="./local-tasks.js?v=2.8.1"></script>
 <script src="./local-instant.js?v=2.9.0"></script>
-<script src="./local-template-library.js?v=3.1.0"></script>
+<script src="./local-template-library.js?v=3.2.0"></script>
 <script>
 (()=>{
 'use strict';
@@ -1350,6 +1350,6 @@ for(const [id,key] of [
 loadSaved();updateMemoryInfo();display();renderSessions();syncActions();state('الأدوات الفورية جاهزة','instant');beginBackgroundWarmup();
 })();
 </script>
-<script src="./local-template-ui.js?v=3.1.0"></script>
+<script src="./local-template-ui.js?v=3.2.0"></script>
 </body>
 </html>
